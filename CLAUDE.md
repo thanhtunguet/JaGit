@@ -46,6 +46,38 @@ Postgres, Zod, Vitest, React + Vite + shadcn/ui, `@zed-industries/claude-code-ac
 - **Use Serena's symbolic tools** for reading/editing code (see tool-selection
   rules); Read/Edit are for non-code files.
 
+## Session logging & changelogs
+
+At the end of **every** working session, before reporting completion, the agent
+MUST record what it did:
+
+- **Per-session changelog file** — write one file per session under
+  `docs/changelogs/`, named with a date-time prefix:
+  `docs/changelogs/YYYY-MM-DD-HHMM-<short-slug>.md` (e.g.
+  `docs/changelogs/2026-06-14-1530-add-webhook-verifier.md`). Include: the task,
+  what changed (files/packages touched), tests added/run, and any follow-ups.
+- **Root CHANGELOG.md** — append a short, one- or two-line entry summarizing the
+  session under a dated heading at the top of `CHANGELOG.md` (newest first).
+  Keep it concise; the detail lives in the per-session file.
+- Create `docs/changelogs/` and `CHANGELOG.md` if they don't exist yet.
+
+## Plan progress tracking
+
+When working through an implementation plan (e.g.
+`docs/superpowers/plans/2026-06-14-jigit-mvp.md`), keep the **Current plan
+progress** section below up to date at the end of each session — record which
+task/step is done, what's in progress, and what's next. The next session reads
+this first to know where to resume.
+
+<!-- BEGIN: Current plan progress (agents update this each session) -->
+### Current plan progress
+
+- **Active plan:** _none yet_
+- **Last completed:** _n/a_
+- **In progress:** _n/a_
+- **Next up:** _n/a_
+<!-- END: Current plan progress -->
+
 ## Secrets — never touch
 
 - Never read, print, log, or commit `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`,
