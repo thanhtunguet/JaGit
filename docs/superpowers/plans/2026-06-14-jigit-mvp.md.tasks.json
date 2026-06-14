@@ -1,0 +1,22 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-14-jigit-mvp.md",
+  "tasks": [
+    { "id": 0, "subject": "Task 0: Monorepo scaffolding", "status": "pending", "blockedBy": [], "description": "pnpm workspace with shared/api/worker packages, tsconfig.base, .env.example. Verify: pnpm install && pnpm -r build." },
+    { "id": 1, "subject": "Task 1: Config loader + secret crypto", "status": "pending", "blockedBy": [0], "description": "zod config loader + AES-256-GCM crypto in @jigit/shared (TDD). Verify: pnpm --filter @jigit/shared test." },
+    { "id": 2, "subject": "Task 2: Prisma schema + migration", "status": "pending", "blockedBy": [0], "description": "Postgres schema (AgentTemplate, Credential, RepoMapping, Job, JobStep, JobEvent, Approval) + client. Verify: prisma validate." },
+    { "id": 3, "subject": "Task 3: Branch-name derivation", "status": "pending", "blockedBy": [0], "description": "deriveBranchName + extractIssueKey, pure (TDD). Verify: pnpm --filter @jigit/shared test branch." },
+    { "id": 4, "subject": "Task 4: Bounded retry policy", "status": "pending", "blockedBy": [0], "description": "withRetry with backoff (TDD). Verify: pnpm --filter @jigit/shared test retry." },
+    { "id": 5, "subject": "Task 5: Queue + events + shared barrel", "status": "pending", "blockedBy": [1, 2], "description": "BullMQ factory, Redis pub/sub, JigitJobData, barrel export. Verify: shared build + test." },
+    { "id": 6, "subject": "Task 6: Webhook normalization", "status": "pending", "blockedBy": [0], "description": "Pure normalizeJira + dedupeKey (TDD); gitlab stub. Verify: api test normalize." },
+    { "id": 7, "subject": "Task 7: Fastify server + webhook receivers + enqueue", "status": "pending", "blockedBy": [5, 6], "description": "Fastify /health + webhook verify/normalize + dedupe Job create + enqueue. Verify: api test." },
+    { "id": 8, "subject": "Task 8: Integration adapters (Jira/GitLab/Git/Telegram)", "status": "pending", "blockedBy": [4], "description": "Interface-first adapters wrapped in withRetry, mockable. Verify: worker test adapters." },
+    { "id": 9, "subject": "Task 9: ACP client wrapping Claude Code", "status": "pending", "blockedBy": [0], "description": "AcpSession over stdio: init/session/prompt, stream updates, bridge permissions, accumulate tokens (TDD fake agent). Verify: worker test acp." },
+    { "id": 10, "subject": "Task 10: LangGraph job graph + checkpointer + nodes", "status": "pending", "blockedBy": [5, 8, 9], "description": "StateGraph lifecycle nodes, JobStep/JobEvent writes, Postgres checkpointer, stop/pause (TDD faked deps). Verify: worker test graph." },
+    { "id": 11, "subject": "Task 11: Approval bridge (Telegram + dashboard + resume)", "status": "pending", "blockedBy": [10], "description": "ACP permission -> Approval(pending) -> notify -> block until resolved/timeout; idempotent. Verify: worker/api approval tests." },
+    { "id": 12, "subject": "Task 12: REST job API + SSE + control endpoints", "status": "pending", "blockedBy": [7, 11], "description": "list/detail jobs, SSE, control, approve/reject, read-only config. Verify: api test jobs." },
+    { "id": 13, "subject": "Task 13: Worker/API entrypoints + seed script", "status": "pending", "blockedBy": [10, 12], "description": "Runnable worker (concurrency, real adapters, control sub) + API main + seed. Verify: pnpm -r build." },
+    { "id": 14, "subject": "Task 14: Dashboard (React + Vite + shadcn/ui)", "status": "pending", "blockedBy": [12], "description": "Overview mock charts, Jobs list, Job detail (SSE+controls+approve), read-only Config. Verify: dashboard test + build." },
+    { "id": 15, "subject": "Task 15: docker-compose + E2E smoke", "status": "pending", "blockedBy": [13, 14], "description": "compose (pg/redis/api/worker) + E2E webhook->opening_mr with faked adapters. Verify: JIGIT_FAKE_ADAPTERS=1 pnpm test:e2e." }
+  ],
+  "lastUpdated": "2026-06-14"
+}
