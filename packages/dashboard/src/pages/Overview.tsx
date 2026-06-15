@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { StatCard } from "@/components/StatCard";
+import { JobsTable } from "@/components/JobsTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -16,7 +19,7 @@ import {
   Cell,
 } from "recharts";
 import { Activity, CheckCircle, Hash, Clock } from "lucide-react";
-import { getOverviewStats, type OverviewStats } from "@/api/client";
+import { getOverviewStats, isActiveJob, listJobs, type Job, type OverviewStats } from "@/api/client";
 
 const STATUS_COLORS: Record<string, string> = {
   done: "#22c55e",
@@ -54,13 +57,22 @@ function formatTokenCount(n: number): string {
 
 export function Overview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [jobs, setJobs] = useState<Job[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshJobs = () => listJobs().then(setJobs).catch((e) => setError((e as Error).message));
 
   useEffect(() => {
     getOverviewStats()
       .then(setStats)
       .catch((e) => setError((e as Error).message));
+    refreshJobs();
   }, []);
+
+  const runningJobs = useMemo(
+    () => (jobs === null ? null : jobs.filter(isActiveJob)),
+    [jobs],
+  );
 
   if (error) {
     return (
@@ -201,6 +213,25 @@ export function Overview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Running jobs */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm">Running Jobs</CardTitle>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/jobs">View all jobs</Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <JobsTable
+            jobs={runningJobs}
+            emptyMessage="No jobs currently running."
+            onActionComplete={refreshJobs}
+            onError={(message) => setError(message)}
+            className="border-0"
+          />
+        </CardContent>
+      </Card>
 
       {/* Recent activity */}
       <Card>

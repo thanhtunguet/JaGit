@@ -15,6 +15,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export const TERMINAL_JOB_STATUSES = ["done", "stopped", "failed"] as const;
+
+export const isActiveJob = (job: Pick<Job, "status">) =>
+  !(TERMINAL_JOB_STATUSES as readonly string[]).includes(job.status);
+
 export const listJobs = () => request<Job[]>("/jobs");
 export const getOverviewStats = () => request<OverviewStats>("/stats/overview");
 export const getJob = (id: string) => request<JobDetail>(`/jobs/${id}`);
