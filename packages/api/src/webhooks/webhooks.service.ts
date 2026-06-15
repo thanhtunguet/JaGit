@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException, Inject } from "@nestjs/common";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { PrismaService } from "../common/prisma.module.js";
 import { QUEUE_TOKEN } from "../common/queue.module.js";
 import { normalizeJira, dedupeKey } from "./normalize.js";
@@ -14,8 +15,15 @@ export class WebhooksService {
     @Inject(QUEUE_TOKEN) private readonly queue: Queue,
   ) {}
 
-  async handleJira(secret: string, body: any) {
-    if (secret !== this.cfg.webhookSecret) throw new UnauthorizedException();
+  async handleJira(hubSignature: string | undefined, rawBody: Buffer, body: any) {
+    // Verify Jira's HMAC-SHA256 signature from x-hub-signature header.
+    const expected = "sha256=" + createHmac("sha256", this.cfg.webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+    const sigBuf = Buffer.from(hubSignature ?? "");
+    const expBuf = Buffer.from(expected);
+    const sigValid = sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf);
+    if (!sigValid) throw new UnauthorizedException();
 
     // Resolve the bot's Jira account ID from the stored Jira credential.
     const jiraCred = await this.prisma.client.credential.findFirst({

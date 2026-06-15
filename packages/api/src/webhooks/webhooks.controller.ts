@@ -9,6 +9,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Req,
   Res,
   UseInterceptors,
 } from "@nestjs/common";
@@ -37,16 +38,18 @@ export class WebhooksController {
   @Post("jira")
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Receive Jira issue-updated webhook" })
-  @ApiHeader({ name: "x-jigit-secret", required: true })
+  @ApiHeader({ name: "x-hub-signature", required: true, description: "HMAC-SHA256 from Jira (sha256=<hex>)" })
   @ApiResponse({ status: 202, description: "Job enqueued" })
   @ApiResponse({ status: 200, description: "Ignored or duplicate" })
-  @ApiResponse({ status: 401, description: "Bad secret" })
+  @ApiResponse({ status: 401, description: "Bad signature" })
   async jira(
-    @Headers("x-jigit-secret") secret: string,
+    @Headers("x-hub-signature") hubSignature: string | undefined,
     @Body() body: unknown,
+    @Req() req: FastifyRequest & { rawBody?: Buffer },
     @Res({ passthrough: true }) res: FastifyReply,
   ) {
-    const result = await this.svc.handleJira(secret, body);
+    const rawBody = req.rawBody ?? Buffer.from(JSON.stringify(body));
+    const result = await this.svc.handleJira(hubSignature, rawBody, body);
     if ("ignored" in result || "duplicate" in result) {
       res.status(200);
     }
