@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-15 (task-01 credential schemas)
+
+**Task 1 — Shared Credential Schemas + mergeSecrets**: Added per-kind Zod schemas (`jira`, `gitlab`, `anthropic`, `telegram`) and `mergeSecrets` helper (decrypt → merge → re-encrypt) in `@jigit/shared`. Exported from shared index. 18 new tests passing.
+
 ## 2026-06-15 (phase-08 docker-e2e)
 
 **Phase 8 — Docker + E2E Smoke Test**: Added Dockerfiles (api, worker), expanded docker-compose.yml to full stack (migrate + api + worker), added `JIGIT_FAKE_ADAPTERS=1` mode to worker (in-memory fakes, no credentials needed), E2E smoke test fires synthetic Jira webhook and polls until job reaches `done`. Fixed SpaController/Fastify wildcard conflict. All 49 unit tests + 3 E2E tests pass.
