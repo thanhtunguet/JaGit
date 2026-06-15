@@ -23,6 +23,9 @@ async function bootstrap() {
     new FastifyAdapter({ logger: true }),
   );
 
+  // All API routes under /api
+  app.setGlobalPrefix("api");
+
   // Global validation
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
@@ -42,7 +45,7 @@ async function bootstrap() {
       .addTag("Config (read-only)")
       .build(),
   );
-  SwaggerModule.setup("api/docs", app, document, {
+  SwaggerModule.setup("docs", app, document, {
     swaggerOptions: { persistAuthorization: true },
   });
 

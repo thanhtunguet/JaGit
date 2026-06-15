@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const BASE = ""; // same origin; vite proxy handles /jobs → http://localhost:3000
+const BASE = "/api"; // same origin; vite proxy handles /jobs → http://localhost:3000
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
