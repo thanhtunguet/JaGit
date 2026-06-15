@@ -28,7 +28,7 @@ function TokenBar() {
       <span className="text-xs text-muted-foreground shrink-0">API token:</span>
       <input
         type="password"
-        className="flex-1 bg-transparent text-xs font-mono outline-none"
+        className="flex-1 bg-background text-foreground text-xs font-mono outline-none placeholder:text-muted-foreground"
         placeholder="Paste DASHBOARD_API_TOKEN to enable mutations"
         value={token}
         onChange={(e) => { setToken(e.target.value); setStoredToken(e.target.value); }}
@@ -46,9 +46,9 @@ function JsonField({
   const [err, setErr] = useState(false);
   return (
     <div>
-      <label className="text-xs font-medium mb-1 block">{label}</label>
+      <label className="text-xs font-medium mb-1 block text-foreground">{label}</label>
       <textarea
-        className={`w-full font-mono text-xs p-2 rounded border min-h-[80px] resize-y ${err ? "border-destructive" : ""}`}
+        className={`w-full font-mono text-xs p-2 rounded border min-h-[80px] resize-y bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring ${err ? "border-destructive" : "border-input"}`}
         value={raw}
         placeholder={placeholder}
         onChange={(e) => {
@@ -67,10 +67,10 @@ function Field({
 }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
   return (
     <div>
-      <label className="text-xs font-medium mb-1 block">{label}</label>
+      <label className="text-xs font-medium mb-1 block text-foreground">{label}</label>
       <input
         type={type}
-        className="w-full text-sm p-2 rounded border"
+        className="w-full text-sm p-2 rounded border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
@@ -135,7 +135,7 @@ function CredentialDialog({
             <div>
               <label className="text-xs font-medium mb-1 block">Kind</label>
               <select
-                className="w-full text-sm p-2 rounded border"
+                className="w-full text-sm p-2 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 value={kind}
                 onChange={(e) => {
                   setKind(e.target.value);
@@ -249,7 +249,7 @@ function RepoMappingDialog({
           <div>
             <label className="text-xs font-medium mb-1 block">Agent Template</label>
             <select
-              className="w-full text-sm p-2 rounded border"
+              className="w-full text-sm p-2 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               value={form.agentTemplateId}
               onChange={(e) => setForm((f) => ({ ...f, agentTemplateId: e.target.value }))}
             >
@@ -317,7 +317,7 @@ function AgentTemplateDialog({
           <div>
             <label className="text-xs font-medium mb-1 block">Prompt</label>
             <textarea
-              className="w-full text-sm p-2 rounded border min-h-[100px] resize-y"
+              className="w-full text-sm p-2 rounded border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring min-h-[100px] resize-y"
               value={form.prompt}
               onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
             />
