@@ -17,7 +17,13 @@ export class WebhooksService {
   async handleJira(secret: string, body: any) {
     if (secret !== this.cfg.webhookSecret) throw new UnauthorizedException();
 
-    const trigger = normalizeJira(body, process.env["JIRA_BOT_ACCOUNT_ID"] ?? "");
+    // Resolve the bot's Jira account ID from the stored Jira credential.
+    const jiraCred = await this.prisma.client.credential.findFirst({
+      where: { kind: "jira" },
+    });
+    const botAccountId: string = (jiraCred?.meta as any)?.botAccountId ?? "";
+
+    const trigger = normalizeJira(body, botAccountId);
     if (!trigger) return { ignored: true };
 
     const key = dedupeKey(trigger);
