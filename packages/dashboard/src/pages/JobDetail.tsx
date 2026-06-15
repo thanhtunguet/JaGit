@@ -6,6 +6,7 @@ import {
   useSSE,
   type JobDetail as JobDetailType,
   type JobEvent,
+  type JobStep,
 } from "@/api/client";
 import { JobStatusBadge } from "@/components/JobStatusBadge";
 import { ApprovalCard } from "@/components/ApprovalCard";
@@ -40,11 +41,44 @@ export function JobDetail() {
   const [job, setJob] = useState<JobDetailType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [controlling, setControlling] = useState(false);
-  const liveEvents = useSSE<{ type: string; event?: JobEvent }>(id!);
+  const liveEvents = useSSE<{
+    type: string;
+    event?: JobEvent;
+    status?: string;
+    error?: string;
+    step?: JobStep;
+  }>(id!);
 
   useEffect(() => {
     getJob(id!).then(setJob).catch((e) => setError(e.message));
   }, [id]);
+
+  useEffect(() => {
+    if (liveEvents.length === 0) return;
+    const latest = liveEvents[liveEvents.length - 1];
+    if (latest.type === "status_changed" && latest.status) {
+      setJob((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: latest.status!,
+              ...(latest.error !== undefined ? { error: latest.error } : {}),
+            }
+          : prev,
+      );
+    }
+    if (latest.type === "step_changed" && latest.step) {
+      setJob((prev) => {
+        if (!prev) return prev;
+        const idx = prev.steps.findIndex((s) => s.id === latest.step!.id);
+        const steps =
+          idx >= 0
+            ? prev.steps.map((s, i) => (i === idx ? { ...s, ...latest.step! } : s))
+            : [...prev.steps, latest.step!];
+        return { ...prev, steps };
+      });
+    }
+  }, [liveEvents]);
 
   const control = async (action: "stop" | "pause" | "resume") => {
     setControlling(true);
@@ -198,6 +232,11 @@ export function JobDetail() {
                 <span className="text-muted-foreground">Branch</span>
                 <span className="font-mono text-xs truncate max-w-[9rem]">{job.branch ?? "—"}</span>
               </div>
+              {job.error && (
+                <div className="text-destructive text-xs break-words rounded border border-destructive/30 bg-destructive/5 p-2">
+                  {job.error}
+                </div>
+              )}
               {job.mrUrl && (
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">MR</span>
@@ -286,7 +325,11 @@ function ConsoleTab({ events }: { events: JobEvent[] }) {
   const [autoScroll, setAutoScroll] = useState(true);
 
   const consoleEvents = events.filter(
-    (e) => e.type === "agent_output" || e.type === "approval_requested" || e.type === "agent_done"
+    (e) =>
+      e.type === "agent_output" ||
+      e.type === "approval_requested" ||
+      e.type === "agent_done" ||
+      e.type === "step_error",
   );
 
   useEffect(() => {
@@ -325,7 +368,7 @@ function ConsoleTab({ events }: { events: JobEvent[] }) {
                       ? "text-yellow-400"
                       : e.type === "agent_done"
                         ? "text-blue-400"
-                        : e.level === "error"
+                        : e.type === "step_error" || e.level === "error"
                           ? "text-red-400"
                           : ""
                   }

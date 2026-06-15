@@ -36,6 +36,7 @@ export interface Job {
   branch: string | null;
   mrUrl: string | null;
   status: string;
+  error?: string | null;
   tokensUsed: number;
   costUsd: number;
   createdAt: string;

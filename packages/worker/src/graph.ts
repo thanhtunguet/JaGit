@@ -1,10 +1,10 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { join } from "node:path";
 import { deriveBranchName, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
 import { awaitApproval } from "./approval.js";
+import { runStep } from "./run-step.js";
 
 export interface GraphDeps {
   jira: IJiraAdapter;
@@ -41,177 +41,172 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
   // ── nodes ──────────────────────────────────────────────────────────────────
 
   async function resolveContext(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "resolveContext");
-    const issue = await jira.getIssue(state.jiraIssueKey);
-    const branch = deriveBranchName(
-      { key: issue.key, type: issue.type, summary: issue.summary },
-      repoMapping.branchPrefixRules,
-    );
-    await sink.addEvent(state.jobId, { type: "context_resolved", message: `Branch: ${branch}` });
-    await sink.finishStep(stepId, "done");
-    return {
-      issueType: issue.type,
-      issueSummary: issue.summary,
-      issueDescription: issue.description,
-      branchName: branch,
-    };
+    return runStep(sink, state.jobId, "resolveContext", async () => {
+      const issue = await jira.getIssue(state.jiraIssueKey);
+      const branch = deriveBranchName(
+        { key: issue.key, type: issue.type, summary: issue.summary },
+        repoMapping.branchPrefixRules,
+      );
+      await sink.addEvent(state.jobId, { type: "context_resolved", message: `Branch: ${branch}` });
+      return {
+        issueType: issue.type,
+        issueSummary: issue.summary,
+        issueDescription: issue.description,
+        branchName: branch,
+      };
+    });
   }
 
   async function cloneRepo(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "cloneRepo");
-    const cloneUrl = gitlab.cloneUrlWithToken(repoMapping.gitlabProjectId);
-    // Derive a safe directory name from the projectId (last path segment)
-    const repoName = repoMapping.gitlabProjectId.split("/").pop() ?? repoMapping.gitlabProjectId;
-    const repoDir = await git.ensureRepo(cloneUrl, repoName);
-    await sink.addEvent(state.jobId, { type: "repo_cloned", message: `Repo ready at ${repoDir}` });
-    await sink.finishStep(stepId, "done");
-    return { repoDir };
+    return runStep(sink, state.jobId, "cloneRepo", async () => {
+      const cloneUrl = gitlab.cloneUrlWithToken(repoMapping.gitlabProjectId);
+      const repoName = repoMapping.gitlabProjectId.split("/").pop() ?? repoMapping.gitlabProjectId;
+      const repoDir = await git.ensureRepo(cloneUrl, repoName);
+      await sink.addEvent(state.jobId, { type: "repo_cloned", message: `Repo ready at ${repoDir}` });
+      return { repoDir };
+    });
   }
 
   async function createBranch(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "createBranch");
-    const workdir = await git.createWorktree(state.repoDir, state.branchName);
-    await sink.addEvent(state.jobId, { type: "branch_created", message: `Worktree: ${workdir}` });
-    await sink.finishStep(stepId, "done");
-    return { workdir };
+    return runStep(sink, state.jobId, "createBranch", async () => {
+      const workdir = await git.createWorktree(state.repoDir, state.branchName);
+      await sink.addEvent(state.jobId, { type: "branch_created", message: `Worktree: ${workdir}` });
+      return { workdir };
+    });
   }
 
   async function runAgent(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "runAgent");
-    const prompt = [
-      `Issue: ${state.jiraIssueKey} — ${state.issueSummary}`,
-      `Type: ${state.issueType}`,
-      `Description: ${state.issueDescription}`,
-      `Working directory: ${state.workdir}`,
-      `Target branch: ${state.branchName}`,
-    ].join("\n");
+    return runStep(sink, state.jobId, "runAgent", async () => {
+      const prompt = [
+        `Issue: ${state.jiraIssueKey} — ${state.issueSummary}`,
+        `Type: ${state.issueType}`,
+        `Description: ${state.issueDescription}`,
+        `Working directory: ${state.workdir}`,
+        `Target branch: ${state.branchName}`,
+      ].join("\n");
 
-    const result = await acp.run(
-      prompt,
-      async (req) => {
-      // Create an Approval row in Postgres
-      const approval = await prisma.approval.create({
-        data: {
-          jobId: state.jobId,
-          kind: "tool_permission",
-          prompt: `Allow tool: ${req.toolCall.name}`,
-          options: req.options as any,
-          status: "pending",
-        },
-      });
-
-      // Notify dashboard via SSE (job channel)
-      await sink.addEvent(state.jobId, {
-        type: "approval_requested",
-        message: `Approval required: ${req.toolCall.name}`,
-        payload: { approvalId: approval.id, options: req.options },
-      });
-
-      // Publish to global approvals channel so the Approvals page receives it
-      publishEvent(loadConfig().redisUrl, approvalsChannel, {
-        type: "approval_requested",
-        approvalId: approval.id,
-        jobId: state.jobId,
-        prompt: `Allow tool: ${req.toolCall.name}`,
-        options: req.options,
-      }).catch(console.error);
-
-      // Telegram notification is best-effort
-      sendTelegram(
-        `Approval needed for job ${state.jobId}: allow ${req.toolCall.name}?`
-      ).catch(console.error);
-
-      return awaitApproval({
-        approvalId: approval.id,
-        jobId: state.jobId,
-        denyOptionId:
-          req.options.find((o) => o.optionId.includes("deny"))?.optionId ?? "deny",
-        resolveApproval: async (id, optionId, via) => {
-          await prisma.approval.updateMany({
-            where: { id, status: "pending" },
+      const result = await acp.run(
+        prompt,
+        async (req) => {
+          const approval = await prisma.approval.create({
             data: {
-              status: optionId.startsWith("deny") ? "rejected" : "approved",
-              chosenOptionId: optionId,
-              decidedVia: via,
-              decidedBy: "system",
-              decidedAt: new Date(),
+              jobId: state.jobId,
+              kind: "tool_permission",
+              prompt: `Allow tool: ${req.toolCall.name}`,
+              options: req.options as any,
+              status: "pending",
+            },
+          });
+
+          await sink.addEvent(state.jobId, {
+            type: "approval_requested",
+            message: `Approval required: ${req.toolCall.name}`,
+            payload: { approvalId: approval.id, options: req.options },
+          });
+
+          publishEvent(loadConfig().redisUrl, approvalsChannel, {
+            type: "approval_requested",
+            approvalId: approval.id,
+            jobId: state.jobId,
+            prompt: `Allow tool: ${req.toolCall.name}`,
+            options: req.options,
+          }).catch(console.error);
+
+          sendTelegram(
+            `Approval needed for job ${state.jobId}: allow ${req.toolCall.name}?`
+          ).catch(console.error);
+
+          return awaitApproval({
+            approvalId: approval.id,
+            jobId: state.jobId,
+            denyOptionId:
+              req.options.find((o) => o.optionId.includes("deny"))?.optionId ?? "deny",
+            resolveApproval: async (id, optionId, via) => {
+              await prisma.approval.updateMany({
+                where: { id, status: "pending" },
+                data: {
+                  status: optionId.startsWith("deny") ? "rejected" : "approved",
+                  chosenOptionId: optionId,
+                  decidedVia: via,
+                  decidedBy: "system",
+                  decidedAt: new Date(),
+                },
+              });
             },
           });
         },
-      });
-    },
-      (output) => {
-        let message = "";
-        if (output.kind === "text" && output.text) message = output.text;
-        else if (output.kind === "tool_use" && output.toolCall) message = `→ ${output.toolCall.name}`;
-        else if (output.kind === "tool_result" && output.toolResult) {
-          message = output.toolResult.error
-            ? `✗ ${output.toolResult.error}`
-            : `✓ ${String(output.toolResult.output).slice(0, 200)}`;
-        }
-        if (message) {
-          sink.addEvent(state.jobId, {
-            type: "agent_output",
-            message,
-            level: output.kind === "tool_result" && output.toolResult?.error ? "error" : "info",
-            payload: { kind: output.kind },
-          }).catch(console.error);
-        }
-      },
-      state.workdir,
-    );
+        (output) => {
+          let message = "";
+          if (output.kind === "text" && output.text) message = output.text;
+          else if (output.kind === "tool_use" && output.toolCall) message = `→ ${output.toolCall.name}`;
+          else if (output.kind === "tool_result" && output.toolResult) {
+            message = output.toolResult.error
+              ? `✗ ${output.toolResult.error}`
+              : `✓ ${String(output.toolResult.output).slice(0, 200)}`;
+          }
+          if (message) {
+            sink.addEvent(state.jobId, {
+              type: "agent_output",
+              message,
+              level: output.kind === "tool_result" && output.toolResult?.error ? "error" : "info",
+              payload: { kind: output.kind },
+            }).catch(console.error);
+          }
+        },
+        state.workdir,
+      );
 
-    await sink.addEvent(state.jobId, {
-      type: "agent_done",
-      message: `Stop: ${result.stopReason}, tokens: ${result.tokensUsed}`,
-      payload: result,
+      await sink.addEvent(state.jobId, {
+        type: "agent_done",
+        message: `Stop: ${result.stopReason}, tokens: ${result.tokensUsed}`,
+        payload: result,
+      });
+      await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
+      return {};
     });
-    await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
-    await sink.finishStep(stepId, "done");
-    return {};
   }
 
   async function commitAndPush(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "commitAndPush");
-    const hasChanges = await git.hasChanges(state.workdir);
-    if (hasChanges) {
-      await git.commitAll(state.workdir, `feat: ${state.jiraIssueKey} — ${state.issueSummary}`);
-      await git.push(state.workdir, state.branchName);
-      await sink.addEvent(state.jobId, { type: "committed_and_pushed", message: `Branch: ${state.branchName}` });
-    } else {
-      await sink.addEvent(state.jobId, { type: "no_changes", message: "No changes to commit" });
-    }
-    await sink.finishStep(stepId, "done");
-    return {};
+    return runStep(sink, state.jobId, "commitAndPush", async () => {
+      const hasChanges = await git.hasChanges(state.workdir);
+      if (hasChanges) {
+        await git.commitAll(state.workdir, `feat: ${state.jiraIssueKey} — ${state.issueSummary}`);
+        await git.push(state.workdir, state.branchName);
+        await sink.addEvent(state.jobId, { type: "committed_and_pushed", message: `Branch: ${state.branchName}` });
+      } else {
+        await sink.addEvent(state.jobId, { type: "no_changes", message: "No changes to commit" });
+      }
+      return {};
+    });
   }
 
   async function openMergeRequest(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "openMergeRequest");
-    const mr = await gitlab.openMergeRequest({
-      projectId: repoMapping.gitlabProjectId,
-      sourceBranch: state.branchName,
-      targetBranch: repoMapping.defaultBaseBranch,
-      title: `${state.jiraIssueKey}: ${state.issueSummary}`,
-      description: `Closes ${state.jiraIssueKey}\n\n${state.issueDescription}`,
+    return runStep(sink, state.jobId, "openMergeRequest", async () => {
+      const mr = await gitlab.openMergeRequest({
+        projectId: repoMapping.gitlabProjectId,
+        sourceBranch: state.branchName,
+        targetBranch: repoMapping.defaultBaseBranch,
+        title: `${state.jiraIssueKey}: ${state.issueSummary}`,
+        description: `Closes ${state.jiraIssueKey}\n\n${state.issueDescription}`,
+      });
+      await sink.addEvent(state.jobId, { type: "mr_opened", message: mr.webUrl });
+      return { mrUrl: mr.webUrl };
     });
-    await sink.addEvent(state.jobId, { type: "mr_opened", message: mr.webUrl });
-    await sink.finishStep(stepId, "done");
-    return { mrUrl: mr.webUrl };
   }
 
   async function jiraWorklog(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "jiraWorklog");
-    await jira.addWorklog(state.jiraIssueKey, `MR opened: ${state.mrUrl}`);
-    await sink.finishStep(stepId, "done");
-    return {};
+    return runStep(sink, state.jobId, "jiraWorklog", async () => {
+      await jira.addWorklog(state.jiraIssueKey, `MR opened: ${state.mrUrl}`);
+      return {};
+    });
   }
 
   async function report(state: JobState): Promise<Partial<JobState>> {
-    const stepId = await sink.startStep(state.jobId, "report");
-    await sendTelegram(`✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`);
-    await sink.setStatus(state.jobId, "done");
-    await sink.finishStep(stepId, "done");
-    return { status: "done" };
+    return runStep(sink, state.jobId, "report", async () => {
+      await sendTelegram(`✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`);
+      await sink.setStatus(state.jobId, "done");
+      return { status: "done" };
+    });
   }
 
   async function stop(state: JobState): Promise<Partial<JobState>> {

@@ -155,6 +155,13 @@ const worker = createWorker(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await deps.sink.setStatus(jobId, "failed", message);
+      const issueKey = jobRow.jiraIssueKey ?? "";
+      await Promise.allSettled([
+        sendTelegram(`❌ Job failed: ${issueKey || jobId}\n${message}`),
+        issueKey
+          ? jira.addWorklog(issueKey, `JiGit agent failed:\n${message}`)
+          : Promise.resolve(),
+      ]);
       throw err;
     }
   },

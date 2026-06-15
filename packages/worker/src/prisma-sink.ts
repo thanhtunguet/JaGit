@@ -29,9 +29,20 @@ export class PrismaJobSink implements IJobSink {
   }
 
   async finishStep(stepId: string, status: "done" | "failed", detail?: object): Promise<void> {
-    await prisma.jobStep.update({
+    const step = await prisma.jobStep.update({
       where: { id: stepId },
       data: { status, finishedAt: new Date(), detail: detail ?? {} },
+    });
+    await publishEvent(this.cfg.redisUrl, jobChannel(step.jobId), {
+      type: "step_changed",
+      step: {
+        id: step.id,
+        name: step.name,
+        status,
+        detail: detail ?? {},
+        startedAt: step.startedAt?.toISOString() ?? null,
+        finishedAt: new Date().toISOString(),
+      },
     });
   }
 

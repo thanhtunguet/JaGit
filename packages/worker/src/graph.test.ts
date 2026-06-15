@@ -17,13 +17,18 @@ vi.mock("./approval.js", () => ({
   awaitApproval: vi.fn().mockResolvedValue("allow"),
 }));
 
-const makeSink = () => ({
-  setStatus: vi.fn().mockResolvedValue(undefined),
-  setUsage: vi.fn().mockResolvedValue(undefined),
-  startStep: vi.fn().mockResolvedValue("step-id-1"),
-  finishStep: vi.fn().mockResolvedValue(undefined),
-  addEvent: vi.fn().mockResolvedValue(undefined),
-});
+let stepCounter = 0;
+
+const makeSink = () => {
+  stepCounter = 0;
+  return {
+    setStatus: vi.fn().mockResolvedValue(undefined),
+    setUsage: vi.fn().mockResolvedValue(undefined),
+    startStep: vi.fn().mockImplementation(async () => `step-${++stepCounter}`),
+    finishStep: vi.fn().mockResolvedValue(undefined),
+    addEvent: vi.fn().mockResolvedValue(undefined),
+  };
+};
 
 const makeSignals = (stop = false) => ({
   shouldStop: vi.fn().mockReturnValue(stop),
@@ -85,6 +90,29 @@ describe("buildGraph", () => {
     const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
     expect(final.status).toBe("stopped");
     expect(deps.acp.run).not.toHaveBeenCalled();
+  });
+
+  it("emits step_error and marks step failed when openMergeRequest throws", async () => {
+    const deps = fakeDeps();
+    deps.gitlab.openMergeRequest = vi.fn().mockRejectedValue(new Error("gitlab 403"));
+    const graph = buildGraph(deps as any);
+
+    await expect(graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" })).rejects.toThrow("gitlab 403");
+
+    expect(deps.sink.addEvent).toHaveBeenCalledWith(
+      "j-1",
+      expect.objectContaining({
+        type: "step_error",
+        level: "error",
+        message: expect.stringContaining("openMergeRequest"),
+      }),
+    );
+    expect(deps.sink.finishStep).toHaveBeenCalledWith(
+      expect.stringMatching(/^step-\d+$/),
+      "failed",
+      expect.objectContaining({ error: "gitlab 403" }),
+    );
+    expect(deps.sink.setStatus).not.toHaveBeenCalledWith("j-1", "done");
   });
 
   it("publishes approval_requested to approvalsChannel when permission is needed", async () => {

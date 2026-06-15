@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (workflow-error-reporting)
+
+**Workflow error reporting**: Graph steps dùng `runStep` để ghi `step_error` và đánh dấu step `failed` khi lỗi; job fail gửi Telegram + comment Jira; dashboard cập nhật step/status qua SSE.
+
 ## 2026-06-16 (token-usage-tracking)
 
 **Token usage from ACP + Total Tokens Used widget**: Worker parses ACP `usage_update`/`PromptResponse.usage`, persists `tokensUsed`/`costUsd` on Job after `runAgent`; Overview stat replaces Avg Token Cost with sum of tokens across all jobs.
