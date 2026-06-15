@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 0 — Monorepo Scaffolding (`feat/phase-00-scaffolding`, commit `c678e8f`)
+- **Last completed:** Phase 1 — Database Design (`feat/phase-01-database`, commit `58f9f6f`)
 - **In progress:** _n/a_
-- **Next up:** Phase 1 — Database (`docs/plans/phase-01-database.md`)
+- **Next up:** Phase 2 — Shared Package (`docs/plans/phase-02-shared-package.md`)
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
