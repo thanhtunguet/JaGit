@@ -26,7 +26,7 @@ export class AgentTemplatesService {
     return this.prisma.client.agentTemplate.create({
       data: {
         name: body.name,
-        model: body.model ?? "claude-opus-4-5",
+        model: body.model ?? "claude-sonnet-4-6",
         systemPrompt: body.systemPrompt ?? body.prompt ?? "",
         maxConcurrent: body.maxConcurrent ?? 1,
         allowedTools: body.allowedTools ?? [],
@@ -42,7 +42,7 @@ export class AgentTemplatesService {
       where: { id },
       data: {
         name: body.name,
-        model: body.model ?? "claude-opus-4-5",
+        model: body.model ?? "claude-sonnet-4-6",
         systemPrompt: body.systemPrompt ?? body.prompt ?? "",
         maxConcurrent: body.maxConcurrent ?? 1,
         allowedTools: body.allowedTools ?? [],

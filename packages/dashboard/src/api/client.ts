@@ -103,6 +103,7 @@ export interface RepoMappingItem {
 export interface AgentTemplateItem {
   id: string;
   name: string;
+  model: string;
   prompt: string;
   maxTurns?: number;
 }

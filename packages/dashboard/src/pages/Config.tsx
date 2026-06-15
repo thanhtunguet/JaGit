@@ -107,6 +107,8 @@ function CredentialDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isAnthropic = (isEdit ? initial!.kind : kind) === "anthropic";
+
   const save = async () => {
     setSaving(true);
     setError(null);
@@ -140,6 +142,7 @@ function CredentialDialog({
                 onChange={(e) => {
                   setKind(e.target.value);
                   setSecrets(Object.fromEntries((SECRET_KEYS[e.target.value] ?? []).map((k) => [k, ""])));
+                  setMeta({});
                 }}
               >
                 {CREDENTIAL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
@@ -147,27 +150,53 @@ function CredentialDialog({
             </div>
           )}
           <Field label="Name" value={name} onChange={setName} />
-          <JsonField
-            label="Meta"
-            value={meta}
-            onChange={setMeta}
-            placeholder='{"baseUrl": "https://…"}'
-          />
-          <div className="space-y-2">
-            <p className="text-xs font-medium">
-              Secrets {isEdit && <span className="text-muted-foreground">(leave blank to keep existing)</span>}
-            </p>
-            {(SECRET_KEYS[isEdit ? initial!.kind : kind] ?? []).map((k) => (
+          {isAnthropic ? (
+            <>
               <Field
-                key={k}
-                label={k}
+                label="Base URL"
+                value={meta.baseUrl ?? ""}
+                onChange={(v) => setMeta((m) => ({ ...m, baseUrl: v }))}
+                placeholder="https://api.anthropic.com"
+              />
+              <Field
+                label="Auth Token"
                 type="password"
-                value={secrets[k] ?? ""}
-                onChange={(v) => setSecrets((s) => ({ ...s, [k]: v }))}
+                value={secrets.apiKey ?? ""}
+                onChange={(v) => setSecrets((s) => ({ ...s, apiKey: v }))}
                 placeholder={isEdit ? "••••••• (unchanged)" : ""}
               />
-            ))}
-          </div>
+              <JsonField
+                label="Meta (optional)"
+                value={meta}
+                onChange={setMeta}
+                placeholder='{"baseUrl": "https://api.anthropic.com", "orgId": "..."}'
+              />
+            </>
+          ) : (
+            <>
+              <JsonField
+                label="Meta"
+                value={meta}
+                onChange={setMeta}
+                placeholder='{"baseUrl": "https://…"}'
+              />
+              <div className="space-y-2">
+                <p className="text-xs font-medium">
+                  Secrets {isEdit && <span className="text-muted-foreground">(leave blank to keep existing)</span>}
+                </p>
+                {(SECRET_KEYS[isEdit ? initial!.kind : kind] ?? []).map((k) => (
+                  <Field
+                    key={k}
+                    label={k}
+                    type="password"
+                    value={secrets[k] ?? ""}
+                    onChange={(v) => setSecrets((s) => ({ ...s, [k]: v }))}
+                    placeholder={isEdit ? "••••••• (unchanged)" : ""}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
         <DialogFooter>
@@ -278,6 +307,7 @@ function AgentTemplateDialog({
 }) {
   const [form, setForm] = useState({
     name: initial?.name ?? "",
+    model: initial?.model ?? "claude-sonnet-4-6",
     prompt: initial?.prompt ?? "",
     maxTurns: String(initial?.maxTurns ?? ""),
   });
@@ -290,6 +320,7 @@ function AgentTemplateDialog({
     try {
       const body = {
         name: form.name,
+        model: form.model || "claude-sonnet-4-6",
         prompt: form.prompt,
         ...(form.maxTurns ? { maxTurns: Number(form.maxTurns) } : {}),
       };
@@ -314,6 +345,12 @@ function AgentTemplateDialog({
         </DialogHeader>
         <div className="space-y-3">
           <Field label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
+          <Field
+            label="Model"
+            value={form.model}
+            onChange={(v) => setForm((f) => ({ ...f, model: v }))}
+            placeholder="e.g. claude-sonnet-4-6"
+          />
           <div>
             <label className="text-xs font-medium mb-1 block">Prompt</label>
             <textarea
@@ -399,6 +436,7 @@ export function Config() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Model</TableHead>
                 <TableHead>Max Turns</TableHead>
                 <TableHead className="w-20" />
               </TableRow>
@@ -407,19 +445,20 @@ export function Config() {
               {templates === null ? (
                 Array.from({ length: 2 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 3 }).map((__, j) => (
+                    {Array.from({ length: 4 }).map((__, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : templates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-6">No agent templates yet.</TableCell>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">No agent templates yet.</TableCell>
                 </TableRow>
               ) : (
                 templates.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.name}</TableCell>
+                    <TableCell className="font-mono text-xs">{t.model}</TableCell>
                     <TableCell>{t.maxTurns ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">

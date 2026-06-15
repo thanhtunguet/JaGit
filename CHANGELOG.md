@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-15 (agent-template-model-anthropic-fields)
+
+**AgentTemplate model field + Anthropic credential UI**: Added `model` field to `AgentTemplateItem` and `AgentTemplateDialog` (default `claude-sonnet-4-6`); updated API service default; Anthropic credential dialog now shows explicit Base URL / Auth Token / Meta fields instead of generic JSON editor.
+
 ## 2026-06-15 (config-ui-and-approvals)
 
 **Config UI + Approvals Page (Tasks 5-11)**: Full CRUD for credentials, repo-mappings, and agent-templates with bearer-token `AuthGuard`; global `approvals` SSE channel; worker publishes `approval_requested` to global channel; Approvals page with live inline approve/reject; editable Config page with dialogs; API token bar in sessionStorage. All packages build cleanly (0 TS errors).
