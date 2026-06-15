@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
-import { createWorker, loadConfig, decrypt, prisma } from "@jigit/shared";
+import { createWorker, createQueue, loadConfig, decrypt, prisma } from "@jigit/shared";
 import { buildGraph } from "./graph.js";
 import { JiraAdapter } from "./adapters/jira.js";
 import { GitlabAdapter } from "./adapters/gitlab.js";
@@ -120,7 +120,7 @@ const worker = createWorker(
       acpRun = async (prompt, onPermission) => {
         const session = new AcpSession({
           command: "npx",
-          args: ["@zed-industries/claude-code-acp"],
+          args: ["@agentclientprotocol/claude-agent-acp"],
           env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
           onUpdate: () => {},
           onPermission,
@@ -154,5 +154,20 @@ const worker = createWorker(
 worker.on("failed", (job, err) => {
   console.error(`Job ${job?.id} failed:`, err);
 });
+
+// Re-enqueue any jobs that are stuck in 'queued' status in Postgres but
+// missing from the BullMQ Redis queue (e.g. after a crash or Redis flush).
+async function recoverStaleJobs(): Promise<void> {
+  const stale = await prisma.job.findMany({ where: { status: "queued" } });
+  if (stale.length === 0) return;
+  const queue = createQueue(cfg.redisUrl);
+  for (const job of stale) {
+    await queue.add("run", { jobId: job.id }, { jobId: job.id });
+    console.log(`Recovered stale job ${job.id}`);
+  }
+  await queue.close();
+}
+
+recoverStaleJobs().catch((err) => console.error("Failed to recover stale jobs:", err));
 
 console.log(`JiGit worker started (concurrency=${cfg.maxConcurrentAgents})`);

@@ -59,8 +59,8 @@ export class AcpSession {
 
     createReader(this.proc.stdout!, (msg) => this.handleMessage(msg));
 
-    // Handshake
-    await this.request("initialize", {});
+    // Handshake — ACP protocol v1 requires protocolVersion in initialize params
+    await this.request("initialize", { protocolVersion: 1 });
     const { sessionId } = await this.request<{ sessionId: string }>("session/new", {});
     this.sessionId = sessionId;
   }
