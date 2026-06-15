@@ -1,4 +1,4 @@
-import { Controller, All, Res, Param } from "@nestjs/common";
+import { Controller, All, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 
 /**
@@ -8,8 +8,8 @@ import type { FastifyReply } from "fastify";
  */
 @Controller()
 export class SpaController {
-  @All("*path")
-  serveSpa(@Param("path") _path: string, @Res() reply: FastifyReply) {
+  @All("*")
+  serveSpa(@Res() reply: FastifyReply) {
     return reply.sendFile("index.html");
   }
 }

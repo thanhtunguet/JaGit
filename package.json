@@ -12,7 +12,8 @@
     "seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "db:migrate": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate deploy",
     "db:migrate:dev": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate dev",
-    "db:studio": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma studio"
+    "db:studio": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma studio",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",

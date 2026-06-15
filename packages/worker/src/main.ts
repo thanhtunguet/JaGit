@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import type { IJiraAdapter, IGitlabAdapter, IGitAdapter } from "./adapters/interfaces.js";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,59 +61,88 @@ const worker = createWorker(
       where: { id: jobId },
       include: { agentTemplate: true },
     });
-    const mapping = await prisma.repoMapping.findFirst({
-      where: { jiraProjectKey: jobRow.jiraIssueKey?.split("-")[0] ?? "" },
-    });
-    if (!mapping) throw new Error(`No repo mapping for job ${jobId}`);
+    const useFakeAdapters = process.env["JIGIT_FAKE_ADAPTERS"] === "1";
 
-    const jiraCred = await getCredential("jira", "default");
-    const gitlabCred = await getCredential("gitlab", "default");
-    const anthropicCred = await getCredential("anthropic", "default");
+    const mapping = useFakeAdapters
+      ? { gitlabProjectId: "fake-project", defaultBaseBranch: "main", branchPrefixRules: {} }
+      : await prisma.repoMapping.findFirst({
+          where: { jiraProjectKey: jobRow.jiraIssueKey?.split("-")[0] ?? "" },
+        });
+    if (!mapping) throw new Error(`No repo mapping for job ${jobId}`);
 
     const redisSignals = new RedisSignals(new IORedis(cfg.redisUrl, { maxRetriesPerRequest: null }) as InstanceType<typeof IORedis>);
     redisSignals.listen(jobId);
 
-    const jira = new JiraAdapter({
-      baseUrl: jiraCred.meta["baseUrl"] ?? "",
-      email: jiraCred.secrets["email"],
-      token: jiraCred.secrets["token"],
-      maxRetries: cfg.maxRetries,
-    });
+    let jira: IJiraAdapter;
+    let gitlab: IGitlabAdapter;
+    let git: IGitAdapter;
+    let acpRun: GraphDeps["acp"]["run"];
+    let sendTelegram: GraphDeps["sendTelegram"];
 
-    const gitlab = new GitlabAdapter({
-      baseUrl: gitlabCred.meta["baseUrl"] ?? "",
-      token: gitlabCred.secrets["token"],
-      maxRetries: cfg.maxRetries,
-    });
+    if (useFakeAdapters) {
+      jira = {
+        getIssue: async (key) => ({ key, type: "Bug", summary: "E2E test issue", description: "Auto-generated" }),
+        addWorklog: async () => {},
+      };
+      gitlab = {
+        cloneUrlWithToken: () => "fake://url",
+        openMergeRequest: async () => ({ webUrl: "https://fake-mr/1", iid: 1 }),
+      };
+      git = {
+        clone: async () => {},
+        createBranch: async () => {},
+        hasChanges: async () => true,
+        commitAll: async () => {},
+        push: async () => {},
+      };
+      acpRun = async () => ({ stopReason: "end_turn", tokensUsed: 0, costUsd: 0 });
+      sendTelegram = async () => {};
+    } else {
+      const jiraCred = await getCredential("jira", "default");
+      const gitlabCred = await getCredential("gitlab", "default");
+      const anthropicCred = await getCredential("anthropic", "default");
+      const telegramChatId = (
+        await getCredential("telegram", "default")
+      ).meta["chatId"] ?? "";
 
-    const telegramChatId = (
-      await getCredential("telegram", "default")
-    ).meta["chatId"] ?? "";
+      jira = new JiraAdapter({
+        baseUrl: jiraCred.meta["baseUrl"] ?? "",
+        email: jiraCred.secrets["email"],
+        token: jiraCred.secrets["token"],
+        maxRetries: cfg.maxRetries,
+      });
+      gitlab = new GitlabAdapter({
+        baseUrl: gitlabCred.meta["baseUrl"] ?? "",
+        token: gitlabCred.secrets["token"],
+        maxRetries: cfg.maxRetries,
+      });
+      git = new GitAdapter();
+      acpRun = async (prompt, onPermission) => {
+        const session = new AcpSession({
+          command: "npx",
+          args: ["@zed-industries/claude-code-acp"],
+          env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
+          onUpdate: () => {},
+          onPermission,
+        });
+        await session.start();
+        const result = await session.runPrompt(prompt);
+        await session.stop();
+        return result;
+      };
+      sendTelegram = (text) => telegramBot.sendMessage(telegramChatId, text).then(() => undefined);
+    }
 
     const deps: GraphDeps = {
       jira,
       gitlab,
-      git: new GitAdapter(),
-      acp: {
-        run: async (prompt, onPermission) => {
-          const session = new AcpSession({
-            command: "npx",
-            args: ["@zed-industries/claude-code-acp"],
-            env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
-            onUpdate: () => {},
-            onPermission,
-          });
-          await session.start();
-          const result = await session.runPrompt(prompt);
-          await session.stop();
-          return result;
-        },
-      },
+      git,
+      acp: { run: acpRun },
       repoMapping: mapping as any,
       sink: new PrismaJobSink(),
       signals: redisSignals,
       prisma,
-      sendTelegram: (text) => telegramBot.sendMessage(telegramChatId, text).then(() => undefined),
+      sendTelegram,
     };
 
     const graph = buildGraph(deps);

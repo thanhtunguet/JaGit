@@ -1,3 +1,20 @@
+version: "3.9"
+
+x-env: &env
+  DATABASE_URL: postgresql://jigit:jigit@postgres:5432/jigit
+  REDIS_URL: redis://redis:6379
+  APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+  MAX_CONCURRENT_AGENTS: "3"
+  MAX_RETRIES: "3"
+  APPROVAL_TIMEOUT_MS: "1800000"
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-placeholder}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-placeholder}
+  PUBLIC_BASE_URL: http://localhost:3000
+  API_PORT: "3000"
+  API_WEBHOOK_SECRET: ${API_WEBHOOK_SECRET:-dev-secret}
+  JIRA_BOT_ACCOUNT_ID: ${JIRA_BOT_ACCOUNT_ID:-bot-account-1}
+  JIGIT_FAKE_ADAPTERS: ${JIGIT_FAKE_ADAPTERS:-0}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -28,6 +45,45 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+      target: builder
+    command: >
+      sh -c "cd packages/shared && pnpm exec prisma migrate deploy"
+    environment:
+      DATABASE_URL: postgresql://jigit:jigit@postgres:5432/jigit
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    environment:
+      <<: *env
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    environment:
+      <<: *env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

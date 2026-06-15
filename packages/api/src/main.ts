@@ -53,7 +53,6 @@ async function bootstrap() {
 
   // Serve dashboard static files (built by packages/dashboard).
   // wildcard: false — @fastify/static serves exact file paths (JS, CSS, assets).
-  // SPA fallback for unknown routes is handled by SpaController (@All('*path')).
   const dashboardDist = path.resolve(__rootDir, "..", "..", "..", "packages", "dashboard", "dist");
   await app.register(fastifyStatic, {
     root: dashboardDist,
