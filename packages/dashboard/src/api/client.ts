@@ -16,6 +16,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const listJobs = () => request<Job[]>("/jobs");
+export const getOverviewStats = () => request<OverviewStats>("/stats/overview");
 export const getJob = (id: string) => request<JobDetail>(`/jobs/${id}`);
 export const controlJob = (id: string, action: "stop" | "pause" | "resume") =>
   request<void>(`/jobs/${id}/${action}`, { method: "POST" });
@@ -71,6 +72,24 @@ export interface JobDetail extends Job {
   steps: JobStep[];
   events: JobEvent[];
   approvals: Approval[];
+}
+
+export interface OverviewStats {
+  activeJobs: number;
+  doneToday: number;
+  doneYesterday: number;
+  approvalQueue: number;
+  avgCostUsd: number;
+  throughput: { day: string; date: string; jobs: number }[];
+  statusDistribution: { status: string; count: number }[];
+  recentEvents: {
+    id: string;
+    ts: string;
+    level: string;
+    type: string;
+    message: string;
+    jiraIssueKey: string | null;
+  }[];
 }
 
 // ─── Config CRUD ─────────────────────────────────────────────────────────────

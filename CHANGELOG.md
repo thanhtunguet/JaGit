@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (dashboard-overview-real-data)
+
+**Dashboard Overview real data**: New `GET /api/stats/overview` aggregates jobs, approvals, throughput, status distribution, and recent events from Postgres; Overview page replaces mock charts/stats with live API data.
+
 ## 2026-06-16 (config-api-token-field-style)
 
 **Config API token field styling**: Token input now uses the same `Field` component styling as other form inputs (border, padding, focus ring).

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  listJobs, getJob, controlJob, decideApproval,
+  listJobs, getJob, controlJob, decideApproval, getOverviewStats,
   listCredentials, createCredential, updateCredential, deleteCredential,
   listPendingApprovals, getStoredToken, setStoredToken,
 } from "./client.js";
@@ -16,6 +16,16 @@ describe("API client", () => {
     await listJobs();
     const [url] = vi.mocked(fetch).mock.calls[0];
     expect(url).toBe("/api/jobs");
+  });
+
+  it("getOverviewStats calls GET /api/stats/overview", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ activeJobs: 0, doneToday: 0, doneYesterday: 0, approvalQueue: 0, avgCostUsd: 0, throughput: [], statusDistribution: [], recentEvents: [] }),
+    } as any);
+    await getOverviewStats();
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/stats/overview");
   });
 
   it("getJob calls GET /api/jobs/:id", async () => {

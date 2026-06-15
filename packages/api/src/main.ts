@@ -44,6 +44,7 @@ async function bootstrap() {
       .addTag("Webhooks")
       .addTag("Approvals")
       .addTag("Config (read-only)")
+      .addTag("Stats")
       .build(),
   );
   SwaggerModule.setup("docs", app, document, {
