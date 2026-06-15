@@ -5,7 +5,7 @@ import { WebhooksModule } from "./webhooks/webhooks.module.js";
 import { JobsModule } from "./jobs/jobs.module.js";
 import { ApprovalsModule } from "./approvals/approvals.module.js";
 import { SseModule } from "./sse/sse.module.js";
-import { ConfigViewModule } from "./config-view/config-view.module.js";
+import { ConfigModule } from "./config/config.module.js";
 import { TelegramModule } from "./telegram/telegram.module.js";
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { TelegramModule } from "./telegram/telegram.module.js";
     JobsModule,
     ApprovalsModule,
     SseModule,
-    ConfigViewModule,
+    ConfigModule,
     TelegramModule,
   ],
   controllers: [],
