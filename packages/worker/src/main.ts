@@ -89,8 +89,9 @@ const worker = createWorker(
         openMergeRequest: async () => ({ webUrl: "https://fake-mr/1", iid: 1 }),
       };
       git = {
-        clone: async () => {},
-        createBranch: async () => {},
+        ensureRepo: async (_url, repoName) => `_works/${repoName}`,
+        createWorktree: async (repoDir, branch) => `${repoDir}/.worktrees/${branch}`,
+        removeWorktree: async () => {},
         hasChanges: async () => true,
         commitAll: async () => {},
         push: async () => {},
@@ -162,7 +163,7 @@ async function recoverStaleJobs(): Promise<void> {
   if (stale.length === 0) return;
   const queue = createQueue(cfg.redisUrl);
   for (const job of stale) {
-    await queue.add("run", { jobId: job.id }, { jobId: job.id });
+    await queue.add("run", { jobId: job.id });
     console.log(`Recovered stale job ${job.id}`);
   }
   await queue.close();

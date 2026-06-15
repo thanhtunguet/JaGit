@@ -41,8 +41,9 @@ const fakeDeps = () => ({
     openMergeRequest: vi.fn().mockResolvedValue({ webUrl: "https://gitlab/mr/1", iid: 1 }),
   },
   git: {
-    clone: vi.fn().mockResolvedValue(undefined),
-    createBranch: vi.fn().mockResolvedValue(undefined),
+    ensureRepo: vi.fn().mockResolvedValue("_works/repo"),
+    createWorktree: vi.fn().mockResolvedValue("_works/repo/.worktrees/bugfix/jigit-7-fix-login"),
+    removeWorktree: vi.fn().mockResolvedValue(undefined),
     hasChanges: vi.fn().mockResolvedValue(true),
     commitAll: vi.fn().mockResolvedValue(undefined),
     push: vi.fn().mockResolvedValue(undefined),

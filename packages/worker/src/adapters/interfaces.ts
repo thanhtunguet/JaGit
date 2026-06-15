@@ -27,8 +27,12 @@ export interface IGitlabAdapter {
 }
 
 export interface IGitAdapter {
-  clone(url: string, workdir: string): Promise<void>;
-  createBranch(workdir: string, branch: string): Promise<void>;
+  /** Clone (or fetch) the repo into _works/<repoName>/ and return the repo dir. */
+  ensureRepo(url: string, repoName: string): Promise<string>;
+  /** Create a git worktree under repoDir/.worktrees/<branch> and return the worktree path. */
+  createWorktree(repoDir: string, branch: string): Promise<string>;
+  /** Remove a worktree when the job is done. */
+  removeWorktree(worktreePath: string): Promise<void>;
   hasChanges(workdir: string): Promise<boolean>;
   commitAll(workdir: string, message: string): Promise<void>;
   push(workdir: string, branch: string): Promise<void>;

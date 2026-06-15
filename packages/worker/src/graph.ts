@@ -1,5 +1,4 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deriveBranchName, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
@@ -26,6 +25,9 @@ const JobStateAnnotation = Annotation.Root({
   issueSummary: Annotation<string>(),
   issueDescription: Annotation<string>(),
   branchName: Annotation<string>(),
+  /** Bare repo dir: _works/<repoName>/ */
+  repoDir: Annotation<string>(),
+  /** Worktree path: repoDir/.worktrees/<branch> — this is where the agent works */
   workdir: Annotation<string>(),
   mrUrl: Annotation<string>(),
   status: Annotation<string>(),
@@ -58,19 +60,20 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
   async function cloneRepo(state: JobState): Promise<Partial<JobState>> {
     const stepId = await sink.startStep(state.jobId, "cloneRepo");
     const cloneUrl = gitlab.cloneUrlWithToken(repoMapping.gitlabProjectId);
-    const workdir = join(tmpdir(), `jigit-${state.jobId}`);
-    await git.clone(cloneUrl, workdir);
-    await sink.addEvent(state.jobId, { type: "repo_cloned", message: `Cloned to ${workdir}` });
+    // Derive a safe directory name from the projectId (last path segment)
+    const repoName = repoMapping.gitlabProjectId.split("/").pop() ?? repoMapping.gitlabProjectId;
+    const repoDir = await git.ensureRepo(cloneUrl, repoName);
+    await sink.addEvent(state.jobId, { type: "repo_cloned", message: `Repo ready at ${repoDir}` });
     await sink.finishStep(stepId, "done");
-    return { workdir };
+    return { repoDir };
   }
 
   async function createBranch(state: JobState): Promise<Partial<JobState>> {
     const stepId = await sink.startStep(state.jobId, "createBranch");
-    await git.createBranch(state.workdir, state.branchName);
-    await sink.addEvent(state.jobId, { type: "branch_created", message: `Branch: ${state.branchName}` });
+    const workdir = await git.createWorktree(state.repoDir, state.branchName);
+    await sink.addEvent(state.jobId, { type: "branch_created", message: `Worktree: ${workdir}` });
     await sink.finishStep(stepId, "done");
-    return {};
+    return { workdir };
   }
 
   async function runAgent(state: JobState): Promise<Partial<JobState>> {
@@ -233,6 +236,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         issueSummary: "",
         issueDescription: "",
         branchName: "",
+        repoDir: "",
         workdir: "",
         mrUrl: "",
         status: "running",
