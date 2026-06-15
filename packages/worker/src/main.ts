@@ -48,7 +48,7 @@ const telegramBot = new TelegramBot(cfg.telegramBotToken);
 async function getCredential(kind: string, name: string) {
   const cred = await prisma.credential.findFirst({ where: { kind: kind as any, name } });
   if (!cred) throw new Error(`Credential not found: ${kind}/${name}`);
-  const secrets = JSON.parse(decrypt(JSON.stringify(cred.secrets), cfg.encryptionKey));
+  const secrets = JSON.parse(decrypt((cred.secrets as { encrypted: string }).encrypted, cfg.encryptionKey));
   return { secrets, meta: cred.meta as Record<string, string> };
 }
 

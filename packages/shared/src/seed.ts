@@ -19,7 +19,7 @@ export const SeedDataSchema = z.object({
     allowedTools: z.array(z.string().min(1)),
     skills: z.array(z.string()),
   }),
-  credentials: z.array(CredentialSeedSchema).length(4),
+  credentials: z.array(CredentialSeedSchema).min(1),
   repoMapping: z.object({
     jiraProjectKey: z.string().min(1),
     gitlabProjectId: z.string().min(1),
@@ -136,10 +136,9 @@ function encryptedSecrets(secrets: Record<string, string>, encryptionKey: string
 
 export async function seedDatabase(
   client: SeedPrismaClient,
-  rawSeedData: SeedData,
+  seedData: SeedData,
   encryptionKey: string,
 ): Promise<void> {
-  const seedData = SeedDataSchema.parse(rawSeedData);
   const { name, ...agentTemplateUpdate } = seedData.agentTemplate;
 
   const agentTemplate = await client.agentTemplate.upsert({

@@ -7,6 +7,7 @@ import { ApprovalsModule } from "./approvals/approvals.module.js";
 import { SseModule } from "./sse/sse.module.js";
 import { ConfigViewModule } from "./config-view/config-view.module.js";
 import { TelegramModule } from "./telegram/telegram.module.js";
+import { SpaController } from "./spa.controller.js";
 
 @Module({
   imports: [
@@ -19,5 +20,6 @@ import { TelegramModule } from "./telegram/telegram.module.js";
     ConfigViewModule,
     TelegramModule,
   ],
+  controllers: [SpaController],
 })
 export class AppModule {}

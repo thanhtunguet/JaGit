@@ -73,7 +73,7 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 7 — Seed Script + Full Wiring (`worktree-phase-07-seed-wiring`)
+- **Last completed:** Phase 7 post-review fixes — all 8 review findings resolved (worker decrypt crash, SPA fallback via SpaController, seed import, double Zod parse, schema .length(4), dead export, HTTP integration tests). 49 tests passing.
 - **In progress:** _n/a_
 - **Next up:** Phase 8 — see `docs/plans/phase-08-*.md`
 <!-- END: Current plan progress -->

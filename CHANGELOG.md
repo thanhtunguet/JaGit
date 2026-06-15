@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-15 (phase-07 post-review fixes)
+
+**Post-review fixes** (8 findings from high-effort code review): Fixed P0 worker decrypt crash (wrong JSON.stringify wrapping), added SpaController for SPA fallback, removed duplicate path computation, fixed seed import to use @jigit/shared, removed double Zod parse, relaxed .length(4) to .min(1), removed dead export, replaced disk-only test with HTTP integration tests. All 49 tests pass.
+
 ## 2026-06-15
 
 **Phase 7 — Seed Script + Full Wiring** (`worktree-phase-07-seed-wiring`): Completed Phase 7 — seed script (TDD, encrypted secrets, zod validation), dashboard static serving from API (`@fastify/static`), SPA integration, and full smoke-run verified (`/health`, `/api/docs`, `/jobs` all pass). 46 tests passing.

@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
-import { buildSeedData, loadConfig, prisma, seedDatabase } from "../packages/shared/src/index.js";
+import { buildSeedData, loadConfig, prisma, seedDatabase } from "@jigit/shared";
 
-export async function main(): Promise<void> {
+async function main(): Promise<void> {
   const cfg = loadConfig();
   console.log("🌱 Seeding JiGit database …");
   await seedDatabase(prisma, buildSeedData({ anthropicApiKey: cfg.anthropicApiKey }), cfg.encryptionKey);

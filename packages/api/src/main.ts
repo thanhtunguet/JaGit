@@ -51,17 +51,14 @@ async function bootstrap() {
     res.send({ ok: true, version: "1.0.0" });
   });
 
-  // Serve dashboard static files (built by packages/dashboard)
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const dashboardDist = path.resolve(__dirname, "..", "..", "..", "packages", "dashboard", "dist");
-  // Register static files. NestJS registers its own not-found handler at listen() time
-  // so we cannot call setNotFoundHandler here. Instead we handle SPA fallback via
-  // a catch-all wildcard registered before NestJS routes close.
+  // Serve dashboard static files (built by packages/dashboard).
+  // wildcard: false — @fastify/static serves exact file paths (JS, CSS, assets).
+  // SPA fallback for unknown routes is handled by SpaController (@All('*path')).
+  const dashboardDist = path.resolve(__rootDir, "..", "..", "..", "packages", "dashboard", "dist");
   await app.register(fastifyStatic, {
     root: dashboardDist,
     prefix: "/",
-    decorateReply: false,
+    decorateReply: true,
     index: "index.html",
     wildcard: false,
   });
