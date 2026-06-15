@@ -1,18 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { listJobs, controlJob, retryJob, deleteJob, type Job } from "@/api/client";
+import { listJobs, type Job } from "@/api/client";
+import { JobActions } from "@/components/JobActions";
 import { JobStatusBadge } from "@/components/JobStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -21,13 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ExternalLink, Pause, RotateCcw, Trash2 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 export function Jobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [acting, setActing] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const navigate = useNavigate();
 
   const refresh = () => listJobs().then(setJobs).catch((e) => setError(e.message));
@@ -35,44 +26,6 @@ export function Jobs() {
   useEffect(() => {
     refresh();
   }, []);
-
-  const control = async (jobId: string, action: "pause") => {
-    setActing(jobId);
-    try {
-      await controlJob(jobId, action);
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setActing(null);
-    }
-  };
-
-  const retry = async (jobId: string) => {
-    setActing(jobId);
-    try {
-      await retryJob(jobId);
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setActing(null);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    setActing(deleteTarget.id);
-    try {
-      await deleteJob(deleteTarget.id);
-      setDeleteTarget(null);
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setActing(null);
-    }
-  };
 
   if (error)
     return (
@@ -157,39 +110,12 @@ export function Jobs() {
                     {new Date(job.createdAt).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {job.status === "failed" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={acting === job.id}
-                          onClick={() => retry(job.id)}
-                        >
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          Retry
-                        </Button>
-                      )}
-                      {job.status === "running" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={acting === job.id}
-                          onClick={() => control(job.id, "pause")}
-                        >
-                          <Pause className="h-3 w-3 mr-1" />
-                          Pause
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={acting === job.id}
-                        onClick={() => setDeleteTarget(job)}
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
+                    <JobActions
+                      job={job}
+                      className="justify-end"
+                      onActionComplete={refresh}
+                      onError={setError}
+                    />
                   </TableCell>
                 </TableRow>
               ))
@@ -197,41 +123,6 @@ export function Jobs() {
           </TableBody>
         </Table>
       </div>
-
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete job?</DialogTitle>
-            <DialogDescription>
-              {deleteTarget?.status === "running" ? (
-                <>
-                  Job <span className="font-mono">{deleteTarget.jiraIssueKey ?? deleteTarget.id}</span>{" "}
-                  is running. It will be stopped, the agent session terminated, and any worktree
-                  removed before deletion.
-                </>
-              ) : (
-                <>
-                  Permanently delete job{" "}
-                  <span className="font-mono">{deleteTarget?.jiraIssueKey ?? deleteTarget?.id}</span>?
-                  This cannot be undone.
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={acting === deleteTarget?.id}
-              onClick={confirmDelete}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getJob,
-  controlJob,
   useSSE,
   type JobDetail as JobDetailType,
   type JobEvent,
   type JobStep,
 } from "@/api/client";
+import { JobActions } from "@/components/JobActions";
 import { JobStatusBadge } from "@/components/JobStatusBadge";
 import { ApprovalCard } from "@/components/ApprovalCard";
 import { EventRow } from "@/components/EventRow";
@@ -38,9 +38,9 @@ const STEP_ICON: Record<string, React.ReactNode> = {
 
 export function JobDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [job, setJob] = useState<JobDetailType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [controlling, setControlling] = useState(false);
   const liveEvents = useSSE<{
     type: string;
     event?: JobEvent;
@@ -80,16 +80,7 @@ export function JobDetail() {
     }
   }, [liveEvents]);
 
-  const control = async (action: "stop" | "pause" | "resume") => {
-    setControlling(true);
-    try {
-      await controlJob(id!, action);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setControlling(false);
-    }
-  };
+  const refreshJob = () => getJob(id!).then(setJob).catch((e) => setError(e.message));
 
   const allEvents: JobEvent[] = [
     ...(job?.events ?? []),
@@ -269,35 +260,13 @@ export function JobDetail() {
             <CardHeader>
               <CardTitle className="text-sm">Controls</CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-2 flex-wrap">
-              {job.status === "running" && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={controlling}
-                    onClick={() => control("pause")}
-                  >
-                    Pause
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={controlling}
-                    onClick={() => control("stop")}
-                  >
-                    Stop
-                  </Button>
-                </>
-              )}
-              {job.status === "paused" && (
-                <Button size="sm" disabled={controlling} onClick={() => control("resume")}>
-                  Resume
-                </Button>
-              )}
-              {["done", "stopped", "failed"].includes(job.status) && (
-                <p className="text-xs text-muted-foreground">No controls available.</p>
-              )}
+            <CardContent>
+              <JobActions
+                job={job}
+                onActionComplete={refreshJob}
+                onDeleted={() => navigate("/jobs")}
+                onError={setError}
+              />
             </CardContent>
           </Card>
 

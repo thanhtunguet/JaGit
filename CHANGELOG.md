@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (job-actions-shared-component)
+
+**Shared JobActions component**: Retry/Pause/Delete + delete confirmation dùng chung giữa Jobs list và Job detail Controls.
+
 ## 2026-06-16 (jobs-page-actions)
 
 **Jobs page actions**: Retry (failed), Pause (running), Delete (all) với confirmation; delete job active sẽ stop agent và dọn worktree trước khi xóa.
