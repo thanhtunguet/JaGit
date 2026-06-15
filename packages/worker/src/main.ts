@@ -149,7 +149,14 @@ const worker = createWorker(
     };
 
     const graph = buildGraph(deps);
-    await graph.run({ jobId, jiraIssueKey: jobRow.jiraIssueKey ?? "" });
+    await deps.sink.setStatus(jobId, "running");
+    try {
+      await graph.run({ jobId, jiraIssueKey: jobRow.jiraIssueKey ?? "" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await deps.sink.setStatus(jobId, "failed", message);
+      throw err;
+    }
   },
   cfg.maxConcurrentAgents,
 );

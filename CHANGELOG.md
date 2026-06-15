@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (fix-job-status-running)
+
+**Fix job status never transitioning to "running"**: Worker now calls `setStatus(jobId, "running")` at job pickup before `graph.run()`. Added try/catch to set status to `"failed"` on unhandled graph errors. The "No onPostToolUseHook found" ACP stderr warning is an upstream library bug (harmless, no fix needed from our side).
+
 ## 2026-06-16 (fix-sse-stream-agent-output)
 
 **Fix SSE 404s + Agent Console Streaming**: Fixed dashboard SSE URLs to use `/api` prefix (resolves 404 on `/approvals/stream`). Added ACP protocol output capture (`text`, `tool_use`, `tool_result`) streamed as `agent_output` job events. New Console tab in JobDetail with auto-scroll, dark terminal styling, and level-colored output. Jobs table rows now clickable to navigate to detail. All dashboard tests pass (11/11).
