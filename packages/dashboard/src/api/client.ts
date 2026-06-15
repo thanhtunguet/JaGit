@@ -172,7 +172,7 @@ export function useSSE<T>(jobId: string) {
   const [events, setEvents] = useState<T[]>([]);
 
   useEffect(() => {
-    const es = new EventSource(`/jobs/${jobId}/stream`);
+    const es = new EventSource(`/api/jobs/${jobId}/stream`);
     es.onmessage = (e) => {
       try {
         setEvents((prev) => [...prev, JSON.parse(e.data) as T]);
@@ -192,7 +192,7 @@ export function useApprovalsSSE(
   onEvent: (evt: { type: string; approvalId: string; jobId: string; [k: string]: unknown }) => void,
 ) {
   useEffect(() => {
-    const es = new EventSource("/approvals/stream");
+    const es = new EventSource("/api/approvals/stream");
     es.onmessage = (e) => {
       try {
         onEvent(JSON.parse(e.data));

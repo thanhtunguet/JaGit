@@ -17,14 +17,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Seed pending count on load and react to SSE events
   useEffect(() => {
-    fetch("/approvals")
+    fetch("/api/approvals")
       .then((r) => r.json())
       .then((arr: unknown[]) => setPendingCount(arr.length))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    const es = new EventSource("/approvals/stream");
+    const es = new EventSource("/api/approvals/stream");
     es.onmessage = (e) => {
       try {
         const evt = JSON.parse(e.data);

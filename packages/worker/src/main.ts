@@ -96,7 +96,7 @@ const worker = createWorker(
         commitAll: async () => {},
         push: async () => {},
       };
-      acpRun = async (_prompt, _onPerm, _cwd) => ({ stopReason: "end_turn", tokensUsed: 0, costUsd: 0 });
+      acpRun = async (_prompt, _onPerm, _onOutput, _cwd) => ({ stopReason: "end_turn", tokensUsed: 0, costUsd: 0 });
       sendTelegram = async () => {};
     } else {
       const jiraCred = await getCredential("jira", "default");
@@ -118,13 +118,14 @@ const worker = createWorker(
         maxRetries: cfg.maxRetries,
       });
       git = new GitAdapter();
-      acpRun = async (prompt, onPermission, cwd) => {
+      acpRun = async (prompt, onPermission, onOutput, cwd) => {
         const session = new AcpSession({
           command: "npx",
           args: ["@agentclientprotocol/claude-agent-acp"],
           cwd,
           env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
           onUpdate: () => {},
+          onOutput,
           onPermission,
         });
         await session.start();

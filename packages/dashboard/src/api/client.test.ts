@@ -11,69 +11,69 @@ vi.stubGlobal("fetch", vi.fn());
 describe("API client", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("listJobs calls GET /jobs", async () => {
+  it("listJobs calls GET /api/jobs", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
     await listJobs();
     const [url] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toBe("/jobs");
+    expect(url).toBe("/api/jobs");
   });
 
-  it("getJob calls GET /jobs/:id", async () => {
+  it("getJob calls GET /api/jobs/:id", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "j1" }) } as any);
     const job = await getJob("j1");
     expect(job.id).toBe("j1");
   });
 
-  it("controlJob calls POST /jobs/:id/:action", async () => {
+  it("controlJob calls POST /api/jobs/:id/:action", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as any);
     await controlJob("j1", "stop");
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/jobs/j1/stop", expect.objectContaining({ method: "POST" }));
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/jobs/j1/stop", expect.objectContaining({ method: "POST" }));
   });
 
-  it("decideApproval calls POST /approvals/:id/decide", async () => {
+  it("decideApproval calls POST /api/approvals/:id/decide", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as any);
     await decideApproval("a1", "allow");
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/approvals/a1/decide",
+      "/api/approvals/a1/decide",
       expect.objectContaining({ method: "POST", body: JSON.stringify({ optionId: "allow" }) })
     );
   });
 
-  it("listCredentials calls GET /credentials", async () => {
+  it("listCredentials calls GET /api/credentials", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
     await listCredentials();
     const [url] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toBe("/credentials");
+    expect(url).toBe("/api/credentials");
   });
 
-  it("createCredential calls POST /credentials with JSON body", async () => {
+  it("createCredential calls POST /api/credentials with JSON body", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "c1" }) } as any);
     await createCredential({ kind: "gitlab", name: "GL", meta: { baseUrl: "https://gl.example.com" }, secrets: { token: "t" } });
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/credentials",
+      "/api/credentials",
       expect.objectContaining({ method: "POST" }),
     );
   });
 
-  it("updateCredential calls PATCH /credentials/:id", async () => {
+  it("updateCredential calls PATCH /api/credentials/:id", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ updated: true }) } as any);
     await updateCredential("c1", { name: "GL2", meta: {}, secrets: {} });
     const [url, init] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toBe("/credentials/c1");
+    expect(url).toBe("/api/credentials/c1");
     expect((init as RequestInit).method).toBe("PATCH");
   });
 
-  it("deleteCredential calls DELETE /credentials/:id", async () => {
+  it("deleteCredential calls DELETE /api/credentials/:id", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ deleted: true }) } as any);
     await deleteCredential("c1");
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/credentials/c1", expect.objectContaining({ method: "DELETE" }));
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/credentials/c1", expect.objectContaining({ method: "DELETE" }));
   });
 
-  it("listPendingApprovals calls GET /approvals", async () => {
+  it("listPendingApprovals calls GET /api/approvals", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
     await listPendingApprovals();
     const [url] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toBe("/approvals");
+    expect(url).toBe("/api/approvals");
   });
 
   it("sends Authorization Bearer header when token is in sessionStorage", async () => {

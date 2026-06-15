@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   getJob,
@@ -24,7 +24,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CheckCircle2, Circle, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { CheckCircle2, Circle, XCircle, Loader2, ExternalLink, Terminal } from "lucide-react";
 
 const STEP_ICON: Record<string, React.ReactNode> = {
   done: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -96,6 +96,10 @@ export function JobDetail() {
           <Tabs defaultValue="timeline">
             <TabsList>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="console">
+                <Terminal className="h-3 w-3 mr-1" />
+                Console
+              </TabsTrigger>
               <TabsTrigger value="events">Events ({allEvents.length})</TabsTrigger>
               <TabsTrigger value="raw">Raw</TabsTrigger>
             </TabsList>
@@ -258,5 +262,66 @@ export function JobDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ConsoleTab({ events }: { events: JobEvent[] }) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  const consoleEvents = events.filter(
+    (e) => e.type === "agent_output" || e.type === "approval_requested" || e.type === "agent_done"
+  );
+
+  useEffect(() => {
+    if (autoScroll && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [consoleEvents.length, autoScroll]);
+
+  return (
+    <Card className="bg-black text-green-400 font-mono text-xs">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+        <span className="text-muted-foreground">Agent Console</span>
+        <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autoScroll}
+            onChange={(e) => setAutoScroll(e.target.checked)}
+            className="h-3 w-3"
+          />
+          Auto-scroll
+        </label>
+      </div>
+      <ScrollArea className="h-96">
+        <div className="p-3 space-y-1">
+          {consoleEvents.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Waiting for agent output...</p>
+          ) : (
+            consoleEvents.map((e, i) => (
+              <div key={e.id ?? i} className="break-all">
+                <span className="text-muted-foreground mr-2">
+                  {new Date(e.ts).toLocaleTimeString()}
+                </span>
+                <span
+                  className={
+                    e.type === "approval_requested"
+                      ? "text-yellow-400"
+                      : e.type === "agent_done"
+                        ? "text-blue-400"
+                        : e.level === "error"
+                          ? "text-red-400"
+                          : ""
+                  }
+                >
+                  {e.message}
+                </span>
+              </div>
+            ))
+          )}
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
+    </Card>
   );
 }

@@ -10,7 +10,7 @@ export interface GraphDeps {
   jira: IJiraAdapter;
   gitlab: IGitlabAdapter;
   git: IGitAdapter;
-  acp: { run(prompt: string, onPermission: (req: PermissionRequest) => Promise<string>, cwd: string): Promise<RunResult> };
+  acp: { run(prompt: string, onPermission: (req: PermissionRequest) => Promise<string>, onOutput: (output: { kind: string; text?: string; toolCall?: { name: string }; toolResult?: { output?: string; error?: string } }) => void, cwd: string): Promise<RunResult> };
   repoMapping: { gitlabProjectId: string; defaultBaseBranch: string; branchPrefixRules: Record<string, string> };
   sink: IJobSink;
   signals: ISignals;
@@ -86,7 +86,9 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       `Target branch: ${state.branchName}`,
     ].join("\n");
 
-    const result = await acp.run(prompt, async (req) => {
+    const result = await acp.run(
+      prompt,
+      async (req) => {
       // Create an Approval row in Postgres
       const approval = await prisma.approval.create({
         data: {
@@ -137,7 +139,27 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
           });
         },
       });
-    }, state.workdir);
+    },
+      (output) => {
+        let message = "";
+        if (output.kind === "text" && output.text) message = output.text;
+        else if (output.kind === "tool_use" && output.toolCall) message = `→ ${output.toolCall.name}`;
+        else if (output.kind === "tool_result" && output.toolResult) {
+          message = output.toolResult.error
+            ? `✗ ${output.toolResult.error}`
+            : `✓ ${String(output.toolResult.output).slice(0, 200)}`;
+        }
+        if (message) {
+          sink.addEvent(state.jobId, {
+            type: "agent_output",
+            message,
+            level: output.kind === "tool_result" && output.toolResult?.error ? "error" : "info",
+            payload: { kind: output.kind },
+          }).catch(console.error);
+        }
+      },
+      state.workdir,
+    );
 
     await sink.addEvent(state.jobId, {
       type: "agent_done",

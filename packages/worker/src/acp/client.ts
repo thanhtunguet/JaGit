@@ -19,6 +19,13 @@ export interface RunResult {
   costUsd: number;
 }
 
+export interface AcpOutput {
+  kind: string;
+  text?: string;
+  toolCall?: { name: string; input?: unknown };
+  toolResult?: { output?: string; error?: string };
+}
+
 export interface AcpSessionOpts {
   command: string;
   args: string[];
@@ -26,6 +33,7 @@ export interface AcpSessionOpts {
   cwd: string;
   env?: NodeJS.ProcessEnv;
   onUpdate: (update: AcpUpdate) => void;
+  onOutput?: (output: AcpOutput) => void;
   onPermission: (req: PermissionRequest) => Promise<string>; // returns chosen optionId
 }
 
@@ -82,6 +90,17 @@ export class AcpSession {
       if (update?.tokens) this.totalTokens += update.tokens;
       if (update?.costUsd) this.totalCost += update.costUsd;
       this.opts.onUpdate(update);
+      // Stream structured output blocks to the dashboard
+      if (this.opts.onOutput) {
+        const kind = update?.kind as string;
+        if (kind === "text" && typeof update.text === "string") {
+          this.opts.onOutput({ kind: "text", text: update.text });
+        } else if (kind === "tool_use" && update.toolCall) {
+          this.opts.onOutput({ kind: "tool_use", toolCall: update.toolCall as any });
+        } else if (kind === "tool_result" && update.toolResult) {
+          this.opts.onOutput({ kind: "tool_result", toolResult: update.toolResult as any });
+        }
+      }
       return;
     }
 

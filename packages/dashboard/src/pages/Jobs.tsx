@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listJobs, controlJob, type Job } from "@/api/client";
 import { JobStatusBadge } from "@/components/JobStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export function Jobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [controlling, setControlling] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     listJobs().then(setJobs).catch((e) => setError(e.message));
@@ -81,6 +82,7 @@ export function Jobs() {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("button,a")) return;
+                    navigate(`/jobs/${job.id}`);
                   }}
                 >
                   <TableCell>
