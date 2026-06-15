@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 3 — NestJS API Backend (`worktree-phase-03-nestjs-api`)
+- **Last completed:** Phase 4 — Worker Service (`worktree-phase-04-worker`)
 - **In progress:** _n/a_
-- **Next up:** Phase 4 — Worker Package (`docs/plans/phase-04-worker.md`)
+- **Next up:** Phase 5 — Dashboard (`docs/plans/phase-05-dashboard.md`)
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
