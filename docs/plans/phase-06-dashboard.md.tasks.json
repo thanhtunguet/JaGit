@@ -177,7 +177,7 @@
       "id": "9",
       "subject": "Commit dashboard phase work",
       "description": "Stage the dashboard package changes and commit with a scoped message and Co-Authored-By trailer.",
-      "status": "pending",
+      "status": "completed",
       "metadata": {
         "files": [
           "packages/dashboard/**"
@@ -191,5 +191,5 @@
       "blockedBy": ["8"]
     }
   ],
-  "lastUpdated": "2026-06-15T12:35:00.000Z"
+  "lastUpdated": "2026-06-15T12:40:00.000Z"
 }
