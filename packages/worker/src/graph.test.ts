@@ -19,6 +19,7 @@ vi.mock("./approval.js", () => ({
 
 const makeSink = () => ({
   setStatus: vi.fn().mockResolvedValue(undefined),
+  setUsage: vi.fn().mockResolvedValue(undefined),
   startStep: vi.fn().mockResolvedValue("step-id-1"),
   finishStep: vi.fn().mockResolvedValue(undefined),
   addEvent: vi.fn().mockResolvedValue(undefined),
@@ -73,6 +74,7 @@ describe("buildGraph", () => {
     const graph = buildGraph(deps as any);
     const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
     expect(final.mrUrl).toBe("https://gitlab/mr/1");
+    expect(deps.sink.setUsage).toHaveBeenCalledWith("j-1", 100, 0.05);
     expect(deps.sink.setStatus).toHaveBeenCalledWith("j-1", "done");
   });
 

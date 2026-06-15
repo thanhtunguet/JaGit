@@ -9,6 +9,18 @@ export class PrismaJobSink implements IJobSink {
     await publishEvent(this.cfg.redisUrl, jobChannel(jobId), { type: "status_changed", status, error });
   }
 
+  async setUsage(jobId: string, tokensUsed: number, costUsd: number): Promise<void> {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { tokensUsed, costUsd },
+    });
+    await publishEvent(this.cfg.redisUrl, jobChannel(jobId), {
+      type: "usage_updated",
+      tokensUsed,
+      costUsd,
+    });
+  }
+
   async startStep(jobId: string, name: string): Promise<string> {
     const step = await prisma.jobStep.create({
       data: { jobId, name, status: "running", startedAt: new Date() },

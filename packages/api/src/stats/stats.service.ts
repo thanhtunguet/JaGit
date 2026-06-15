@@ -56,6 +56,7 @@ export class StatsService {
       approvalQueue,
       statusGroups,
       doneJobsWeek,
+      tokenAggregate,
       recentEvents,
     ] = await Promise.all([
       this.prisma.client.job.count({
@@ -77,8 +78,9 @@ export class StatsService {
       }),
       this.prisma.client.job.findMany({
         where: { status: "done", updatedAt: { gte: sevenDaysAgo } },
-        select: { updatedAt: true, costUsd: true },
+        select: { updatedAt: true },
       }),
+      this.prisma.client.job.aggregate({ _sum: { tokensUsed: true } }),
       this.prisma.client.jobEvent.findMany({
         orderBy: { ts: "desc" },
         take: 15,
@@ -86,17 +88,14 @@ export class StatsService {
       }),
     ]);
 
-    const avgCostUsd =
-      doneJobsWeek.length === 0
-        ? 0
-        : doneJobsWeek.reduce((sum, j) => sum + j.costUsd, 0) / doneJobsWeek.length;
+    const totalTokensUsed = tokenAggregate._sum.tokensUsed ?? 0;
 
     return {
       activeJobs,
       doneToday,
       doneYesterday,
       approvalQueue,
-      avgCostUsd,
+      totalTokensUsed,
       throughput: bucketByDay(doneJobsWeek, now),
       statusDistribution: statusGroups
         .map((g) => ({ status: g.status, count: g._count._all }))

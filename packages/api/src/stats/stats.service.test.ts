@@ -7,6 +7,7 @@ const mockPrisma = {
       count: vi.fn(),
       groupBy: vi.fn(),
       findMany: vi.fn(),
+      aggregate: vi.fn(),
     },
     approval: {
       count: vi.fn(),
@@ -61,9 +62,10 @@ describe("StatsService.getOverview", () => {
       { status: "failed", _count: { _all: 2 } },
     ]);
     mockPrisma.client.job.findMany.mockResolvedValue([
-      { updatedAt: new Date("2026-06-16T10:00:00Z"), costUsd: 0.1 },
-      { updatedAt: new Date("2026-06-15T10:00:00Z"), costUsd: 0.2 },
+      { updatedAt: new Date("2026-06-16T10:00:00Z") },
+      { updatedAt: new Date("2026-06-15T10:00:00Z") },
     ]);
+    mockPrisma.client.job.aggregate.mockResolvedValue({ _sum: { tokensUsed: 125_000 } });
     mockPrisma.client.jobEvent.findMany.mockResolvedValue([
       {
         id: "e1",
@@ -84,7 +86,7 @@ describe("StatsService.getOverview", () => {
     expect(result.doneToday).toBe(5);
     expect(result.doneYesterday).toBe(2);
     expect(result.approvalQueue).toBe(1);
-    expect(result.avgCostUsd).toBeCloseTo(0.15);
+    expect(result.totalTokensUsed).toBe(125_000);
     expect(result.throughput).toHaveLength(7);
     expect(result.statusDistribution).toEqual([
       { status: "done", count: 10 },

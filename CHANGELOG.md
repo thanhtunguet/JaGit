@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (token-usage-tracking)
+
+**Token usage from ACP + Total Tokens Used widget**: Worker parses ACP `usage_update`/`PromptResponse.usage`, persists `tokensUsed`/`costUsd` on Job after `runAgent`; Overview stat replaces Avg Token Cost with sum of tokens across all jobs.
+
 ## 2026-06-16 (dashboard-overview-real-data)
 
 **Dashboard Overview real data**: New `GET /api/stats/overview` aggregates jobs, approvals, throughput, status distribution, and recent events from Postgres; Overview page replaces mock charts/stats with live API data.

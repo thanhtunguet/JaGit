@@ -15,7 +15,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Activity, CheckCircle, DollarSign, Clock } from "lucide-react";
+import { Activity, CheckCircle, Hash, Clock } from "lucide-react";
 import { getOverviewStats, type OverviewStats } from "@/api/client";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -48,8 +48,8 @@ function doneDeltaDescription(doneToday: number, doneYesterday: number): string 
   return `${sign}${delta} from yesterday`;
 }
 
-function formatCost(usd: number): string {
-  return usd === 0 ? "$0.00" : `$${usd.toFixed(2)}`;
+function formatTokenCount(n: number): string {
+  return n.toLocaleString();
 }
 
 export function Overview() {
@@ -111,10 +111,10 @@ export function Overview() {
               description={doneDeltaDescription(stats.doneToday, stats.doneYesterday)}
             />
             <StatCard
-              title="Avg Token Cost"
-              value={formatCost(stats.avgCostUsd)}
-              icon={DollarSign}
-              description="Per job this week"
+              title="Total Tokens Used"
+              value={formatTokenCount(stats.totalTokensUsed)}
+              icon={Hash}
+              description="Across all jobs"
             />
             <StatCard
               title="Approval Queue"

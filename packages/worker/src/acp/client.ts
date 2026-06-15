@@ -1,10 +1,27 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createReader, createWriter, type JsonRpcMessage } from "./protocol.js";
 
+export interface AcpCost {
+  amount: number;
+  currency: string;
+}
+
+export interface AcpUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+}
+
 export interface AcpUpdate {
-  kind: string;
+  kind?: string;
+  sessionUpdate?: string;
+  /** Legacy / test shape */
   tokens?: number;
+  /** Legacy / test shape */
   costUsd?: number;
+  /** ACP usage_update: tokens currently in context (cumulative session metric from agent) */
+  used?: number;
+  cost?: AcpCost;
   [key: string]: unknown;
 }
 
@@ -37,6 +54,58 @@ export interface AcpSessionOpts {
   onPermission: (req: PermissionRequest) => Promise<string>; // returns chosen optionId
 }
 
+export interface UsageTotals {
+  tokensUsed: number;
+  costUsd: number;
+}
+
+/** Merge token/cost figures from an ACP session/update notification. */
+export function applyUsageUpdate(
+  totals: UsageTotals,
+  update: AcpUpdate,
+): UsageTotals {
+  const next = { ...totals };
+
+  if (update.sessionUpdate === "usage_update") {
+    if (typeof update.used === "number" && update.used >= 0) {
+      next.tokensUsed = Math.max(next.tokensUsed, update.used);
+    }
+    if (update.cost && typeof update.cost.amount === "number" && update.cost.amount >= 0) {
+      next.costUsd = Math.max(next.costUsd, update.cost.amount);
+    }
+    return next;
+  }
+
+  if (typeof update.tokens === "number" && update.tokens > 0) {
+    next.tokensUsed += update.tokens;
+  }
+  if (typeof update.costUsd === "number" && update.costUsd > 0) {
+    next.costUsd += update.costUsd;
+  }
+
+  return next;
+}
+
+/** Apply per-prompt usage from session/prompt response (fallback when stream omits usage). */
+export function applyPromptUsage(
+  totals: UsageTotals,
+  usage?: AcpUsage | null,
+): UsageTotals {
+  if (!usage) return totals;
+
+  const next = { ...totals };
+  const fromParts =
+    (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
+  const candidate =
+    usage.totalTokens ?? (fromParts > 0 ? fromParts : 0);
+
+  if (candidate > 0) {
+    next.tokensUsed = Math.max(next.tokensUsed, candidate);
+  }
+
+  return next;
+}
+
 export class AcpSession {
   private proc!: ChildProcess;
   private sessionId!: string;
@@ -44,8 +113,7 @@ export class AcpSession {
   private pending = new Map<number | string, { resolve: (v: any) => void; reject: (e: Error) => void }>();
   private write!: (msg: JsonRpcMessage) => void;
 
-  private totalTokens = 0;
-  private totalCost = 0;
+  private totals: UsageTotals = { tokensUsed: 0, costUsd: 0 };
 
   constructor(private readonly opts: AcpSessionOpts) {}
 
@@ -87,9 +155,8 @@ export class AcpSession {
     // Notification (no id) — session/update is a CLIENT_METHOD notification from agent
     if (msg.id === undefined && msg.method === "session/update") {
       const update = (msg.params as any)?.update as AcpUpdate;
-      if (update?.tokens) this.totalTokens += update.tokens;
-      if (update?.costUsd) this.totalCost += update.costUsd;
-      this.opts.onUpdate(update);
+      this.totals = applyUsageUpdate(this.totals, update ?? {});
+      this.opts.onUpdate(update ?? {});
       // Stream structured output blocks to the dashboard
       if (this.opts.onOutput) {
         const kind = update?.kind as string;
@@ -128,11 +195,16 @@ export class AcpSession {
 
   async runPrompt(text: string): Promise<RunResult> {
     // ACP PromptRequest.prompt is Array<ContentBlock>, not a plain string
-    const result = await this.request<{ stopReason: string }>("session/prompt", {
+    const result = await this.request<{ stopReason: string; usage?: AcpUsage }>("session/prompt", {
       sessionId: this.sessionId,
       prompt: [{ type: "text", text }],
     });
-    return { stopReason: result.stopReason, tokensUsed: this.totalTokens, costUsd: this.totalCost };
+    this.totals = applyPromptUsage(this.totals, result.usage);
+    return {
+      stopReason: result.stopReason,
+      tokensUsed: this.totals.tokensUsed,
+      costUsd: this.totals.costUsd,
+    };
   }
 
   async stop(): Promise<void> {

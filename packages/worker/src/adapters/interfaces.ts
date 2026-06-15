@@ -41,6 +41,7 @@ export interface IGitAdapter {
 /** Sink for writing JobStep/JobEvent rows + updating job status */
 export interface IJobSink {
   setStatus(jobId: string, status: string, error?: string): Promise<void>;
+  setUsage(jobId: string, tokensUsed: number, costUsd: number): Promise<void>;
   startStep(jobId: string, stepName: string): Promise<string>; // returns stepId
   finishStep(stepId: string, status: "done" | "failed", detail?: object): Promise<void>;
   addEvent(jobId: string, opts: {

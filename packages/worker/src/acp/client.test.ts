@@ -1,5 +1,64 @@
 import { describe, it, expect } from "vitest";
-import { AcpSession } from "./client.js";
+import {
+  applyUsageUpdate,
+  applyPromptUsage,
+  AcpSession,
+} from "./client.js";
+
+describe("applyUsageUpdate", () => {
+  it("reads ACP usage_update (cumulative used + cost)", () => {
+    const result = applyUsageUpdate(
+      { tokensUsed: 0, costUsd: 0 },
+      {
+        sessionUpdate: "usage_update",
+        used: 53_000,
+        size: 200_000,
+        cost: { amount: 0.045, currency: "USD" },
+      },
+    );
+    expect(result).toEqual({ tokensUsed: 53_000, costUsd: 0.045 });
+  });
+
+  it("keeps the higher cumulative values across multiple usage_update events", () => {
+    let totals = applyUsageUpdate(
+      { tokensUsed: 0, costUsd: 0 },
+      { sessionUpdate: "usage_update", used: 10_000, cost: { amount: 0.01, currency: "USD" } },
+    );
+    totals = applyUsageUpdate(totals, {
+      sessionUpdate: "usage_update",
+      used: 25_000,
+      cost: { amount: 0.03, currency: "USD" },
+    });
+    expect(totals).toEqual({ tokensUsed: 25_000, costUsd: 0.03 });
+  });
+
+  it("accumulates legacy tokens/costUsd fields", () => {
+    let totals = applyUsageUpdate(
+      { tokensUsed: 0, costUsd: 0 },
+      { kind: "agent_message", tokens: 7, costUsd: 0.001 },
+    );
+    totals = applyUsageUpdate(totals, { kind: "agent_message", tokens: 3, costUsd: 0.002 });
+    expect(totals).toEqual({ tokensUsed: 10, costUsd: 0.003 });
+  });
+});
+
+describe("applyPromptUsage", () => {
+  it("uses totalTokens from PromptResponse.usage as fallback", () => {
+    const result = applyPromptUsage(
+      { tokensUsed: 100, costUsd: 0 },
+      { inputTokens: 40, outputTokens: 60, totalTokens: 120 },
+    );
+    expect(result.tokensUsed).toBe(120);
+  });
+
+  it("sums input/output when totalTokens is absent", () => {
+    const result = applyPromptUsage(
+      { tokensUsed: 0, costUsd: 0 },
+      { inputTokens: 500, outputTokens: 250 },
+    );
+    expect(result.tokensUsed).toBe(750);
+  });
+});
 
 // Fake agent: reads JSON-RPC requests, emits scripted responses
 const FAKE_AGENT_SCRIPT = `
@@ -24,12 +83,10 @@ process.stdin.on("data", d => {
     }
     if (msg.method === "session/prompt") {
       promptId = msg.id;
-      // emit an update
       process.stdout.write(JSON.stringify({
         method: "session/update",
         params: { sessionId: "s1", update: { kind: "agent_message", tokens: 7, costUsd: 0.001 } }
       }) + "\\n");
-      // emit a permission request
       process.stdout.write(JSON.stringify({
         id: 999,
         method: "session/request_permission",
@@ -38,8 +95,10 @@ process.stdin.on("data", d => {
       }) + "\\n");
     }
     if (msg.id === 999) {
-      // after permission resolved, send end_turn for the original prompt
-      process.stdout.write(JSON.stringify({ id: promptId, result: { stopReason: "end_turn" } }) + "\\n");
+      process.stdout.write(JSON.stringify({
+        id: promptId,
+        result: { stopReason: "end_turn", usage: { totalTokens: 42 } }
+      }) + "\\n");
     }
   }
 });
@@ -61,7 +120,8 @@ describe("AcpSession", () => {
     await session.stop();
 
     expect(result.stopReason).toBe("end_turn");
-    expect(result.tokensUsed).toBe(7);
+    expect(result.tokensUsed).toBe(42);
+    expect(result.costUsd).toBeCloseTo(0.001);
     expect(updates.length).toBeGreaterThan(0);
     expect(updates[0].kind).toBe("agent_message");
   });

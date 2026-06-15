@@ -166,6 +166,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       message: `Stop: ${result.stopReason}, tokens: ${result.tokensUsed}`,
       payload: result,
     });
+    await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
     await sink.finishStep(stepId, "done");
     return {};
   }

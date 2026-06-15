@@ -79,7 +79,7 @@ export interface OverviewStats {
   doneToday: number;
   doneYesterday: number;
   approvalQueue: number;
-  avgCostUsd: number;
+  totalTokensUsed: number;
   throughput: { day: string; date: string; jobs: number }[];
   statusDistribution: { status: string; count: number }[];
   recentEvents: {

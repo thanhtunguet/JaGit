@@ -21,7 +21,7 @@ describe("API client", () => {
   it("getOverviewStats calls GET /api/stats/overview", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: async () => ({ activeJobs: 0, doneToday: 0, doneYesterday: 0, approvalQueue: 0, avgCostUsd: 0, throughput: [], statusDistribution: [], recentEvents: [] }),
+      json: async () => ({ activeJobs: 0, doneToday: 0, doneYesterday: 0, approvalQueue: 0, totalTokensUsed: 0, throughput: [], statusDistribution: [], recentEvents: [] }),
     } as any);
     await getOverviewStats();
     const [url] = vi.mocked(fetch).mock.calls[0];
