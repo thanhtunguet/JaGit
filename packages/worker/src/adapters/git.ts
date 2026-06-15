@@ -32,7 +32,26 @@ export class GitAdapter implements IGitAdapter {
   async createWorktree(repoDir: string, branch: string): Promise<string> {
     const wtDir = join(repoDir, ".worktrees", branch);
     await mkdir(join(repoDir, ".worktrees"), { recursive: true });
-    await execa("git", ["worktree", "add", "-b", branch, wtDir, "HEAD"], { cwd: repoDir });
+
+    // Check if this worktree path is already registered (previous run survived)
+    const { stdout: wtList } = await execa("git", ["worktree", "list", "--porcelain"], { cwd: repoDir });
+    if (wtList.includes(wtDir)) {
+      // Already registered — just return it
+      return wtDir;
+    }
+
+    // Prune stale worktree records (directory removed but still tracked)
+    await execa("git", ["worktree", "prune"], { cwd: repoDir });
+
+    // Check if the branch already exists locally
+    const { stdout: branchList } = await execa("git", ["branch", "--list", branch], { cwd: repoDir });
+    if (branchList.trim()) {
+      // Branch exists — check it out into the new worktree path without re-creating it
+      await execa("git", ["worktree", "add", wtDir, branch], { cwd: repoDir });
+    } else {
+      // New branch — create it from HEAD
+      await execa("git", ["worktree", "add", "-b", branch, wtDir, "HEAD"], { cwd: repoDir });
+    }
     return wtDir;
   }
 
