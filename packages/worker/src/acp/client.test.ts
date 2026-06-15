@@ -19,6 +19,9 @@ process.stdin.on("data", d => {
     if (msg.method === "session/new") {
       process.stdout.write(JSON.stringify({ id: msg.id, result: { sessionId: "s1" } }) + "\\n");
     }
+    if (msg.method === "session/set_mode") {
+      process.stdout.write(JSON.stringify({ id: msg.id, result: {} }) + "\\n");
+    }
     if (msg.method === "session/prompt") {
       promptId = msg.id;
       // emit an update

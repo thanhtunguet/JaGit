@@ -67,6 +67,12 @@ export class AcpSession {
       mcpServers: [],
     });
     this.sessionId = sessionId;
+
+    // Skip interactive permission prompts — the agent decides what tools to use
+    await this.request("session/set_mode", {
+      sessionId: this.sessionId,
+      modeId: "bypassPermissions",
+    });
   }
 
   private handleMessage(msg: JsonRpcMessage) {
