@@ -8,3 +8,4 @@ dist/
 *.js.map
 *.tsbuildinfo
 .worktrees/
+packages/worker/_works/
