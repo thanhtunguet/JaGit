@@ -1,0 +1,195 @@
+{
+  "planPath": "docs/plans/phase-06-dashboard.md",
+  "tasks": [
+    {
+      "id": "1",
+      "subject": "Scaffold Vite + React + TailwindCSS in dashboard package",
+      "description": "Install missing runtime and dev dependencies (react-router-dom, tailwindcss, postcss, autoprefixer, recharts) and create the Tailwind config + src/index.css with shadcn CSS variables. The dashboard package already has a minimal Vite + React scaffold; extend it to match the Phase 6 spec.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/package.json",
+          "packages/dashboard/tailwind.config.js",
+          "packages/dashboard/postcss.config.js",
+          "packages/dashboard/src/index.css"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "tailwindcss, postcss, autoprefixer, react-router-dom, recharts are in devDependencies/dependencies",
+          "tailwind.config.js exports darkMode class config with shadcn color tokens",
+          "src/index.css contains @tailwind directives and :root/.dark CSS variables"
+        ]
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "2",
+      "subject": "Install shadcn/ui components and utils",
+      "description": "Add the shadcn/ui utility libraries (class-variance-authority, clsx, tailwind-merge, tailwindcss-animate, lucide-react) and create src/lib/utils.ts plus the required shadcn/ui component files under packages/dashboard/src/components/ui/.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/src/lib/utils.ts",
+          "packages/dashboard/tsconfig.json",
+          "packages/dashboard/src/components/ui/button.tsx",
+          "packages/dashboard/src/components/ui/badge.tsx",
+          "packages/dashboard/src/components/ui/card.tsx",
+          "packages/dashboard/src/components/ui/table.tsx",
+          "packages/dashboard/src/components/ui/dialog.tsx",
+          "packages/dashboard/src/components/ui/tabs.tsx",
+          "packages/dashboard/src/components/ui/skeleton.tsx",
+          "packages/dashboard/src/components/ui/alert.tsx",
+          "packages/dashboard/src/components/ui/tooltip.tsx",
+          "packages/dashboard/src/components/ui/scroll-area.tsx",
+          "packages/dashboard/src/components/ui/separator.tsx",
+          "packages/dashboard/src/components/ui/accordion.tsx"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "cn() helper exists in src/lib/utils.ts",
+          "All required shadcn/ui components compile without TypeScript errors",
+          "Components use Tailwind utility classes and CSS variable tokens"
+        ]
+      },
+      "blockedBy": ["1"]
+    },
+    {
+      "id": "3",
+      "subject": "Create API client and useSSE hook (TDD)",
+      "description": "Write the failing test first in packages/dashboard/src/api/client.test.ts, then implement packages/dashboard/src/api/client.ts with listJobs, getJob, controlJob, decideApproval, and a useSSE hook for live events. Follow the Phase 6 spec for types and endpoints.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/src/api/client.test.ts",
+          "packages/dashboard/src/api/client.ts"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard test",
+        "acceptanceCriteria": [
+          "client.test.ts has a failing test before implementation is added",
+          "All four API client tests pass",
+          "Types mirror the API response shapes (Job, JobStep, JobEvent, Approval, JobDetail)"
+        ]
+      },
+      "blockedBy": ["1"]
+    },
+    {
+      "id": "4",
+      "subject": "Create shared dashboard components",
+      "description": "Create reusable dashboard components: JobStatusBadge, StatCard, ApprovalCard, and EventRow under packages/dashboard/src/components/. They must follow the UI non-negotiable rules (shadcn only, Tailwind only, dark mode aware, semantic tokens).",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/src/components/JobStatusBadge.tsx",
+          "packages/dashboard/src/components/StatCard.tsx",
+          "packages/dashboard/src/components/ApprovalCard.tsx",
+          "packages/dashboard/src/components/EventRow.tsx"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "JobStatusBadge uses the STATUS_VARIANT map",
+          "StatCard accepts icon, value, title, description",
+          "ApprovalCard calls decideApproval and shows error Alert",
+          "EventRow renders timestamp, level badge, type, message"
+        ]
+      },
+      "blockedBy": ["2", "3"]
+    },
+    {
+      "id": "5",
+      "subject": "Create app shell and router",
+      "description": "Implement the application layout (AppShell with sidebar navigation) and router setup (App.tsx, main.tsx). Ensure the root HTML includes dark mode class and the app routes to Overview, Jobs, JobDetail, and Config pages.\n\nNote: minimal page stubs were created so App.tsx could typecheck; they are replaced in task #6.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/src/components/layout/AppShell.tsx",
+          "packages/dashboard/src/App.tsx",
+          "packages/dashboard/src/main.tsx",
+          "packages/dashboard/index.html"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "BrowserRouter wraps AppShell and Routes",
+          "AppShell renders sidebar nav with active-state styling",
+          "index.html has class=\"dark\" on the html element"
+        ]
+      },
+      "blockedBy": ["4"]
+    },
+    {
+      "id": "6",
+      "subject": "Implement dashboard pages",
+      "description": "Build the four page components: Overview (mock metrics + Recharts charts), Jobs (list table with controls), JobDetail (tabs, timeline, events, raw, approvals), and Config (read-only tables for templates, credentials, mappings).",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/src/pages/Overview.tsx",
+          "packages/dashboard/src/pages/Jobs.tsx",
+          "packages/dashboard/src/pages/JobDetail.tsx",
+          "packages/dashboard/src/pages/Config.tsx"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "Overview renders stat cards, LineChart, PieChart, recent activity, and mock-data badge",
+          "Jobs table shows status badges, MR links, and stop/pause/resume actions",
+          "JobDetail has Tabs for Timeline/Events/Raw and uses SSE for live events",
+          "Config page shows agent templates, redacted credentials, and repo mappings"
+        ]
+      },
+      "blockedBy": ["4", "5"]
+    },
+    {
+      "id": "7",
+      "subject": "Configure Vite with API proxy",
+      "description": "Update packages/dashboard/vite.config.ts to add the @ alias pointing to src and proxy /jobs, /webhooks, /approvals, /agent-templates, /credentials, /repo-mappings to the API service at http://localhost:3000.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/vite.config.ts"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard typecheck",
+        "acceptanceCriteria": [
+          "@ alias resolves to src",
+          "All API routes are proxied to localhost:3000",
+          "Build output directory is dist with emptyOutDir true"
+        ]
+      },
+      "blockedBy": ["1"]
+    },
+    {
+      "id": "8",
+      "subject": "Build dashboard and run tests",
+      "description": "Run the dashboard test suite and production build. Fix any TypeScript or build errors before marking the phase complete.",
+      "status": "completed",
+      "metadata": {
+        "files": [
+          "packages/dashboard/dist/**"
+        ],
+        "verifyCommand": "pnpm --filter @jigit/dashboard test && pnpm --filter @jigit/dashboard build",
+        "acceptanceCriteria": [
+          "pnpm --filter @jigit/dashboard test passes",
+          "pnpm --filter @jigit/dashboard build produces static assets in dist/",
+          "No TypeScript errors in the dashboard package"
+        ]
+      },
+      "blockedBy": ["6", "7"]
+    },
+    {
+      "id": "9",
+      "subject": "Commit dashboard phase work",
+      "description": "Stage the dashboard package changes and commit with a scoped message and Co-Authored-By trailer.",
+      "status": "pending",
+      "metadata": {
+        "files": [
+          "packages/dashboard/**"
+        ],
+        "verifyCommand": "git status --short && git log -1 --oneline",
+        "acceptanceCriteria": [
+          "All dashboard changes are staged by name (not git add -A)",
+          "Commit message follows conventional commits and includes Co-Authored-By"
+        ]
+      },
+      "blockedBy": ["8"]
+    }
+  ],
+  "lastUpdated": "2026-06-15T12:35:00.000Z"
+}
