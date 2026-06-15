@@ -103,6 +103,7 @@ const worker = createWorker(
       repoMapping: mapping as any,
       sink: new PrismaJobSink(),
       signals: redisSignals,
+      prisma,
       sendTelegram: (text) => telegramBot.sendMessage(telegramChatId, text).then(() => undefined),
     };
 

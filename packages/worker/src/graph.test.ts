@@ -41,6 +41,12 @@ const fakeDeps = () => ({
   },
   sink: makeSink(),
   signals: makeSignals(),
+  prisma: {
+    approval: {
+      create: vi.fn().mockResolvedValue({ id: "appr-mock-1" }),
+      updateMany: vi.fn().mockResolvedValue(undefined),
+    },
+  },
   sendTelegram: vi.fn().mockResolvedValue(undefined),
 });
 

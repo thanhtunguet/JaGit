@@ -2,8 +2,10 @@ import { Annotation, StateGraph, END } from "@langchain/langgraph";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deriveBranchName } from "@jigit/shared";
+import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
+import { awaitApproval } from "./approval.js";
 
 export interface GraphDeps {
   jira: IJiraAdapter;
@@ -13,6 +15,7 @@ export interface GraphDeps {
   repoMapping: { gitlabProjectId: string; defaultBaseBranch: string; branchPrefixRules: Record<string, string> };
   sink: IJobSink;
   signals: ISignals;
+  prisma: PrismaClient;
   sendTelegram(text: string): Promise<void>;
 }
 
@@ -31,7 +34,7 @@ const JobStateAnnotation = Annotation.Root({
 export type JobState = typeof JobStateAnnotation.State;
 
 export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraIssueKey: string }): Promise<JobState> } {
-  const { jira, gitlab, git, acp, repoMapping, sink, signals, sendTelegram } = deps;
+  const { jira, gitlab, git, acp, repoMapping, sink, signals, prisma, sendTelegram } = deps;
 
   // ── nodes ──────────────────────────────────────────────────────────────────
 
@@ -81,13 +84,47 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
     ].join("\n");
 
     const result = await acp.run(prompt, async (req) => {
-      await sink.addEvent(state.jobId, {
-        type: "permission_requested",
-        message: `Tool: ${req.toolCall.name}`,
-        payload: req,
+      // Create an Approval row in Postgres
+      const approval = await prisma.approval.create({
+        data: {
+          jobId: state.jobId,
+          kind: "tool_permission",
+          prompt: `Allow tool: ${req.toolCall.name}`,
+          options: req.options as any,
+          status: "pending",
+        },
       });
-      // Default to first option (allow) — the real entrypoint wires a Telegram bridge
-      return req.options[0]?.optionId ?? "allow";
+
+      // Notify dashboard via SSE
+      await sink.addEvent(state.jobId, {
+        type: "approval_requested",
+        message: `Approval required: ${req.toolCall.name}`,
+        payload: { approvalId: approval.id, options: req.options },
+      });
+
+      // Telegram notification is best-effort
+      sendTelegram(
+        `Approval needed for job ${state.jobId}: allow ${req.toolCall.name}?`
+      ).catch(console.error);
+
+      return awaitApproval({
+        approvalId: approval.id,
+        jobId: state.jobId,
+        denyOptionId:
+          req.options.find((o) => o.optionId.includes("deny"))?.optionId ?? "deny",
+        resolveApproval: async (id, optionId, via) => {
+          await prisma.approval.updateMany({
+            where: { id, status: "pending" },
+            data: {
+              status: optionId.startsWith("deny") ? "rejected" : "approved",
+              chosenOptionId: optionId,
+              decidedVia: via,
+              decidedBy: "system",
+              decidedAt: new Date(),
+            },
+          });
+        },
+      });
     });
 
     await sink.addEvent(state.jobId, {
