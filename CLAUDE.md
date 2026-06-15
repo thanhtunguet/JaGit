@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 4 — Worker Service (`worktree-phase-04-worker`)
+- **Last completed:** Phase 5 — Telegram Bot + Approval Bridge (`worktree-phase-05-telegram-approval`)
 - **In progress:** _n/a_
-- **Next up:** Phase 5 — Dashboard (`docs/plans/phase-05-dashboard.md`)
+- **Next up:** Phase 5 (dashboard) — `docs/plans/phase-05-dashboard.md` (if exists) or Phase 6
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
