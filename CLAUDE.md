@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 7 post-review fixes — all 8 review findings resolved (worker decrypt crash, SPA fallback via SpaController, seed import, double Zod parse, schema .length(4), dead export, HTTP integration tests). 49 tests passing.
+- **Last completed:** Phase 8 — Docker + E2E smoke test. Dockerfiles (api, worker), docker-compose full stack (migrate/api/worker), JIGIT_FAKE_ADAPTERS mode, E2E smoke test (3 tests pass in ~9 s). Fixed SpaController Fastify wildcard conflict. 49 unit tests + 3 E2E tests passing.
 - **In progress:** _n/a_
-- **Next up:** Phase 8 — see `docs/plans/phase-08-*.md`
+- **Next up:** All planned phases complete.
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch

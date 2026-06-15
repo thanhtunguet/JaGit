@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-15 (phase-08 docker-e2e)
+
+**Phase 8 — Docker + E2E Smoke Test**: Added Dockerfiles (api, worker), expanded docker-compose.yml to full stack (migrate + api + worker), added `JIGIT_FAKE_ADAPTERS=1` mode to worker (in-memory fakes, no credentials needed), E2E smoke test fires synthetic Jira webhook and polls until job reaches `done`. Fixed SpaController/Fastify wildcard conflict. All 49 unit tests + 3 E2E tests pass.
+
 ## 2026-06-15 (phase-07 post-review fixes)
 
 **Post-review fixes** (8 findings from high-effort code review): Fixed P0 worker decrypt crash (wrong JSON.stringify wrapping), added SpaController for SPA fallback, removed duplicate path computation, fixed seed import to use @jigit/shared, removed double Zod parse, relaxed .length(4) to .min(1), removed dead export, replaced disk-only test with HTTP integration tests. All 49 tests pass.
