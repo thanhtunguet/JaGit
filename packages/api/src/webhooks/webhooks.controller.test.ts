@@ -31,6 +31,7 @@ process.env["PUBLIC_BASE_URL"] = "http://localhost:3000";
 process.env["MAX_CONCURRENT_AGENTS"] = "4";
 process.env["MAX_RETRIES"] = "3";
 process.env["APPROVAL_TIMEOUT_MS"] = "300000";
+process.env["DASHBOARD_API_TOKEN"] = "test-dashboard-token";
 
 describe("WebhooksController", () => {
   let app: NestFastifyApplication;

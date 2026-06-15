@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (github-actions-docker)
+
+**GitHub Actions Docker CI**: Workflow test + build/push multi-arch (amd64/arm64) images api/dashboard/worker lên GHCR; thêm Dockerfile dashboard.
+
 ## 2026-06-16 (job-actions-shared-component)
 
 **Shared JobActions component**: Retry/Pause/Delete + delete confirmation dùng chung giữa Jobs list và Job detail Controls.
