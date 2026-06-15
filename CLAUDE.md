@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 2 — Shared Package (`worktree-phase-02-shared-package`, commit `1a5a89c`)
+- **Last completed:** Phase 3 — NestJS API Backend (`worktree-phase-03-nestjs-api`)
 - **In progress:** _n/a_
-- **Next up:** Phase 3 — API Package (`docs/plans/phase-03-api.md`)
+- **Next up:** Phase 4 — Worker Package (`docs/plans/phase-04-worker.md`)
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
