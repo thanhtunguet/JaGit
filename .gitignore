@@ -1,2 +1,9 @@
 __MACOSX__
 .DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.js.map
+*.tsbuildinfo

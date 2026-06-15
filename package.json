@@ -1,0 +1,18 @@
+{
+  "name": "jigit",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "dev:api": "pnpm --filter @jigit/api dev",
+    "dev:worker": "pnpm --filter @jigit/worker dev",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "tsx": "^4.16.0",
+    "vitest": "^2.0.0"
+  }
+}
