@@ -10,6 +10,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/shared": "workspace:*"
+    "@jigit/shared": "workspace:*",
+    "@langchain/langgraph": "^1.4.2",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.3",
+    "bullmq": "^5.78.1",
+    "execa": "^9.6.1",
+    "ioredis": "^5.11.1",
+    "node-telegram-bot-api": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.64.15"
   }
 }
