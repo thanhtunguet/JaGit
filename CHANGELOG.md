@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (fix-sse-stream-agent-output)
+
+**Fix SSE 404s + Agent Console Streaming**: Fixed dashboard SSE URLs to use `/api` prefix (resolves 404 on `/approvals/stream`). Added ACP protocol output capture (`text`, `tool_use`, `tool_result`) streamed as `agent_output` job events. New Console tab in JobDetail with auto-scroll, dark terminal styling, and level-colored output. Jobs table rows now clickable to navigate to detail. All dashboard tests pass (11/11).
+
 ## 2026-06-15 (agent-template-model-anthropic-fields)
 
 **AgentTemplate model field + Anthropic credential UI**: Added `model` field to `AgentTemplateItem` and `AgentTemplateDialog` (default `claude-sonnet-4-6`); updated API service default; Anthropic credential dialog now shows explicit Base URL / Auth Token / Meta fields instead of generic JSON editor.
