@@ -1,3 +1,11 @@
+import { config } from "dotenv";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Load .env from monorepo root before any config reads
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "../../../.env") });
+
 import { createWorker, loadConfig, decrypt, prisma } from "@jigit/shared";
 import { buildGraph } from "./graph.js";
 import { JiraAdapter } from "./adapters/jira.js";
