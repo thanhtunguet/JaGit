@@ -13,6 +13,7 @@ const FULL_ENV = {
   PUBLIC_BASE_URL: "http://localhost:3000",
   API_PORT: "3000",
   API_WEBHOOK_SECRET: "webhook-secret",
+  DASHBOARD_API_TOKEN: "dash-token",
 };
 
 describe("parseConfig", () => {
@@ -25,6 +26,7 @@ describe("parseConfig", () => {
     expect(cfg.maxConcurrentAgents).toBe(3);
     expect(cfg.approvalTimeoutMs).toBe(1800000);
     expect(cfg.apiPort).toBe(3000);
+    expect(cfg.dashboardApiToken).toBe("dash-token");
   });
 
   it("rejects a non-URL PUBLIC_BASE_URL", () => {

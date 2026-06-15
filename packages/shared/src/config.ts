@@ -12,6 +12,7 @@ const Schema = z.object({
   PUBLIC_BASE_URL:        z.string().url(),
   API_PORT:               z.coerce.number().int().positive().default(3000),
   API_WEBHOOK_SECRET:     z.string().min(1),
+  DASHBOARD_API_TOKEN:    z.string().min(1),
 });
 
 export type RawEnv = NodeJS.ProcessEnv | Record<string, string | undefined>;
@@ -30,6 +31,7 @@ export function parseConfig(env: RawEnv) {
     publicBaseUrl:        p.PUBLIC_BASE_URL,
     apiPort:              p.API_PORT,
     webhookSecret:        p.API_WEBHOOK_SECRET,
+    dashboardApiToken:    p.DASHBOARD_API_TOKEN,
   };
 }
 

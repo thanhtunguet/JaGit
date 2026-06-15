@@ -7,7 +7,9 @@ export const jobChannel = (jobId: string) => `job:${jobId}`;
 /** Channel name for worker control signals (stop/pause/resume/approval) */
 export const controlChannel = (jobId: string) => `control:${jobId}`;
 
-/** Creates a connected IORedis instance */
+/** Channel name for global approval events (SSE + worker graph) */
+export const approvalsChannel = "approvals";
+
 export function makeRedis(url: string): Redis {
   return new Redis(url, { maxRetriesPerRequest: null, lazyConnect: false });
 }
