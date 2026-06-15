@@ -72,10 +72,10 @@ this first to know where to resume.
 <!-- BEGIN: Current plan progress (agents update this each session) -->
 ### Current plan progress
 
-- **Active plan:** _none yet_
-- **Last completed:** _n/a_
+- **Active plan:** `docs/plans/` (phases 0–8)
+- **Last completed:** Phase 0 — Monorepo Scaffolding (`feat/phase-00-scaffolding`, commit `c678e8f`)
 - **In progress:** _n/a_
-- **Next up:** _n/a_
+- **Next up:** Phase 1 — Database (`docs/plans/phase-01-database.md`)
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
