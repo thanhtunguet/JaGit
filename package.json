@@ -8,6 +8,7 @@
     "test": "pnpm -r test",
     "dev:api": "pnpm --filter @jigit/api dev",
     "dev:worker": "pnpm --filter @jigit/worker dev",
+    "dev:dashboard": "pnpm --filter @jigit/dashboard dev",
     "seed": "tsx scripts/seed.ts",
     "db:migrate": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate deploy",
     "db:migrate:dev": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate dev",
