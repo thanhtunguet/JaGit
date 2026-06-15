@@ -3,7 +3,14 @@ import { useState, useEffect } from "react";
 const BASE = ""; // same origin; vite proxy handles /jobs → http://localhost:3000
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = init ? await fetch(BASE + path, init) : await fetch(BASE + path);
+  const token = sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = init
+    ? await fetch(BASE + path, { ...init, headers })
+    : await fetch(BASE + path, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
@@ -66,6 +73,98 @@ export interface JobDetail extends Job {
   approvals: Approval[];
 }
 
+// ─── Config CRUD ─────────────────────────────────────────────────────────────
+
+export interface CredentialListItem {
+  id: string;
+  kind: string;
+  name: string;
+  meta: Record<string, string>;
+  secretKeys: string[];
+}
+
+export interface CredentialCreateBody {
+  kind: string;
+  name: string;
+  meta: Record<string, string>;
+  secrets: Record<string, string>;
+}
+
+export interface RepoMappingItem {
+  id: string;
+  jiraProjectKey: string;
+  gitlabProjectId: string;
+  defaultBaseBranch: string;
+  branchPrefixRules: Record<string, string>;
+  agentTemplateId: string;
+  agentTemplate?: { id: string; name: string };
+}
+
+export interface AgentTemplateItem {
+  id: string;
+  name: string;
+  prompt: string;
+  maxTurns?: number;
+}
+
+export const listCredentials = () => request<CredentialListItem[]>("/credentials");
+export const createCredential = (body: CredentialCreateBody) =>
+  request<{ id: string }>("/credentials", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const updateCredential = (id: string, body: Omit<CredentialCreateBody, "kind">) =>
+  request<{ updated: boolean }>(`/credentials/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const deleteCredential = (id: string) =>
+  request<{ deleted: boolean }>(`/credentials/${id}`, { method: "DELETE" });
+
+export const listRepoMappings = () => request<RepoMappingItem[]>("/repo-mappings");
+export const createRepoMapping = (body: Omit<RepoMappingItem, "id" | "agentTemplate">) =>
+  request<RepoMappingItem>("/repo-mappings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const updateRepoMapping = (id: string, body: Omit<RepoMappingItem, "id" | "agentTemplate">) =>
+  request<RepoMappingItem>(`/repo-mappings/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const deleteRepoMapping = (id: string) =>
+  request<{ deleted: boolean }>(`/repo-mappings/${id}`, { method: "DELETE" });
+
+export const listAgentTemplates = () => request<AgentTemplateItem[]>("/agent-templates");
+export const createAgentTemplate = (body: Omit<AgentTemplateItem, "id">) =>
+  request<AgentTemplateItem>("/agent-templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const updateAgentTemplate = (id: string, body: Omit<AgentTemplateItem, "id">) =>
+  request<AgentTemplateItem>(`/agent-templates/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const deleteAgentTemplate = (id: string) =>
+  request<{ deleted: boolean }>(`/agent-templates/${id}`, { method: "DELETE" });
+
+export const listPendingApprovals = () =>
+  request<(Approval & { jobId: string; createdAt: string; job: { id: string; jiraIssueKey: string | null } })[]>(
+    "/approvals",
+  );
+
+// ─── Token helper ─────────────────────────────────────────────────────────────
+
+export const getStoredToken = () => sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
+export const setStoredToken = (t: string) => sessionStorage.setItem("DASHBOARD_API_TOKEN", t);
+
 // ─── useSSE hook ──────────────────────────────────────────────────────────────
 
 export function useSSE<T>(jobId: string) {
@@ -84,4 +183,22 @@ export function useSSE<T>(jobId: string) {
   }, [jobId]);
 
   return events;
+}
+
+// ─── useApprovalsSSE hook ─────────────────────────────────────────────────────
+
+export function useApprovalsSSE(
+  onEvent: (evt: { type: string; approvalId: string; jobId: string; [k: string]: unknown }) => void,
+) {
+  useEffect(() => {
+    const es = new EventSource("/approvals/stream");
+    es.onmessage = (e) => {
+      try {
+        onEvent(JSON.parse(e.data));
+      } catch {
+        /* ignore */
+      }
+    };
+    return () => es.close();
+  }, [onEvent]);
 }
