@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --watch --import @swc-node/register/esm-register src/main.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.1.26",
+    "@swc-node/register": "^1.11.1",
     "@swc/core": "^1.15.41",
     "@types/node-telegram-bot-api": "^0.64.15",
     "@types/supertest": "^7.2.0",
