@@ -2,6 +2,10 @@
 
 ## 2026-06-15
 
+**Phase 7 — Seed Script + Full Wiring** (`worktree-phase-07-seed-wiring`): Completed Phase 7 — seed script (TDD, encrypted secrets, zod validation), dashboard static serving from API (`@fastify/static`), SPA integration, and full smoke-run verified (`/health`, `/api/docs`, `/jobs` all pass). 46 tests passing.
+
+**Phase 7 Step 1 — Seed Script** (`worktree-phase-07-seed-wiring`): Added TDD-covered seed helpers plus `scripts/seed.ts` wrapper for validated AgentTemplate, Credential, and RepoMapping upserts with encrypted credential secrets.
+
 **Phase 6 — Dashboard Frontend** (`worktree-phase-06-dashboard`): Implemented full React + Vite + TailwindCSS + shadcn/ui dashboard with Overview (mock metrics + Recharts), Jobs list, Job Detail (tabs, timeline, SSE events, approvals), and read-only Config. API client TDD (4 tests passing), build clean, all shadcn/ui UI rules followed.
 
 **Phase 5 — Telegram Bot + Approval Bridge** (`worktree-phase-05-telegram-approval`): Implemented full approval lifecycle — `awaitApproval` Redis helper (TDD), `TelegramService` with inline-keyboard callbacks and idempotent `ApprovalsService.decide` tests (TDD), wired into LangGraph `runAgent` `onPermission`. API: 11 tests passing; Worker: 9 tests passing.

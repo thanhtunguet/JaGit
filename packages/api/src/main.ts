@@ -1,10 +1,11 @@
 import { config } from "dotenv";
-import { resolve, dirname } from "node:path";
+import fastifyStatic from "@fastify/static";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 // Load .env from monorepo root before NestJS DI initialises any providers
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../../../.env") });
+const __rootDir = path.dirname(fileURLToPath(import.meta.url));
+config({ path: path.resolve(__rootDir, "../../../.env") });
 
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
@@ -48,6 +49,21 @@ async function bootstrap() {
   // Health check
   app.getHttpAdapter().get("/health", (_req: unknown, res: any) => {
     res.send({ ok: true, version: "1.0.0" });
+  });
+
+  // Serve dashboard static files (built by packages/dashboard)
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const dashboardDist = path.resolve(__dirname, "..", "..", "..", "packages", "dashboard", "dist");
+  // Register static files. NestJS registers its own not-found handler at listen() time
+  // so we cannot call setNotFoundHandler here. Instead we handle SPA fallback via
+  // a catch-all wildcard registered before NestJS routes close.
+  await app.register(fastifyStatic, {
+    root: dashboardDist,
+    prefix: "/",
+    decorateReply: false,
+    index: "index.html",
+    wildcard: false,
   });
 
   await app.listen(cfg.apiPort, "0.0.0.0");
