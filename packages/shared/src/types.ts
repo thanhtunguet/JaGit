@@ -8,7 +8,7 @@ export const JigitJobDataSchema = z.object({ jobId: z.string() });
 export type JigitJobData = z.infer<typeof JigitJobDataSchema>;
 
 /** Control signals published to Redis controlChannel(jobId) */
-export type ControlSignalType = "stop" | "pause" | "resume" | "approval";
+export type ControlSignalType = "stop" | "pause" | "resume" | "approval" | "delete";
 
 export interface ControlSignal {
   type: ControlSignalType;

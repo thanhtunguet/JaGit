@@ -20,6 +20,10 @@ export const getOverviewStats = () => request<OverviewStats>("/stats/overview");
 export const getJob = (id: string) => request<JobDetail>(`/jobs/${id}`);
 export const controlJob = (id: string, action: "stop" | "pause" | "resume") =>
   request<void>(`/jobs/${id}/${action}`, { method: "POST" });
+export const retryJob = (id: string) =>
+  request<{ accepted: boolean; jobId: string }>(`/jobs/${id}/retry`, { method: "POST" });
+export const deleteJob = (id: string) =>
+  request<{ deleted: boolean }>(`/jobs/${id}`, { method: "DELETE" });
 export const decideApproval = (id: string, optionId: string) =>
   request<void>(`/approvals/${id}/decide`, {
     method: "POST",

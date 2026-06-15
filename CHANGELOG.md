@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (jobs-page-actions)
+
+**Jobs page actions**: Retry (failed), Pause (running), Delete (all) với confirmation; delete job active sẽ stop agent và dọn worktree trước khi xóa.
+
 ## 2026-06-16 (workflow-error-reporting)
 
 **Workflow error reporting**: Graph steps dùng `runStep` để ghi `step_error` và đánh dấu step `failed` khi lỗi; job fail gửi Telegram + comment Jira; dashboard cập nhật step/status qua SSE.

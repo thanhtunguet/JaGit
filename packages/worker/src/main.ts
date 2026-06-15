@@ -17,31 +17,48 @@ import { PrismaJobSink } from "./prisma-sink.js";
 import type { GraphDeps } from "./graph.js";
 import { Redis as IORedis } from "ioredis";
 import TelegramBot from "node-telegram-bot-api";
+import {
+  registerRuntime,
+  updateRuntime,
+  cleanupJobRuntime,
+  abortJobAgent,
+  clearRuntime,
+} from "./job-runtime.js";
 
 const cfg = loadConfig();
 
-/** Per-job stop/pause flags driven by Redis control-channel messages */
+/** Per-job stop/pause/delete flags driven by Redis control-channel messages */
 class RedisSignals {
   private stopped = new Set<string>();
   private paused = new Set<string>();
+  private deleted = new Set<string>();
 
-  constructor(private redis: InstanceType<typeof IORedis>) {}
+  constructor(
+    private redis: InstanceType<typeof IORedis>,
+    private readonly jobId: string,
+    private readonly onAbort: () => Promise<void>,
+  ) {}
 
-  listen(jobId: string) {
-    this.redis.subscribe(`control:${jobId}`);
+  listen() {
+    this.redis.subscribe(`control:${this.jobId}`);
     this.redis.on("message", (_ch: string, msg: string) => {
       try {
         const signal = JSON.parse(msg);
-        if (signal.jobId !== jobId) return;
-        if (signal.type === "stop") this.stopped.add(jobId);
-        if (signal.type === "pause") this.paused.add(jobId);
-        if (signal.type === "resume") this.paused.delete(jobId);
+        if (signal.jobId !== this.jobId) return;
+        if (signal.type === "stop" || signal.type === "delete") {
+          this.stopped.add(this.jobId);
+          this.onAbort().catch(console.error);
+        }
+        if (signal.type === "delete") this.deleted.add(this.jobId);
+        if (signal.type === "pause") this.paused.add(this.jobId);
+        if (signal.type === "resume") this.paused.delete(this.jobId);
       } catch { /* ignore */ }
     });
   }
 
   shouldStop(jobId: string): boolean { return this.stopped.has(jobId); }
   shouldPause(jobId: string): boolean { return this.paused.has(jobId); }
+  shouldDelete(jobId: string): boolean { return this.deleted.has(jobId); }
 }
 
 const telegramBot = new TelegramBot(cfg.telegramBotToken);
@@ -70,8 +87,12 @@ const worker = createWorker(
         });
     if (!mapping) throw new Error(`No repo mapping for job ${jobId}`);
 
-    const redisSignals = new RedisSignals(new IORedis(cfg.redisUrl, { maxRetriesPerRequest: null }) as InstanceType<typeof IORedis>);
-    redisSignals.listen(jobId);
+    const redisSignals = new RedisSignals(
+      new IORedis(cfg.redisUrl, { maxRetriesPerRequest: null }) as InstanceType<typeof IORedis>,
+      jobId,
+      async () => { await abortJobAgent(jobId); },
+    );
+    redisSignals.listen();
 
     let jira: IJiraAdapter;
     let gitlab: IGitlabAdapter;
@@ -98,6 +119,7 @@ const worker = createWorker(
       };
       acpRun = async (_prompt, _onPerm, _onOutput, _cwd) => ({ stopReason: "end_turn", tokensUsed: 0, costUsd: 0 });
       sendTelegram = async () => {};
+      registerRuntime(jobId, { acpSession: null, workdir: null, git });
     } else {
       const jiraCred = await getCredential("jira", "default");
       const gitlabCred = await getCredential("gitlab", "default");
@@ -118,6 +140,7 @@ const worker = createWorker(
         maxRetries: cfg.maxRetries,
       });
       git = new GitAdapter();
+      registerRuntime(jobId, { acpSession: null, workdir: null, git });
       acpRun = async (prompt, onPermission, onOutput, cwd) => {
         const session = new AcpSession({
           command: "npx",
@@ -128,10 +151,27 @@ const worker = createWorker(
           onOutput,
           onPermission,
         });
+        updateRuntime(jobId, { acpSession: session, workdir: cwd });
         await session.start();
-        const result = await session.runPrompt(prompt);
-        await session.stop();
-        return result;
+
+        const runPromise = session.runPrompt(prompt);
+        const abortPromise = new Promise<never>((_, reject) => {
+          const timer = setInterval(() => {
+            if (redisSignals.shouldStop(jobId) || redisSignals.shouldDelete(jobId)) {
+              clearInterval(timer);
+              session.stop().catch(() => {});
+              reject(new Error("Job aborted"));
+            }
+          }, 300);
+          runPromise.finally(() => clearInterval(timer));
+        });
+
+        try {
+          return await Promise.race([runPromise, abortPromise]);
+        } finally {
+          await session.stop();
+          updateRuntime(jobId, { acpSession: null });
+        }
       };
       sendTelegram = (text) => telegramBot.sendMessage(telegramChatId, text).then(() => undefined);
     }
@@ -153,7 +193,21 @@ const worker = createWorker(
     try {
       await graph.run({ jobId, jiraIssueKey: jobRow.jiraIssueKey ?? "" });
     } catch (err) {
+      if (redisSignals.shouldDelete(jobId)) {
+        const row = await prisma.job.findUnique({ where: { id: jobId } });
+        if (row?.workdir) await git.removeWorktree(row.workdir);
+        await cleanupJobRuntime(jobId);
+        return;
+      }
+      if (redisSignals.shouldStop(jobId)) {
+        await deps.sink.setStatus(jobId, "stopped");
+        return;
+      }
       const message = err instanceof Error ? err.message : String(err);
+      if (message === "Job aborted") {
+        await deps.sink.setStatus(jobId, "stopped");
+        return;
+      }
       await deps.sink.setStatus(jobId, "failed", message);
       const issueKey = jobRow.jiraIssueKey ?? "";
       await Promise.allSettled([
@@ -163,6 +217,10 @@ const worker = createWorker(
           : Promise.resolve(),
       ]);
       throw err;
+    } finally {
+      if (!redisSignals.shouldDelete(jobId)) {
+        clearRuntime(jobId);
+      }
     }
   },
   cfg.maxConcurrentAgents,

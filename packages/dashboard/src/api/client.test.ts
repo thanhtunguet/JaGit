@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  listJobs, getJob, controlJob, decideApproval, getOverviewStats,
+  listJobs, getJob, controlJob, retryJob, deleteJob, decideApproval, getOverviewStats,
   listCredentials, createCredential, updateCredential, deleteCredential,
   listPendingApprovals, getStoredToken, setStoredToken,
 } from "./client.js";
@@ -38,6 +38,18 @@ describe("API client", () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as any);
     await controlJob("j1", "stop");
     expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/jobs/j1/stop", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("retryJob calls POST /api/jobs/:id/retry", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ accepted: true, jobId: "j1" }) } as any);
+    await retryJob("j1");
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/jobs/j1/retry", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("deleteJob calls DELETE /api/jobs/:id", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ deleted: true }) } as any);
+    await deleteJob("j1");
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/jobs/j1", expect.objectContaining({ method: "DELETE" }));
   });
 
   it("decideApproval calls POST /api/approvals/:id/decide", async () => {

@@ -5,6 +5,7 @@ import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } fr
 import type { RunResult, PermissionRequest } from "./acp/client.js";
 import { awaitApproval } from "./approval.js";
 import { runStep } from "./run-step.js";
+import { updateRuntime } from "./job-runtime.js";
 
 export interface GraphDeps {
   jira: IJiraAdapter;
@@ -70,6 +71,11 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
   async function createBranch(state: JobState): Promise<Partial<JobState>> {
     return runStep(sink, state.jobId, "createBranch", async () => {
       const workdir = await git.createWorktree(state.repoDir, state.branchName);
+      await prisma.job.update({
+        where: { id: state.jobId },
+        data: { workdir, branch: state.branchName },
+      });
+      updateRuntime(state.jobId, { workdir });
       await sink.addEvent(state.jobId, { type: "branch_created", message: `Worktree: ${workdir}` });
       return { workdir };
     });

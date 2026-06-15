@@ -17,4 +17,5 @@ export * from "./retry.js";
 export * from "./queue.js";
 export * from "./events.js";
 export * from "./types.js";
+export * from "./git-worktree.js";
 export * from "./seed.js";
