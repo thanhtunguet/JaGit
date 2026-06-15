@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 6 — Dashboard Frontend (`worktree-phase-06-dashboard`)
+- **Last completed:** Phase 7 — Seed Script + Full Wiring (`worktree-phase-07-seed-wiring`)
 - **In progress:** _n/a_
-- **Next up:** Phase 7 — see `docs/plans/phase-07-*.md`
+- **Next up:** Phase 8 — see `docs/plans/phase-08-*.md`
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch

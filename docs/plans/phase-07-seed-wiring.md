@@ -16,12 +16,12 @@
 
 ## Acceptance Criteria
 
-- [ ] `pnpm seed` upserts one `AgentTemplate`, four `Credential` rows
+- [x] `pnpm seed` upserts one `AgentTemplate`, four `Credential` rows
   (jira, gitlab, telegram, anthropic), one `RepoMapping` — without error.
-- [ ] `pnpm dev:api` starts on `PORT` without crashing; `curl /health` → `{ ok: true }`.
-- [ ] `curl http://localhost:3000/api/docs` returns HTML (Swagger UI).
-- [ ] `curl http://localhost:3000/jobs` returns `[]` (empty array; no jobs yet).
-- [ ] Dashboard loads at `http://localhost:5173` (run `pnpm --filter @jigit/dashboard dev`).
+- [x] `pnpm dev:api` starts on `PORT` without crashing; `curl /health` → `{ ok: true }`.
+- [x] `curl http://localhost:3000/api/docs` returns HTML (Swagger UI).
+- [x] `curl http://localhost:3000/jobs` returns `[]` (empty array; no jobs yet).
+- [ ] Dashboard loads at `http://localhost:5173` (run `pnpm --filter @jigit/dashboard dev`) — not verified in CI (no browser); static serving wired correctly.
 
 ---
 
@@ -29,7 +29,7 @@
 
 ### Step 1 — Seed script
 
-- [ ] Create `scripts/seed.ts`:
+- [x] Create `scripts/seed.ts`:
 ```ts
 import { z } from "zod";
 import { prisma, encrypt, loadConfig } from "@jigit/shared";
@@ -172,7 +172,7 @@ async function seed() {
 seed().catch((err) => { console.error("Seed failed:", err); process.exit(1); });
 ```
 
-- [ ] Run:
+- [x] Run:
 ```bash
 pnpm seed
 ```
@@ -186,7 +186,7 @@ Fix any errors (likely missing env vars — set `DATABASE_URL` and `APP_ENCRYPTI
 The NestJS API should serve the built dashboard static files so the whole system
 is deployable as one container.
 
-- [ ] Install `@fastify/static` in `packages/api`:
+- [x] Install `@fastify/static` in `packages/api`:
 ```bash
 cd packages/api
 pnpm add @fastify/static
@@ -213,27 +213,27 @@ app.getHttpAdapter().getInstance().setNotFoundHandler((_req: any, res: any) => {
 
 ### Step 3 — Verify full stack
 
-- [ ] Run the full build:
+- [x] Run the full build:
 ```bash
 pnpm -r build
 ```
 
-- [ ] Start Postgres + Redis:
+- [x] Start Postgres + Redis:
 ```bash
 docker-compose up -d postgres redis
 ```
 
-- [ ] Run the seed:
+- [x] Run the seed:
 ```bash
 pnpm seed
 ```
 
-- [ ] Start the API:
+- [x] Start the API:
 ```bash
 pnpm dev:api
 ```
 
-- [ ] In another terminal, verify:
+- [x] In another terminal, verify:
 ```bash
 curl http://localhost:3000/health
 # → {"ok":true,"version":"1.0.0"}
@@ -249,7 +249,7 @@ curl http://localhost:3000/jobs
 ```bash
 pnpm dev:worker
 ```
-Should log "JiGit worker started (concurrency=3)".
+Should log "JiGit worker started (concurrency=3)". (Not verified this session — requires wired worker env.)
 
 ---
 

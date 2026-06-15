@@ -1,0 +1,73 @@
+{
+  "planPath": "docs/plans/phase-07-seed-wiring.md",
+  "lastUpdated": "2026-06-15T06:35:51Z",
+  "tasks": [
+    {
+      "id": "1",
+      "subject": "Implement seed script",
+      "status": "completed",
+      "blockedBy": [],
+      "lastUpdated": "2026-06-15T13:43:00Z",
+      "metadata": {
+        "files": ["scripts/seed.ts", "package.json", "scripts/**/*.test.ts"],
+        "verifyCommand": "pnpm -r test",
+        "acceptanceCriteria": [
+          "pnpm seed upserts one AgentTemplate, four Credential rows, and one RepoMapping without error",
+          "Credential secrets are encrypted before persistence",
+          "Seed shape is validated with zod"
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "subject": "Serve dashboard from API",
+      "status": "pending",
+      "blockedBy": [],
+      "lastUpdated": "2026-06-15T06:35:51Z",
+      "metadata": {
+        "files": ["packages/api/package.json", "packages/api/src/main.ts", "packages/api/src/**/*.test.ts"],
+        "verifyCommand": "pnpm --filter @jigit/api test && pnpm -r build",
+        "acceptanceCriteria": [
+          "API serves dashboard static files from packages/dashboard/dist",
+          "SPA fallback sends index.html for unknown dashboard routes",
+          "/health, /api/docs, and /jobs remain available"
+        ]
+      }
+    },
+    {
+      "id": "3",
+      "subject": "Verify full stack smoke run",
+      "status": "pending",
+      "blockedBy": ["1", "2"],
+      "lastUpdated": "2026-06-15T06:35:51Z",
+      "metadata": {
+        "files": [],
+        "verifyCommand": "pnpm -r build",
+        "acceptanceCriteria": [
+          "Full build succeeds",
+          "Seed script runs successfully when environment and services are available",
+          "API smoke endpoints respond as expected",
+          "Worker startup is verified or blocker documented",
+          "Dashboard dev server is verified or blocker documented"
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "subject": "Record changelog and plan progress",
+      "status": "pending",
+      "blockedBy": ["1", "2", "3"],
+      "lastUpdated": "2026-06-15T06:35:51Z",
+      "metadata": {
+        "files": ["docs/changelogs/*.md", "CHANGELOG.md", "CLAUDE.md", "docs/plans/phase-07-seed-wiring.md"],
+        "verifyCommand": "pnpm -r build",
+        "acceptanceCriteria": [
+          "Per-session changelog is written",
+          "Root CHANGELOG.md is updated",
+          "CLAUDE.md current plan progress is updated",
+          "Phase 7 plan checkboxes are updated"
+        ]
+      }
+    }
+  ]
+}
