@@ -49,7 +49,7 @@ const fakeDeps = () => ({
     push: vi.fn().mockResolvedValue(undefined),
   },
   acp: {
-    run: vi.fn().mockResolvedValue({ stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 }),
+    run: vi.fn().mockResolvedValue({ stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 }), // (prompt, onPermission, cwd)
   },
   repoMapping: {
     gitlabProjectId: "proj-5",
@@ -89,7 +89,7 @@ describe("buildGraph", () => {
     const deps = fakeDeps();
     // Override acp.run to invoke the permission callback once
     deps.acp.run = vi.fn().mockImplementation(
-      async (_prompt: string, onPermission: (req: any) => Promise<string>) => {
+      async (_prompt: string, onPermission: (req: any) => Promise<string>, _cwd: string) => {
         await onPermission({
           toolCall: { name: "bash" },
           options: [{ optionId: "allow", name: "Allow" }, { optionId: "deny", name: "Deny" }],

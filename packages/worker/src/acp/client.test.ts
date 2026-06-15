@@ -48,6 +48,7 @@ describe("AcpSession", () => {
     const session = new AcpSession({
       command: "node",
       args: ["-e", FAKE_AGENT_SCRIPT],
+      cwd: process.cwd(),
       onUpdate: (u) => updates.push(u),
       onPermission: async (_perm) => "allow",
     });

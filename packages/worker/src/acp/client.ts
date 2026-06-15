@@ -22,6 +22,8 @@ export interface RunResult {
 export interface AcpSessionOpts {
   command: string;
   args: string[];
+  /** Absolute path to the working directory the agent operates in (required by ACP). */
+  cwd: string;
   env?: NodeJS.ProcessEnv;
   onUpdate: (update: AcpUpdate) => void;
   onPermission: (req: PermissionRequest) => Promise<string>; // returns chosen optionId
@@ -56,17 +58,19 @@ export class AcpSession {
     });
 
     this.write = createWriter(this.proc.stdin!);
-
     createReader(this.proc.stdout!, (msg) => this.handleMessage(msg));
 
-    // Handshake — ACP protocol v1 requires protocolVersion in initialize params
+    // ACP protocol v1 handshake
     await this.request("initialize", { protocolVersion: 1 });
-    const { sessionId } = await this.request<{ sessionId: string }>("session/new", {});
+    const { sessionId } = await this.request<{ sessionId: string }>("session/new", {
+      cwd: this.opts.cwd,
+      mcpServers: [],
+    });
     this.sessionId = sessionId;
   }
 
   private handleMessage(msg: JsonRpcMessage) {
-    // Notification (no id) — dispatch to update or permission handler
+    // Notification (no id) — session/update is a CLIENT_METHOD notification from agent
     if (msg.id === undefined && msg.method === "session/update") {
       const update = (msg.params as any)?.update as AcpUpdate;
       if (update?.tokens) this.totalTokens += update.tokens;
@@ -75,17 +79,18 @@ export class AcpSession {
       return;
     }
 
+    // session/request_permission is a CLIENT_METHOD request from agent (has id, expects response)
     if (msg.method === "session/request_permission") {
-      // Permission is a request from the agent (has id, expects a response)
       const id = msg.id!;
       const params = msg.params as PermissionRequest;
       this.opts.onPermission(params).then((optionId) => {
-        this.write({ id, result: { optionId } });
+        // ACP response shape: { outcome: { outcome: "selected", optionId } }
+        this.write({ id, result: { outcome: { outcome: "selected", optionId } } });
       });
       return;
     }
 
-    // Regular response
+    // Regular response to one of our outgoing requests
     if (msg.id !== undefined) {
       const pending = this.pending.get(msg.id);
       if (pending) {
@@ -97,8 +102,10 @@ export class AcpSession {
   }
 
   async runPrompt(text: string): Promise<RunResult> {
+    // ACP PromptRequest.prompt is Array<ContentBlock>, not a plain string
     const result = await this.request<{ stopReason: string }>("session/prompt", {
-      sessionId: this.sessionId, prompt: text,
+      sessionId: this.sessionId,
+      prompt: [{ type: "text", text }],
     });
     return { stopReason: result.stopReason, tokensUsed: this.totalTokens, costUsd: this.totalCost };
   }

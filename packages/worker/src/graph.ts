@@ -10,7 +10,7 @@ export interface GraphDeps {
   jira: IJiraAdapter;
   gitlab: IGitlabAdapter;
   git: IGitAdapter;
-  acp: { run(prompt: string, onPermission: (req: PermissionRequest) => Promise<string>): Promise<RunResult> };
+  acp: { run(prompt: string, onPermission: (req: PermissionRequest) => Promise<string>, cwd: string): Promise<RunResult> };
   repoMapping: { gitlabProjectId: string; defaultBaseBranch: string; branchPrefixRules: Record<string, string> };
   sink: IJobSink;
   signals: ISignals;
@@ -137,7 +137,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
           });
         },
       });
-    });
+    }, state.workdir);
 
     await sink.addEvent(state.jobId, {
       type: "agent_done",
