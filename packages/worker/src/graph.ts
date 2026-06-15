@@ -1,7 +1,7 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { deriveBranchName } from "@jigit/shared";
+import { deriveBranchName, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
@@ -95,12 +95,21 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         },
       });
 
-      // Notify dashboard via SSE
+      // Notify dashboard via SSE (job channel)
       await sink.addEvent(state.jobId, {
         type: "approval_requested",
         message: `Approval required: ${req.toolCall.name}`,
         payload: { approvalId: approval.id, options: req.options },
       });
+
+      // Publish to global approvals channel so the Approvals page receives it
+      publishEvent(loadConfig().redisUrl, approvalsChannel, {
+        type: "approval_requested",
+        approvalId: approval.id,
+        jobId: state.jobId,
+        prompt: `Allow tool: ${req.toolCall.name}`,
+        options: req.options,
+      }).catch(console.error);
 
       // Telegram notification is best-effort
       sendTelegram(

@@ -1,6 +1,22 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildGraph } from "./graph.js";
 
+vi.mock("@jigit/shared", async (orig) => {
+  const actual = await orig<any>();
+  return {
+    ...actual,
+    publishEvent: vi.fn().mockResolvedValue(undefined),
+    loadConfig: () => ({
+      redisUrl: "redis://localhost:6379",
+      approvalTimeoutMs: 100,
+    }),
+  };
+});
+
+vi.mock("./approval.js", () => ({
+  awaitApproval: vi.fn().mockResolvedValue("allow"),
+}));
+
 const makeSink = () => ({
   setStatus: vi.fn().mockResolvedValue(undefined),
   startStep: vi.fn().mockResolvedValue("step-id-1"),
@@ -66,5 +82,32 @@ describe("buildGraph", () => {
     const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
     expect(final.status).toBe("stopped");
     expect(deps.acp.run).not.toHaveBeenCalled();
+  });
+
+  it("publishes approval_requested to approvalsChannel when permission is needed", async () => {
+    const deps = fakeDeps();
+    // Override acp.run to invoke the permission callback once
+    deps.acp.run = vi.fn().mockImplementation(
+      async (_prompt: string, onPermission: (req: any) => Promise<string>) => {
+        await onPermission({
+          toolCall: { name: "bash" },
+          options: [{ optionId: "allow", name: "Allow" }, { optionId: "deny", name: "Deny" }],
+        });
+        return { stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 };
+      },
+    );
+    // awaitApproval will be mocked by faking the control signal inline —
+    // but since awaitApproval subscribes to Redis which isn't available, we mock it:
+    const graph = buildGraph(deps as any);
+    const { publishEvent: mockPublishEvent } = await import("@jigit/shared");
+
+    // awaitApproval will timeout after approvalTimeoutMs (100ms), that's fine
+    await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" }).catch(() => {});
+
+    expect(mockPublishEvent).toHaveBeenCalledWith(
+      "redis://localhost:6379",
+      "approvals",
+      expect.objectContaining({ type: "approval_requested", approvalId: "appr-mock-1" }),
+    );
   });
 });
