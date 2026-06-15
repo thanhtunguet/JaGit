@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 1 — Database Design (`feat/phase-01-database`, commit `58f9f6f`)
+- **Last completed:** Phase 2 — Shared Package (`worktree-phase-02-shared-package`, commit `1a5a89c`)
 - **In progress:** _n/a_
-- **Next up:** Phase 2 — Shared Package (`docs/plans/phase-02-shared-package.md`)
+- **Next up:** Phase 3 — API Package (`docs/plans/phase-03-api.md`)
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
