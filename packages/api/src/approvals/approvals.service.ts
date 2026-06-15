@@ -1,12 +1,20 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
-import { publishControl, loadConfig } from "@jigit/shared";
+import { publishControl, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
 
 @Injectable()
 export class ApprovalsService {
   private readonly cfg = loadConfig();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  listPending() {
+    return this.prisma.client.approval.findMany({
+      where: { status: "pending" },
+      include: { job: { select: { id: true, jiraIssueKey: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+  }
 
   /**
    * Idempotent: first call sets status to approved/rejected; subsequent calls
@@ -35,6 +43,14 @@ export class ApprovalsService {
       type: "approval",
       jobId: approval.jobId,
       approvalId,
+      chosenOptionId: optionId,
+    });
+
+    await publishEvent(this.cfg.redisUrl, approvalsChannel, {
+      type: "resolved",
+      approvalId,
+      jobId: approval.jobId,
+      status,
       chosenOptionId: optionId,
     });
 
