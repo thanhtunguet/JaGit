@@ -1,2 +1,2 @@
-// @jigit/shared — barrel (populated in Phase 2)
-export {};
+export { prisma } from "./prisma.js";
+export * from "@prisma/client";
