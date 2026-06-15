@@ -72,10 +72,16 @@ this first to know where to resume.
 <!-- BEGIN: Current plan progress (agents update this each session) -->
 ### Current plan progress
 
-- **Active plan:** `docs/plans/` (phases 0–8)
-- **Last completed:** Phase 8 — Docker + E2E smoke test. Dockerfiles (api, worker), docker-compose full stack (migrate/api/worker), JIGIT_FAKE_ADAPTERS mode, E2E smoke test (3 tests pass in ~9 s). Fixed SpaController Fastify wildcard conflict. 49 unit tests + 3 E2E tests passing.
+- **Active plan:** `docs/superpowers/plans/2026-06-15-config-ui-and-approvals.md` (Tasks 1–11)
+- **Last completed:** Tasks 1–11 — Config UI + Approvals page. All 11 tasks complete:
+  - Shared: credential schemas + mergeSecrets, dashboardApiToken config, approvalsChannel
+  - API: AuthGuard, credentials/repo-mappings/agent-templates CRUD, ConfigModule (replaces config-view), listPending approvals + global SSE + resolved event publish
+  - Worker: publishes approval_requested to global approvals channel
+  - Dashboard: API client (CRUD, auth header, SSE hook), Approvals page (live inline approve/reject), editable Config page with dialogs, nav badge
+  - Build: fixed Prisma CredentialKind collision in shared/index.ts; AgentTemplateBody mapped to Prisma schema
+  - All packages build cleanly; 112 unit tests passing (3 pre-existing webhook failures unrelated to this work)
 - **In progress:** _n/a_
-- **Next up:** All planned phases complete.
+- **Next up:** All planned phases and the Config UI/Approvals feature complete.
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch

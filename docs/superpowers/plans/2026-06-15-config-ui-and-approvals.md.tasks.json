@@ -4,8 +4,7 @@
     {
       "id": 1,
       "subject": "Task 1: Shared credential schemas + mergeSecrets",
-      "status": "pending",
-      "description": "**Goal:** Single source of truth for credential validation + secret-merge helper (decrypt→merge→encrypt) reused by API and seed.\n\n```json:metadata\n{\"files\":[\"packages/shared/src/credentials.ts\",\"packages/shared/src/credentials.test.ts\",\"packages/shared/src/index.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/shared test credentials\",\"acceptanceCriteria\":[\"per-kind Zod validation\",\"mergeSecrets keep/overwrite/new\",\"never returns plaintext\"]}\n```"
+      "status": "completed",\n\n```json:metadata\n{\"files\":[\"packages/shared/src/credentials.ts\",\"packages/shared/src/credentials.test.ts\",\"packages/shared/src/index.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/shared test credentials\",\"acceptanceCriteria\":[\"per-kind Zod validation\",\"mergeSecrets keep/overwrite/new\",\"never returns plaintext\"]}\n```"
     },
     {
       "id": 2,

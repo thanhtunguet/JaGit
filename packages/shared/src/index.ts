@@ -1,6 +1,16 @@
 export * from "./config.js";
 export * from "./crypto.js";
-export * from "./credentials.js";
+export {
+  CredentialKindSchema,
+  JiraCredentialSchema,
+  GitLabCredentialSchema,
+  AnthropicCredentialSchema,
+  TelegramCredentialSchema,
+  credentialSecretKeys,
+  validateCredential,
+  mergeSecrets,
+} from "./credentials.js";
+export type { CredentialKind } from "./credentials.js";
 export * from "./prisma.js";
 export * from "./branch.js";
 export * from "./retry.js";

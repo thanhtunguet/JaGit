@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-15 (config-ui-and-approvals)
+
+**Config UI + Approvals Page (Tasks 5-11)**: Full CRUD for credentials, repo-mappings, and agent-templates with bearer-token `AuthGuard`; global `approvals` SSE channel; worker publishes `approval_requested` to global channel; Approvals page with live inline approve/reject; editable Config page with dialogs; API token bar in sessionStorage. All packages build cleanly (0 TS errors).
+
 ## 2026-06-15 (task-01 credential schemas)
 
 **Task 1 — Shared Credential Schemas + mergeSecrets**: Added per-kind Zod schemas (`jira`, `gitlab`, `anthropic`, `telegram`) and `mergeSecrets` helper (decrypt → merge → re-encrypt) in `@jigit/shared`. Exported from shared index. 18 new tests passing.

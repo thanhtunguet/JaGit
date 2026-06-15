@@ -3,8 +3,15 @@ import { PrismaService } from "../common/prisma.module.js";
 
 export interface AgentTemplateBody {
   name: string;
-  prompt: string;
+  /** Alias for systemPrompt — dashboard uses "prompt" for simplicity */
+  prompt?: string;
+  systemPrompt?: string;
+  model?: string;
+  maxConcurrent?: number;
+  /** @deprecated use maxConcurrent — kept for dashboard compat */
   maxTurns?: number;
+  allowedTools?: string[];
+  skills?: string[];
 }
 
 @Injectable()
@@ -16,13 +23,32 @@ export class AgentTemplatesService {
   }
 
   create(body: AgentTemplateBody) {
-    return this.prisma.client.agentTemplate.create({ data: body });
+    return this.prisma.client.agentTemplate.create({
+      data: {
+        name: body.name,
+        model: body.model ?? "claude-opus-4-5",
+        systemPrompt: body.systemPrompt ?? body.prompt ?? "",
+        maxConcurrent: body.maxConcurrent ?? 1,
+        allowedTools: body.allowedTools ?? [],
+        skills: body.skills ?? [],
+      },
+    });
   }
 
   async update(id: string, body: AgentTemplateBody) {
     const existing = await this.prisma.client.agentTemplate.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Agent template ${id} not found`);
-    return this.prisma.client.agentTemplate.update({ where: { id }, data: body });
+    return this.prisma.client.agentTemplate.update({
+      where: { id },
+      data: {
+        name: body.name,
+        model: body.model ?? "claude-opus-4-5",
+        systemPrompt: body.systemPrompt ?? body.prompt ?? "",
+        maxConcurrent: body.maxConcurrent ?? 1,
+        allowedTools: body.allowedTools ?? [],
+        skills: body.skills ?? [],
+      },
+    });
   }
 
   async remove(id: string) {

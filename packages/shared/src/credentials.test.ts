@@ -192,7 +192,7 @@ describe("validateCredential", () => {
       meta: {},
       secrets: { apiKey: "sk-ant-xxx" },
     });
-    expect(result.secrets.apiKey).toBe("sk-ant-xxx");
+    expect((result.secrets as { apiKey: string }).apiKey).toBe("sk-ant-xxx");
   });
 
   it("validates telegram credentials", () => {
