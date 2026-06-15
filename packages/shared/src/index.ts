@@ -1,5 +1,6 @@
 export * from "./config.js";
 export * from "./crypto.js";
+export * from "./credentials.js";
 export * from "./prisma.js";
 export * from "./branch.js";
 export * from "./retry.js";
