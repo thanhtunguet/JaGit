@@ -8,11 +8,15 @@
     "test": "pnpm -r test",
     "dev:api": "pnpm --filter @jigit/api dev",
     "dev:worker": "pnpm --filter @jigit/worker dev",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate deploy",
+    "db:migrate:dev": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate dev",
+    "db:studio": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma studio"
   },
   "devDependencies": {
-    "typescript": "^5.5.0",
+    "dotenv-cli": "^11.0.0",
     "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }
 }
