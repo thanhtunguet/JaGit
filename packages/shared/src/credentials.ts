@@ -5,10 +5,12 @@ export const CredentialKindSchema = z.enum(["jira", "gitlab", "telegram", "anthr
 export type CredentialKind = z.infer<typeof CredentialKindSchema>;
 
 export const JiraCredentialSchema = z.object({
-  meta: z.object({
-    baseUrl: z.string().min(1),
-    botAccountId: z.string().min(1),
-  }),
+  meta: z
+    .object({
+      baseUrl: z.string().url(),
+      botAccountId: z.string().min(1),
+    })
+    .catchall(z.string()),
   secrets: z.object({
     email: z.string().min(1),
     token: z.string().min(1),
@@ -16,29 +18,69 @@ export const JiraCredentialSchema = z.object({
 });
 
 export const GitLabCredentialSchema = z.object({
-  meta: z.object({
-    baseUrl: z.string().min(1),
-  }),
+  meta: z
+    .object({
+      baseUrl: z.string().url(),
+    })
+    .catchall(z.string()),
   secrets: z.object({
     token: z.string().min(1),
   }),
 });
 
 export const AnthropicCredentialSchema = z.object({
-  meta: z.object({}).optional().default({}),
+  meta: z
+    .object({
+      baseUrl: z.string().url().optional(),
+    })
+    .catchall(z.string())
+    .optional()
+    .default({}),
   secrets: z.object({
     apiKey: z.string().min(1),
   }),
 });
 
 export const TelegramCredentialSchema = z.object({
-  meta: z.object({
-    chatId: z.string().min(1),
-  }),
+  meta: z
+    .object({
+      chatId: z.string().min(1),
+    })
+    .catchall(z.string()),
   secrets: z.object({
     botToken: z.string().min(1),
   }),
 });
+
+/**
+ * Returns the required secret keys for a given credential kind.
+ */
+export function credentialSecretKeys(kind: CredentialKind): string[] {
+  switch (kind) {
+    case "jira":
+      return ["email", "token"];
+    case "gitlab":
+      return ["token"];
+    case "anthropic":
+      return ["apiKey"];
+    case "telegram":
+      return ["botToken"];
+  }
+}
+
+const KindToSchema = {
+  jira: JiraCredentialSchema,
+  gitlab: GitLabCredentialSchema,
+  anthropic: AnthropicCredentialSchema,
+  telegram: TelegramCredentialSchema,
+};
+
+/**
+ * Validates a full credential input against the appropriate kind schema.
+ */
+export function validateCredential(kind: CredentialKind, input: unknown) {
+  return KindToSchema[kind].parse(input);
+}
 
 /**
  * Merges provided secrets into existing encrypted secrets.
@@ -62,7 +104,7 @@ export function mergeSecrets(
 
   for (const [key, value] of Object.entries(provided)) {
     if (value !== undefined && value.trim() !== "") {
-      merged[key] = value;
+      merged[key] = value.trim();
     }
   }
 

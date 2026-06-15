@@ -5,6 +5,8 @@ import {
   GitLabCredentialSchema,
   AnthropicCredentialSchema,
   TelegramCredentialSchema,
+  credentialSecretKeys,
+  validateCredential,
   mergeSecrets,
 } from "./credentials.js";
 import { decrypt } from "./crypto.js";
@@ -121,6 +123,96 @@ describe("TelegramCredentialSchema", () => {
   });
 });
 
+describe("URL validation", () => {
+  it("rejects malformed baseUrl in jira", () => {
+    expect(() =>
+      JiraCredentialSchema.parse({
+        meta: { baseUrl: "not-a-url", botAccountId: "123" },
+        secrets: { email: "bot@example.com", token: "tok" },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects malformed baseUrl in gitlab", () => {
+    expect(() =>
+      GitLabCredentialSchema.parse({
+        meta: { baseUrl: "not-a-url" },
+        secrets: { token: "glpat-xxx" },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects malformed baseUrl in anthropic meta", () => {
+    expect(() =>
+      AnthropicCredentialSchema.parse({
+        meta: { baseUrl: "not-a-url" },
+        secrets: { apiKey: "sk-ant-xxx" },
+      }),
+    ).toThrow();
+  });
+});
+
+describe("credentialSecretKeys", () => {
+  it("returns correct keys for jira", () => {
+    expect(credentialSecretKeys("jira")).toEqual(["email", "token"]);
+  });
+
+  it("returns correct keys for gitlab", () => {
+    expect(credentialSecretKeys("gitlab")).toEqual(["token"]);
+  });
+
+  it("returns correct keys for anthropic", () => {
+    expect(credentialSecretKeys("anthropic")).toEqual(["apiKey"]);
+  });
+
+  it("returns correct keys for telegram", () => {
+    expect(credentialSecretKeys("telegram")).toEqual(["botToken"]);
+  });
+});
+
+describe("validateCredential", () => {
+  it("validates jira credentials", () => {
+    const result = validateCredential("jira", {
+      meta: { baseUrl: "https://jira.example.com", botAccountId: "123" },
+      secrets: { email: "bot@example.com", token: "tok" },
+    });
+    expect(result.meta.baseUrl).toBe("https://jira.example.com");
+  });
+
+  it("validates gitlab credentials", () => {
+    const result = validateCredential("gitlab", {
+      meta: { baseUrl: "https://gitlab.com" },
+      secrets: { token: "glpat-xxx" },
+    });
+    expect(result.meta.baseUrl).toBe("https://gitlab.com");
+  });
+
+  it("validates anthropic credentials", () => {
+    const result = validateCredential("anthropic", {
+      meta: {},
+      secrets: { apiKey: "sk-ant-xxx" },
+    });
+    expect(result.secrets.apiKey).toBe("sk-ant-xxx");
+  });
+
+  it("validates telegram credentials", () => {
+    const result = validateCredential("telegram", {
+      meta: { chatId: "123456" },
+      secrets: { botToken: "123:abc" },
+    });
+    expect(result.meta.chatId).toBe("123456");
+  });
+
+  it("rejects invalid credentials", () => {
+    expect(() =>
+      validateCredential("jira", {
+        meta: { baseUrl: "not-a-url", botAccountId: "123" },
+        secrets: { email: "bot@example.com", token: "tok" },
+      }),
+    ).toThrow();
+  });
+});
+
 describe("mergeSecrets", () => {
   it("encrypts provided secrets when no existing blob", () => {
     const provided = { apiKey: "sk-ant-new" };
@@ -150,6 +242,13 @@ describe("mergeSecrets", () => {
     const result = mergeSecrets(existing, { token: "", email: undefined }, KEY);
     const decrypted = JSON.parse(decrypt(result, KEY));
     expect(decrypted).toEqual({ token: "old-token", email: "a@b.com" });
+  });
+
+  it("trims whitespace-only values before storing", () => {
+    const existing = mergeSecrets(null, { token: "old-token" }, KEY);
+    const result = mergeSecrets(existing, { token: "   new-token   " }, KEY);
+    const decrypted = JSON.parse(decrypt(result, KEY));
+    expect(decrypted).toEqual({ token: "new-token" });
   });
 
   it("returns a new ciphertext (re-encrypts)", () => {
