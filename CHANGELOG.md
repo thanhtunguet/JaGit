@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (job-detail-events-raw-height)
+
+**Job detail Events/Raw full height**: Events tab scroll area and Raw tab now fill available viewport height. Raw JSON is shown in a readonly Monaco editor instead of a `<pre>` block.
+
 ## 2026-06-16 (fix-job-status-running)
 
 **Fix job status never transitioning to "running"**: Worker now calls `setStatus(jobId, "running")` at job pickup before `graph.run()`. Added try/catch to set status to `"failed"` on unhandled graph errors. The "No onPostToolUseHook found" ACP stderr warning is an upstream library bug (harmless, no fix needed from our side).
