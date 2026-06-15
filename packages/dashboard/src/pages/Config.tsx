@@ -19,24 +19,6 @@ import {
   getStoredToken, setStoredToken,
 } from "@/api/client";
 
-// ─── Token input ──────────────────────────────────────────────────────────────
-
-function TokenBar() {
-  const [token, setToken] = useState(getStoredToken);
-  return (
-    <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/40">
-      <span className="text-xs text-muted-foreground shrink-0">API token:</span>
-      <input
-        type="password"
-        className="flex-1 bg-background text-foreground text-xs font-mono outline-none placeholder:text-muted-foreground"
-        placeholder="Paste DASHBOARD_API_TOKEN to enable mutations"
-        value={token}
-        onChange={(e) => { setToken(e.target.value); setStoredToken(e.target.value); }}
-      />
-    </div>
-  );
-}
-
 // ─── Simple textarea-based JSON editor ───────────────────────────────────────
 
 function JsonField({
@@ -76,6 +58,21 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
       />
     </div>
+  );
+}
+
+// ─── Token input ──────────────────────────────────────────────────────────────
+
+function TokenBar() {
+  const [token, setToken] = useState(getStoredToken);
+  return (
+    <Field
+      label="API Token"
+      type="password"
+      value={token}
+      placeholder="Paste DASHBOARD_API_TOKEN to enable mutations"
+      onChange={(v) => { setToken(v); setStoredToken(v); }}
+    />
   );
 }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-06-16 (config-api-token-field-style)
+
+**Config API token field styling**: Token input now uses the same `Field` component styling as other form inputs (border, padding, focus ring).
+
+## 2026-06-16 (fix-agent-template-edit-prompt)
+
+**Fix Agent Template edit modal empty prompt**: API now maps `systemPrompt` → `prompt` and `maxConcurrent` → `maxTurns` in list/create/update responses so the dashboard edit dialog shows saved values.
+
 ## 2026-06-16 (job-detail-events-raw-height)
 
 **Job detail Events/Raw full height**: Events tab scroll area and Raw tab now fill available viewport height. Raw JSON is shown in a readonly Monaco editor instead of a `<pre>` block.

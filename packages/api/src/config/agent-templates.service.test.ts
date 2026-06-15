@@ -23,7 +23,10 @@ describe("AgentTemplatesService", () => {
 
   describe("create", () => {
     it("defaults model to claude-sonnet-4-6 when not provided", async () => {
-      mockPrisma.client.agentTemplate.create.mockResolvedValue({ id: "tpl-1" });
+      mockPrisma.client.agentTemplate.create.mockResolvedValue({
+        id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
+        systemPrompt: "You are a coding agent.", maxConcurrent: 1,
+      });
       await svc.create({ name: "default", prompt: "You are a coding agent." });
       expect(mockPrisma.client.agentTemplate.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ model: "claude-sonnet-4-6" }),
@@ -31,11 +34,44 @@ describe("AgentTemplatesService", () => {
     });
 
     it("uses provided model when specified", async () => {
-      mockPrisma.client.agentTemplate.create.mockResolvedValue({ id: "tpl-1" });
+      mockPrisma.client.agentTemplate.create.mockResolvedValue({
+        id: "tpl-1", name: "opus", model: "claude-opus-4-5",
+        systemPrompt: "Prompt.", maxConcurrent: 1,
+      });
       await svc.create({ name: "opus", model: "claude-opus-4-5", prompt: "Prompt." });
       expect(mockPrisma.client.agentTemplate.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ model: "claude-opus-4-5" }),
       });
+    });
+
+    it("maps systemPrompt to prompt in response", async () => {
+      mockPrisma.client.agentTemplate.create.mockResolvedValue({
+        id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
+        systemPrompt: "You are a coding agent.", maxConcurrent: 3,
+      });
+      const result = await svc.create({ name: "default", prompt: "You are a coding agent.", maxTurns: 3 });
+      expect(result).toEqual({
+        id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
+        prompt: "You are a coding agent.", maxTurns: 3,
+      });
+    });
+  });
+
+  describe("list", () => {
+    it("maps systemPrompt to prompt in response", async () => {
+      mockPrisma.client.agentTemplate.findMany.mockResolvedValue([
+        {
+          id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
+          systemPrompt: "Stored prompt.", maxConcurrent: 2,
+        },
+      ]);
+      const result = await svc.list();
+      expect(result).toEqual([
+        {
+          id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
+          prompt: "Stored prompt.", maxTurns: 2,
+        },
+      ]);
     });
   });
 
