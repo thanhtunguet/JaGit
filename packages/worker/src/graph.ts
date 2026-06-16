@@ -32,6 +32,8 @@ const JobStateAnnotation = Annotation.Root({
   /** Worktree path: repoDir/.worktrees/<branch> — this is where the agent works */
   workdir: Annotation<string>(),
   mrUrl: Annotation<string>(),
+  /** Agent's last uninterrupted text output — relayed as the Telegram report body. */
+  agentSummary: Annotation<string>(),
   status: Annotation<string>(),
   hasChanges: Annotation<boolean>(),
 });
@@ -150,10 +152,18 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
       const prompt = parts.join("\n\n");
 
+      const summaryBuffer: string[] = [];
+
       const result = await acp.run(
         prompt,
         (req) => requestToolApproval(state, req),
         (output) => {
+          if (output.kind === "text" && output.text) {
+            summaryBuffer.push(output.text);
+          } else if (output.kind === "tool_use" || output.kind === "tool_result") {
+            summaryBuffer.length = 0;
+          }
+
           let message = "";
           if (output.kind === "text" && output.text) message = output.text;
           else if (output.kind === "tool_use" && output.toolCall) message = `→ ${output.toolCall.name}`;
@@ -180,7 +190,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         payload: result,
       });
       await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
-      return {};
+      return { agentSummary: summaryBuffer.join("").trim() };
     });
   }
 
@@ -223,8 +233,8 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
   async function report(state: JobState): Promise<Partial<JobState>> {
     return runStep(sink, state.jobId, "report", async () => {
       const message = state.mrUrl
-        ? `✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`
-        : `✅ ${state.jiraIssueKey} done\nNo changes — no MR opened`;
+        ? `✅ ${state.jiraIssueKey} done\n${state.agentSummary}\n\nMR: ${state.mrUrl}`
+        : `✅ ${state.jiraIssueKey} done\n${state.agentSummary || "No changes were made."}`;
       await sendTelegram(message);
       await sink.setStatus(state.jobId, "done");
       return { status: "done" };
@@ -311,6 +321,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         repoDir: "",
         workdir: "",
         mrUrl: "",
+        agentSummary: "",
         status: "running",
       });
       return result as JobState;
