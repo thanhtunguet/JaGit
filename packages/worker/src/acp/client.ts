@@ -55,7 +55,11 @@ export interface AcpSessionOpts {
   onUpdate: (update: AcpUpdate) => void;
   onOutput?: (output: AcpOutput) => void;
   onPermission: (req: PermissionRequest) => Promise<string>; // returns chosen optionId
+  /** Reject a pending ACP request if no response arrives within this many ms. Guards against a hung subprocess (e.g. the upstream "No onPostToolUseHook" bug). */
+  requestTimeoutMs?: number;
 }
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 600_000;
 
 export interface UsageTotals {
   tokensUsed: number;
@@ -113,7 +117,10 @@ export class AcpSession {
   private proc!: ChildProcess;
   private sessionId!: string;
   private idCounter = 0;
-  private pending = new Map<number | string, { resolve: (v: any) => void; reject: (e: Error) => void }>();
+  private pending = new Map<
+    number | string,
+    { resolve: (v: any) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }
+  >();
   private write!: (msg: JsonRpcMessage) => void;
 
   private totals: UsageTotals = { tokensUsed: 0, costUsd: 0 };
@@ -125,7 +132,12 @@ export class AcpSession {
   private request<T>(method: string, params?: unknown): Promise<T> {
     const id = this.nextId();
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timeoutMs = this.opts.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`ACP request timed out after ${timeoutMs}ms: ${method}`));
+      }, timeoutMs);
+      this.pending.set(id, { resolve, reject, timer });
       this.write({ id, method, params });
     });
   }
@@ -190,6 +202,7 @@ export class AcpSession {
       const pending = this.pending.get(msg.id);
       if (pending) {
         this.pending.delete(msg.id);
+        clearTimeout(pending.timer);
         if (msg.error) pending.reject(new Error(msg.error.message));
         else pending.resolve(msg.result);
       }
@@ -211,6 +224,8 @@ export class AcpSession {
   }
 
   async stop(): Promise<void> {
+    for (const { timer } of this.pending.values()) clearTimeout(timer);
+    this.pending.clear();
     try { this.proc.kill("SIGTERM"); } catch { /* ignore */ }
   }
 }

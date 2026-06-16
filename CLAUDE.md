@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** JiGit MCP Review + MCP Config Dashboard (completed)
-- **Last completed:** `requireReviewBeforeCommit` default changed `true` → `false` (schema/API/worker/dashboard) — fixes jobs failing with "Human review required before commit" when the agent never calls `jigit_request_review`. Tool is still always injected into the ACP session; review is now opt-in per AgentTemplate (set flag `true`, or instruct the agent via system prompt/skill) instead of enforced by default.
+- **Last completed:** Fixed jobs hanging forever on the ACP "No onPostToolUseHook" subprocess bug — `AcpSession.request()` now has a per-request timeout (`ACP_REQUEST_TIMEOUT_MS`, default 10 min) instead of waiting on `pending` forever. Also wired `shouldPause` (declared since the initial scaffold commit, never called) into the existing abort-poll loop in `main.ts` — Pause now actually kills the running ACP session and sets job status to `"paused"` instead of being a no-op.
 - **In progress:** _n/a_
-- **Next up:** Run `prisma migrate deploy` on deploy (new migration `20260616120000_review_default_false`); investigate pre-existing `webhooks.controller.test.ts` 401 failures (unrelated, found during this session); E2E with real agent session
+- **Next up:** Run `prisma migrate deploy` on deploy (new migration `20260616120000_review_default_false`); investigate pre-existing `webhooks.controller.test.ts` 401 failures (unrelated, found in an earlier session); implement real resume-from-checkpoint for paused jobs (current Pause only halts the in-flight agent run, it doesn't resume LangGraph execution from that point); E2E with real agent session
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch

@@ -178,6 +178,7 @@ const worker = createWorker(
           cwd,
           mcpServers,
           env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
+          requestTimeoutMs: cfg.acpRequestTimeoutMs,
           onUpdate: () => {},
           onOutput,
           onPermission,
@@ -188,7 +189,11 @@ const worker = createWorker(
         const runPromise = session.runPrompt(prompt);
         const abortPromise = new Promise<never>((_, reject) => {
           const timer = setInterval(() => {
-            if (redisSignals.shouldStop(jobId) || redisSignals.shouldDelete(jobId)) {
+            if (redisSignals.shouldPause(jobId)) {
+              clearInterval(timer);
+              session.stop().catch(() => {});
+              reject(new Error("Job paused"));
+            } else if (redisSignals.shouldStop(jobId) || redisSignals.shouldDelete(jobId)) {
               clearInterval(timer);
               session.stop().catch(() => {});
               reject(new Error("Job aborted"));
@@ -241,6 +246,10 @@ const worker = createWorker(
       const message = err instanceof Error ? err.message : String(err);
       if (message === "Job aborted") {
         await deps.sink.setStatus(jobId, "stopped");
+        return;
+      }
+      if (message === "Job paused" || redisSignals.shouldPause(jobId)) {
+        await deps.sink.setStatus(jobId, "paused");
         return;
       }
       await deps.sink.setStatus(jobId, "failed", message);

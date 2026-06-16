@@ -126,3 +126,48 @@ describe("AcpSession", () => {
     expect(updates[0].kind).toBe("agent_message");
   });
 }, { timeout: 10000 });
+
+// Fake agent: completes handshake, then never responds to session/prompt
+const HANGING_AGENT_SCRIPT = `
+let buf = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", d => {
+  buf += d;
+  let i;
+  while ((i = buf.indexOf("\\n")) >= 0) {
+    const line = buf.slice(0, i); buf = buf.slice(i + 1);
+    let msg;
+    try { msg = JSON.parse(line); } catch { continue; }
+    if (msg.method === "initialize") {
+      process.stdout.write(JSON.stringify({ id: msg.id, result: { protocolVersion: 1 } }) + "\\n");
+    }
+    if (msg.method === "session/new") {
+      process.stdout.write(JSON.stringify({ id: msg.id, result: { sessionId: "s1" } }) + "\\n");
+    }
+    if (msg.method === "session/set_mode") {
+      process.stdout.write(JSON.stringify({ id: msg.id, result: {} }) + "\\n");
+    }
+    // session/prompt intentionally never answered — simulates the
+    // "No onPostToolUseHook" ACP bug where the subprocess hangs.
+  }
+});
+`;
+
+describe("AcpSession request timeout", () => {
+  it("rejects a hung request instead of waiting forever", async () => {
+    const session = new AcpSession({
+      command: "node",
+      args: ["-e", HANGING_AGENT_SCRIPT],
+      cwd: process.cwd(),
+      requestTimeoutMs: 200,
+      onUpdate: () => {},
+      onPermission: async () => "allow",
+    });
+
+    await session.start();
+    await expect(session.runPrompt("Implement the feature")).rejects.toThrow(
+      /timed out/i,
+    );
+    await session.stop();
+  });
+}, { timeout: 10000 });

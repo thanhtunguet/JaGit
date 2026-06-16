@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (acp-timeout-and-pause)
+
+**Fix job treo vô hạn + Pause vô dụng**: `AcpSession.request()` nay có timeout (`ACP_REQUEST_TIMEOUT_MS`, default 10 phút) — chặn job kẹt "running" mãi khi subprocess ACP gặp bug "No onPostToolUseHook" và không trả response. `shouldPause` (tồn tại từ đầu project nhưng chưa từng được gọi) giờ được wire vào abort-poll loop: Pause thực sự kill agent session đang chạy và set status `"paused"`.
+
 ## 2026-06-16 (review-default-false)
 
 **Tắt enforcement cứng review**: `requireReviewBeforeCommit` đổi default `true` → `false` (schema, API, worker, dashboard) — job không còn tự fail nếu agent không gọi `jigit_request_review`; tool vẫn luôn sẵn có, người dùng tự hướng dẫn agent qua prompt/skill khi cần review.
