@@ -190,7 +190,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         payload: result,
       });
       await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
-      return { agentSummary: summaryBuffer.join("").trim() };
+      return { agentSummary: summaryBuffer.join("").trim().slice(0, 1500) };
     });
   }
 
