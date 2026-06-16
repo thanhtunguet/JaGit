@@ -12,6 +12,8 @@ export interface AgentTemplateBody {
   maxTurns?: number;
   allowedTools?: string[];
   skills?: string[];
+  mcpServerIds?: string[];
+  requireReviewBeforeCommit?: boolean;
 }
 
 /** Dashboard-facing shape (prompt / maxTurns aliases). */
@@ -21,6 +23,8 @@ export interface AgentTemplateResponse {
   model: string;
   prompt: string;
   maxTurns: number;
+  mcpServerIds: string[];
+  requireReviewBeforeCommit: boolean;
 }
 
 function toResponse(row: {
@@ -29,6 +33,8 @@ function toResponse(row: {
   model: string;
   systemPrompt: string;
   maxConcurrent: number;
+  mcpServerIds: unknown;
+  requireReviewBeforeCommit: boolean;
 }): AgentTemplateResponse {
   return {
     id: row.id,
@@ -36,6 +42,8 @@ function toResponse(row: {
     model: row.model,
     prompt: row.systemPrompt,
     maxTurns: row.maxConcurrent,
+    mcpServerIds: Array.isArray(row.mcpServerIds) ? (row.mcpServerIds as string[]) : [],
+    requireReviewBeforeCommit: row.requireReviewBeforeCommit ?? true,
   };
 }
 
@@ -57,6 +65,8 @@ export class AgentTemplatesService {
         maxConcurrent: body.maxConcurrent ?? body.maxTurns ?? 1,
         allowedTools: body.allowedTools ?? [],
         skills: body.skills ?? [],
+        mcpServerIds: body.mcpServerIds ?? [],
+        requireReviewBeforeCommit: body.requireReviewBeforeCommit ?? true,
       },
     });
     return toResponse(row);
@@ -72,8 +82,11 @@ export class AgentTemplatesService {
         model: body.model ?? "claude-sonnet-4-6",
         systemPrompt: body.systemPrompt ?? body.prompt ?? "",
         maxConcurrent: body.maxConcurrent ?? body.maxTurns ?? existing.maxConcurrent,
-        allowedTools: body.allowedTools ?? [],
-        skills: body.skills ?? [],
+        allowedTools: body.allowedTools ?? (existing.allowedTools as string[]) ?? [],
+        skills: body.skills ?? (existing.skills as string[]) ?? [],
+        mcpServerIds: body.mcpServerIds ?? (existing.mcpServerIds as string[]) ?? [],
+        requireReviewBeforeCommit:
+          body.requireReviewBeforeCommit ?? existing.requireReviewBeforeCommit,
       },
     });
     return toResponse(row);

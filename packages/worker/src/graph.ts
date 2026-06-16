@@ -1,5 +1,5 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { deriveBranchName, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
+import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
@@ -13,6 +13,7 @@ export interface GraphDeps {
   git: IGitAdapter;
   acp: { run(prompt: string, onPermission: (req: PermissionRequest) => Promise<string>, onOutput: (output: { kind: string; text?: string; toolCall?: { name: string }; toolResult?: { output?: string; error?: string } }) => void, cwd: string): Promise<RunResult> };
   repoMapping: { gitlabProjectId: string; defaultBaseBranch: string; branchPrefixRules: Record<string, string> };
+  agentTemplate: { systemPrompt: string; requireReviewBeforeCommit: boolean };
   sink: IJobSink;
   signals: ISignals;
   prisma: PrismaClient;
@@ -37,7 +38,59 @@ const JobStateAnnotation = Annotation.Root({
 export type JobState = typeof JobStateAnnotation.State;
 
 export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraIssueKey: string }): Promise<JobState> } {
-  const { jira, gitlab, git, acp, repoMapping, sink, signals, prisma, sendTelegram } = deps;
+  const { jira, gitlab, git, acp, repoMapping, agentTemplate, sink, signals, prisma, sendTelegram } = deps;
+
+  async function requestToolApproval(
+    state: JobState,
+    req: PermissionRequest,
+  ): Promise<string> {
+    const approval = await prisma.approval.create({
+      data: {
+        jobId: state.jobId,
+        kind: "tool_permission",
+        prompt: `Allow tool: ${req.toolCall.name}`,
+        options: req.options as any,
+        status: "pending",
+      },
+    });
+
+    await sink.addEvent(state.jobId, {
+      type: "approval_requested",
+      message: `Approval required: ${req.toolCall.name}`,
+      payload: { approvalId: approval.id, options: req.options },
+    });
+
+    publishEvent(loadConfig().redisUrl, approvalsChannel, {
+      type: "approval_requested",
+      approvalId: approval.id,
+      jobId: state.jobId,
+      prompt: `Allow tool: ${req.toolCall.name}`,
+      options: req.options,
+    }).catch(console.error);
+
+    sendTelegram(
+      `Approval needed for job ${state.jobId}: allow ${req.toolCall.name}?`,
+    ).catch(console.error);
+
+    return awaitApproval({
+      approvalId: approval.id,
+      jobId: state.jobId,
+      denyOptionId:
+        req.options.find((o) => o.optionId.includes("deny"))?.optionId ?? "deny",
+      resolveApproval: async (id, optionId, via) => {
+        await prisma.approval.updateMany({
+          where: { id, status: "pending" },
+          data: {
+            status: optionId.startsWith("deny") ? "rejected" : "approved",
+            chosenOptionId: optionId,
+            decidedVia: via,
+            decidedBy: "system",
+            decidedAt: new Date(),
+          },
+        });
+      },
+    });
+  }
 
   // ── nodes ──────────────────────────────────────────────────────────────────
 
@@ -83,64 +136,21 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
   async function runAgent(state: JobState): Promise<Partial<JobState>> {
     return runStep(sink, state.jobId, "runAgent", async () => {
-      const prompt = [
+      const parts = [
+        agentTemplate.systemPrompt,
+        agentTemplate.requireReviewBeforeCommit ? buildReviewInstruction() : "",
         `Issue: ${state.jiraIssueKey} — ${state.issueSummary}`,
         `Type: ${state.issueType}`,
         `Description: ${state.issueDescription}`,
         `Working directory: ${state.workdir}`,
         `Target branch: ${state.branchName}`,
-      ].join("\n");
+      ].filter(Boolean);
+
+      const prompt = parts.join("\n\n");
 
       const result = await acp.run(
         prompt,
-        async (req) => {
-          const approval = await prisma.approval.create({
-            data: {
-              jobId: state.jobId,
-              kind: "tool_permission",
-              prompt: `Allow tool: ${req.toolCall.name}`,
-              options: req.options as any,
-              status: "pending",
-            },
-          });
-
-          await sink.addEvent(state.jobId, {
-            type: "approval_requested",
-            message: `Approval required: ${req.toolCall.name}`,
-            payload: { approvalId: approval.id, options: req.options },
-          });
-
-          publishEvent(loadConfig().redisUrl, approvalsChannel, {
-            type: "approval_requested",
-            approvalId: approval.id,
-            jobId: state.jobId,
-            prompt: `Allow tool: ${req.toolCall.name}`,
-            options: req.options,
-          }).catch(console.error);
-
-          sendTelegram(
-            `Approval needed for job ${state.jobId}: allow ${req.toolCall.name}?`
-          ).catch(console.error);
-
-          return awaitApproval({
-            approvalId: approval.id,
-            jobId: state.jobId,
-            denyOptionId:
-              req.options.find((o) => o.optionId.includes("deny"))?.optionId ?? "deny",
-            resolveApproval: async (id, optionId, via) => {
-              await prisma.approval.updateMany({
-                where: { id, status: "pending" },
-                data: {
-                  status: optionId.startsWith("deny") ? "rejected" : "approved",
-                  chosenOptionId: optionId,
-                  decidedVia: via,
-                  decidedBy: "system",
-                  decidedAt: new Date(),
-                },
-              });
-            },
-          });
-        },
+        (req) => requestToolApproval(state, req),
         (output) => {
           let message = "";
           if (output.kind === "text" && output.text) message = output.text;
@@ -215,6 +225,19 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
     });
   }
 
+  async function reportFailedReview(state: JobState): Promise<Partial<JobState>> {
+    const message =
+      "Human review required before commit. Agent must call jigit_request_review and receive approval.";
+    await sink.setStatus(state.jobId, "failed", message);
+    await sink.addEvent(state.jobId, {
+      type: "review_required",
+      message,
+      level: "error",
+    });
+    await sendTelegram(`❌ Job ${state.jiraIssueKey ?? state.jobId} failed: ${message}`);
+    return { status: "failed" };
+  }
+
   async function stop(state: JobState): Promise<Partial<JobState>> {
     await sink.setStatus(state.jobId, "stopped");
     await sink.addEvent(state.jobId, { type: "stopped", message: "Job stopped by signal" });
@@ -227,6 +250,13 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
     return signals.shouldStop(state.jobId) ? "stop" : "continue";
   }
 
+  async function reviewCheck(state: JobState): Promise<"continue" | "blocked"> {
+    if (!agentTemplate.requireReviewBeforeCommit) return "continue";
+    const job = await prisma.job.findUnique({ where: { id: state.jobId } });
+    if (job?.reviewApprovedAt) return "continue";
+    return "blocked";
+  }
+
   // ── graph wiring ──────────────────────────────────────────────────────────
 
   const graph = new StateGraph(JobStateAnnotation)
@@ -234,6 +264,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
     .addNode("cloneRepo", cloneRepo)
     .addNode("createBranch", createBranch)
     .addNode("runAgent", runAgent)
+    .addNode("reportFailedReview", reportFailedReview)
     .addNode("commitAndPush", commitAndPush)
     .addNode("openMergeRequest", openMergeRequest)
     .addNode("jiraWorklog", jiraWorklog)
@@ -243,7 +274,11 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
     .addEdge("resolveContext", "cloneRepo")
     .addEdge("cloneRepo", "createBranch")
     .addConditionalEdges("createBranch", stopCheck, { stop: "stop", continue: "runAgent" })
-    .addEdge("runAgent", "commitAndPush")
+    .addConditionalEdges("runAgent", reviewCheck, {
+      continue: "commitAndPush",
+      blocked: "reportFailedReview",
+    })
+    .addEdge("reportFailedReview", END)
     .addEdge("commitAndPush", "openMergeRequest")
     .addEdge("openMergeRequest", "jiraWorklog")
     .addEdge("jiraWorklog", "report")

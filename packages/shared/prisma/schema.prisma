@@ -41,18 +41,35 @@ enum ApprovalStatus {
 // Controls which model and tools are used for a coding run.
 
 model AgentTemplate {
-  id            String   @id @default(cuid())
-  name          String   @unique
-  model         String   // e.g. "claude-opus-4-5"
-  systemPrompt  String
-  maxConcurrent Int      @default(1)
-  allowedTools  Json     @default("[]")   // string[] of ACP tool names
-  skills        Json     @default("[]")   // string[] of skill names (MVP: name-only)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  name                      String   @unique
+  model                     String   // e.g. "claude-opus-4-5"
+  systemPrompt              String
+  maxConcurrent             Int      @default(1)
+  allowedTools              Json     @default("[]")   // string[] of ACP tool names
+  skills                    Json     @default("[]")   // string[] of skill names (MVP: name-only)
+  mcpServerIds              Json     @default("[]")   // string[] of McpServerConfig ids
+  requireReviewBeforeCommit Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   jobs          Job[]
   repoMappings  RepoMapping[]
+}
+
+// ─── McpServerConfig ───────────────────────────────────────────────────────────
+// Stdio MCP servers injected into ACP session/new via AgentTemplate.mcpServerIds.
+// env values are literals or credential refs (resolved at session spawn).
+
+model McpServerConfig {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  command   String
+  args      Json     @default("[]")   // string[]
+  env       Json     @default("{}")   // Record<string, string | credential ref>
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Credential ──────────────────────────────────────────────────────────────
@@ -109,6 +126,7 @@ model Job {
   costUsd             Float          @default(0)
   error               String?
   workdir             String?        // ephemeral clone path (cleaned on terminal state)
+  reviewApprovedAt    DateTime?      // set when human_review approved before commit
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

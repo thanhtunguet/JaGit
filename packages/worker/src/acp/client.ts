@@ -43,12 +43,15 @@ export interface AcpOutput {
   toolResult?: { output?: string; error?: string };
 }
 
+import type { AcpMcpServer } from "@jigit/shared";
+
 export interface AcpSessionOpts {
   command: string;
   args: string[];
   /** Absolute path to the working directory the agent operates in (required by ACP). */
   cwd: string;
   env?: NodeJS.ProcessEnv;
+  mcpServers?: AcpMcpServer[];
   onUpdate: (update: AcpUpdate) => void;
   onOutput?: (output: AcpOutput) => void;
   onPermission: (req: PermissionRequest) => Promise<string>; // returns chosen optionId
@@ -140,7 +143,7 @@ export class AcpSession {
     await this.request("initialize", { protocolVersion: 1 });
     const { sessionId } = await this.request<{ sessionId: string }>("session/new", {
       cwd: this.opts.cwd,
-      mcpServers: [],
+      mcpServers: this.opts.mcpServers ?? [],
     });
     this.sessionId = sessionId;
 

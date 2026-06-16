@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, Briefcase, Settings, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Briefcase, Settings, CheckSquare, Plug } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/jobs", label: "Jobs", icon: Briefcase },
   { to: "/approvals", label: "Approvals", icon: CheckSquare },
+  { to: "/mcp-servers", label: "MCP Servers", icon: Plug },
   { to: "/config", label: "Config", icon: Settings },
 ];
 

@@ -4,6 +4,7 @@ import {
   listJobs, getJob, controlJob, retryJob, deleteJob, decideApproval, getOverviewStats,
   listCredentials, createCredential, updateCredential, deleteCredential,
   listPendingApprovals, getStoredToken, setStoredToken,
+  listMcpServers, createMcpServer, deleteMcpServer,
 } from "./client.js";
 
 vi.stubGlobal("fetch", vi.fn());
@@ -96,6 +97,37 @@ describe("API client", () => {
     await listPendingApprovals();
     const [url] = vi.mocked(fetch).mock.calls[0];
     expect(url).toBe("/api/approvals");
+  });
+
+  it("listMcpServers calls GET /api/mcp-servers", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
+    await listMcpServers();
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/mcp-servers");
+  });
+
+  it("createMcpServer calls POST /api/mcp-servers", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "m1" }) } as any);
+    await createMcpServer({
+      name: "test",
+      command: "npx",
+      args: [],
+      env: {},
+      enabled: true,
+    });
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      "/api/mcp-servers",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("deleteMcpServer calls DELETE /api/mcp-servers/:id", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ deleted: true }) } as any);
+    await deleteMcpServer("m1");
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      "/api/mcp-servers/m1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 
   it("sends Authorization Bearer header when token is in sessionStorage", async () => {

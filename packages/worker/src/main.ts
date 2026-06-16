@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
-import { createWorker, createQueue, loadConfig, decrypt, prisma } from "@jigit/shared";
+import { createWorker, createQueue, loadConfig, decrypt, prisma, buildAcpMcpServers } from "@jigit/shared";
 import { buildGraph } from "./graph.js";
 import { JiraAdapter } from "./adapters/jira.js";
 import { GitlabAdapter } from "./adapters/gitlab.js";
@@ -141,11 +141,42 @@ const worker = createWorker(
       });
       git = new GitAdapter();
       registerRuntime(jobId, { acpSession: null, workdir: null, git });
+
+      const template = jobRow.agentTemplate;
+      const mcpIds = Array.isArray(template?.mcpServerIds)
+        ? (template.mcpServerIds as string[])
+        : [];
+      const dbMcpConfigs = mcpIds.length
+        ? await prisma.mcpServerConfig.findMany({ where: { id: { in: mcpIds } } })
+        : [];
+      const jigitServerPath = resolve(__dirname, "mcp", "jigit-server.js");
+
       acpRun = async (prompt, onPermission, onOutput, cwd) => {
+        const mcpServers = await buildAcpMcpServers({
+          template: {
+            mcpServerIds: mcpIds,
+            requireReviewBeforeCommit: template?.requireReviewBeforeCommit ?? true,
+          },
+          dbConfigs: dbMcpConfigs,
+          jobContext: {
+            jobId,
+            redisUrl: cfg.redisUrl,
+            publicBaseUrl: cfg.publicBaseUrl,
+            dashboardApiToken: cfg.dashboardApiToken,
+            jigitServerPath,
+            approvalTimeoutMs: cfg.approvalTimeoutMs,
+          },
+          resolveCredential: async (kind, name) => {
+            const cred = await getCredential(kind, name);
+            return cred.secrets;
+          },
+        });
+
         const session = new AcpSession({
           command: "npx",
           args: ["@agentclientprotocol/claude-agent-acp"],
           cwd,
+          mcpServers,
           env: { ANTHROPIC_API_KEY: anthropicCred.secrets["apiKey"] },
           onUpdate: () => {},
           onOutput,
@@ -182,6 +213,10 @@ const worker = createWorker(
       git,
       acp: { run: acpRun },
       repoMapping: mapping as any,
+      agentTemplate: {
+        systemPrompt: jobRow.agentTemplate?.systemPrompt ?? "",
+        requireReviewBeforeCommit: jobRow.agentTemplate?.requireReviewBeforeCommit ?? true,
+      },
       sink: new PrismaJobSink(),
       signals: redisSignals,
       prisma,

@@ -62,11 +62,16 @@ const fakeDeps = () => ({
     defaultBaseBranch: "main",
     branchPrefixRules: { Bug: "bugfix/", Story: "feature/", default: "feature/" },
   },
+  agentTemplate: {
+    systemPrompt: "You are a coding agent.",
+    requireReviewBeforeCommit: false,
+  },
   sink: makeSink(),
   signals: makeSignals(),
   prisma: {
     job: {
       update: vi.fn().mockResolvedValue(undefined),
+      findUnique: vi.fn().mockResolvedValue({ reviewApprovedAt: new Date() }),
     },
     approval: {
       create: vi.fn().mockResolvedValue({ id: "appr-mock-1" }),
@@ -142,6 +147,21 @@ describe("buildGraph", () => {
       "redis://localhost:6379",
       "approvals",
       expect.objectContaining({ type: "approval_requested", approvalId: "appr-mock-1" }),
+    );
+  });
+
+  it("fails when review required but not approved", async () => {
+    const deps = fakeDeps();
+    deps.agentTemplate.requireReviewBeforeCommit = true;
+    deps.prisma.job.findUnique = vi.fn().mockResolvedValue({ reviewApprovedAt: null });
+    const graph = buildGraph(deps as any);
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+    expect(final.status).toBe("failed");
+    expect(deps.git.commitAll).not.toHaveBeenCalled();
+    expect(deps.sink.setStatus).toHaveBeenCalledWith(
+      "j-1",
+      "failed",
+      expect.stringContaining("Human review required"),
     );
   });
 });

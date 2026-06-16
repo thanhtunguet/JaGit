@@ -1,6 +1,18 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
-import { publishControl, publishEvent, approvalsChannel, loadConfig } from "@jigit/shared";
+import {
+  publishControl,
+  publishEvent,
+  approvalsChannel,
+  loadConfig,
+  isApproveOptionId,
+} from "@jigit/shared";
+
+export interface ReviewRequestBody {
+  jobId: string;
+  prompt: string;
+  options: { optionId: string; name: string }[];
+}
 
 @Injectable()
 export class ApprovalsService {
@@ -14,6 +26,31 @@ export class ApprovalsService {
       include: { job: { select: { id: true, jiraIssueKey: true } } },
       orderBy: { createdAt: "asc" },
     });
+  }
+
+  async createReviewRequest(body: ReviewRequestBody) {
+    const job = await this.prisma.client.job.findUnique({ where: { id: body.jobId } });
+    if (!job) throw new NotFoundException(`Job ${body.jobId} not found`);
+
+    const approval = await this.prisma.client.approval.create({
+      data: {
+        jobId: body.jobId,
+        kind: "human_review",
+        prompt: body.prompt,
+        options: body.options as any,
+        status: "pending",
+      },
+    });
+
+    await publishEvent(this.cfg.redisUrl, approvalsChannel, {
+      type: "approval_requested",
+      approvalId: approval.id,
+      jobId: body.jobId,
+      prompt: body.prompt,
+      options: body.options,
+    });
+
+    return { approvalId: approval.id };
   }
 
   /**
@@ -38,6 +75,13 @@ export class ApprovalsService {
       where: { id: approvalId, status: "pending" },
       data: { status, chosenOptionId: optionId, decidedVia: via, decidedBy: by, decidedAt: new Date() },
     });
+
+    if (approval.kind === "human_review" && isApproveOptionId(optionId)) {
+      await this.prisma.client.job.update({
+        where: { id: approval.jobId },
+        data: { reviewApprovedAt: new Date() },
+      });
+    }
 
     await publishControl(this.cfg.redisUrl, {
       type: "approval",

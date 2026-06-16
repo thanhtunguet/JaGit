@@ -1,33 +1,19 @@
 import { describe, it, expect, vi } from "vitest";
 import { awaitApproval } from "./approval.js";
-import EventEmitter from "node:events";
+import { waitForApprovalDecision } from "@jigit/shared";
 
 vi.mock("@jigit/shared", async (orig) => {
   const actual = await orig<any>();
   return {
     ...actual,
-    makeRedis: vi.fn(),
+    waitForApprovalDecision: vi.fn(),
     loadConfig: () => ({ approvalTimeoutMs: 50, redisUrl: "redis://x" }),
   };
 });
 
-import { makeRedis } from "@jigit/shared";
-
 describe("awaitApproval", () => {
   it("resolves with the chosen optionId from the control channel", async () => {
-    const emitter = new EventEmitter();
-    const fakeSub = Object.assign(emitter, {
-      subscribe: vi.fn(),
-      quit: vi.fn().mockResolvedValue(undefined),
-    });
-    vi.mocked(makeRedis).mockReturnValue(fakeSub as any);
-
-    // Simulate a control signal arriving after 10ms
-    setTimeout(() => {
-      emitter.emit("message", "control:job-1",
-        JSON.stringify({ type: "approval", approvalId: "appr-1", chosenOptionId: "allow" })
-      );
-    }, 10);
+    vi.mocked(waitForApprovalDecision).mockResolvedValue("allow");
 
     const optionId = await awaitApproval({
       approvalId: "appr-1",
@@ -39,12 +25,7 @@ describe("awaitApproval", () => {
   });
 
   it("auto-rejects on timeout and returns denyOptionId", async () => {
-    const emitter = new EventEmitter();
-    const fakeSub = Object.assign(emitter, {
-      subscribe: vi.fn(),
-      quit: vi.fn().mockResolvedValue(undefined),
-    });
-    vi.mocked(makeRedis).mockReturnValue(fakeSub as any);
+    vi.mocked(waitForApprovalDecision).mockResolvedValue("deny");
 
     const resolve = vi.fn().mockResolvedValue(undefined);
     const optionId = await awaitApproval({

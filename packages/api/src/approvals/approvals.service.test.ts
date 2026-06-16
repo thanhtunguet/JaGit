@@ -28,7 +28,12 @@ const mockPrisma = {
     approval: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      create: vi.fn(),
       update: vi.fn().mockResolvedValue({ ...pendingApproval, status: "approved" }),
+    },
+    job: {
+      update: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn(),
     },
   },
 };
@@ -61,6 +66,44 @@ describe("ApprovalsService.decide", () => {
       expect.any(String),
       "approvals",
       expect.objectContaining({ type: "resolved", approvalId: "appr-1" }),
+    );
+  });
+
+  it("sets reviewApprovedAt when human_review is approved", async () => {
+    mockPrisma.client.approval.findUnique.mockResolvedValue({
+      ...pendingApproval,
+      kind: "human_review",
+    });
+    await svc.decide("appr-1", "approve", "dashboard");
+    expect(mockPrisma.client.job.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "job-1" },
+        data: expect.objectContaining({ reviewApprovedAt: expect.any(Date) }),
+      }),
+    );
+  });
+});
+
+describe("ApprovalsService.createReviewRequest", () => {
+  let svc: ApprovalsService;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    svc = new ApprovalsService(mockPrisma as any);
+  });
+
+  it("creates human_review approval and returns approvalId", async () => {
+    mockPrisma.client.job.findUnique.mockResolvedValue({ id: "job-1" });
+    mockPrisma.client.approval.create.mockResolvedValue({ id: "appr-new" });
+    const result = await svc.createReviewRequest({
+      jobId: "job-1",
+      prompt: "Review please",
+      options: [{ optionId: "approve", name: "Approve" }],
+    });
+    expect(result.approvalId).toBe("appr-new");
+    expect(mockPrisma.client.approval.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ kind: "human_review" }),
+      }),
     );
   });
 });

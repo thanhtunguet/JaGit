@@ -15,7 +15,8 @@ import {
   listCredentials, createCredential, updateCredential, deleteCredential,
   listRepoMappings, createRepoMapping, updateRepoMapping, deleteRepoMapping,
   listAgentTemplates, createAgentTemplate, updateAgentTemplate, deleteAgentTemplate,
-  type CredentialListItem, type RepoMappingItem, type AgentTemplateItem,
+  listMcpServers,
+  type CredentialListItem, type RepoMappingItem, type AgentTemplateItem, type McpServerItem,
   getStoredToken, setStoredToken,
 } from "@/api/client";
 
@@ -296,17 +297,20 @@ function RepoMappingDialog({
 // ─── Agent Template dialog ────────────────────────────────────────────────────
 
 function AgentTemplateDialog({
-  initial, onClose, onSaved,
+  initial, onClose, onSaved, mcpServers,
 }: {
   initial?: AgentTemplateItem;
   onClose: () => void;
   onSaved: () => void;
+  mcpServers: McpServerItem[];
 }) {
   const [form, setForm] = useState({
     name: initial?.name ?? "",
     model: initial?.model ?? "claude-sonnet-4-6",
     prompt: initial?.prompt ?? "",
     maxTurns: String(initial?.maxTurns ?? ""),
+    mcpServerIds: initial?.mcpServerIds ?? [] as string[],
+    requireReviewBeforeCommit: initial?.requireReviewBeforeCommit ?? true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,6 +323,8 @@ function AgentTemplateDialog({
         name: form.name,
         model: form.model || "claude-sonnet-4-6",
         prompt: form.prompt,
+        mcpServerIds: form.mcpServerIds,
+        requireReviewBeforeCommit: form.requireReviewBeforeCommit,
         ...(form.maxTurns ? { maxTurns: Number(form.maxTurns) } : {}),
       };
       if (initial) {
@@ -363,6 +369,43 @@ function AgentTemplateDialog({
             onChange={(v) => setForm((f) => ({ ...f, maxTurns: v }))}
             placeholder="e.g. 20"
           />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.requireReviewBeforeCommit}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, requireReviewBeforeCommit: e.target.checked }))
+              }
+            />
+            Require human review before commit (jigit_request_review)
+          </label>
+          {mcpServers.length > 0 && (
+            <div>
+              <label className="text-xs font-medium mb-2 block">Additional MCP servers</label>
+              <div className="space-y-1 max-h-32 overflow-y-auto border rounded-md p-2">
+                {mcpServers.map((mcp) => (
+                  <label key={mcp.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.mcpServerIds.includes(mcp.id)}
+                      disabled={!mcp.enabled}
+                      onChange={(e) => {
+                        setForm((f) => ({
+                          ...f,
+                          mcpServerIds: e.target.checked
+                            ? [...f.mcpServerIds, mcp.id]
+                            : f.mcpServerIds.filter((id) => id !== mcp.id),
+                        }));
+                      }}
+                    />
+                    <span className={!mcp.enabled ? "text-muted-foreground" : ""}>
+                      {mcp.name}{!mcp.enabled ? " (disabled)" : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
         <DialogFooter>
@@ -378,6 +421,7 @@ function AgentTemplateDialog({
 
 export function Config() {
   const [templates, setTemplates] = useState<AgentTemplateItem[] | null>(null);
+  const [mcpServers, setMcpServers] = useState<McpServerItem[]>([]);
   const [credentials, setCredentials] = useState<CredentialListItem[] | null>(null);
   const [mappings, setMappings] = useState<RepoMappingItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -387,8 +431,13 @@ export function Config() {
   const [templateDialog, setTemplateDialog] = useState<{ open: boolean; item?: AgentTemplateItem }>({ open: false });
 
   const reload = useCallback(() => {
-    Promise.all([listAgentTemplates(), listCredentials(), listRepoMappings()])
-      .then(([t, c, m]) => { setTemplates(t); setCredentials(c); setMappings(m); })
+    Promise.all([listAgentTemplates(), listCredentials(), listRepoMappings(), listMcpServers()])
+      .then(([t, c, m, mcps]) => {
+        setTemplates(t);
+        setCredentials(c);
+        setMappings(m);
+        setMcpServers(mcps);
+      })
       .catch((e) => setError(e.message));
   }, []);
 
@@ -606,6 +655,7 @@ export function Config() {
       {templateDialog.open && (
         <AgentTemplateDialog
           initial={templateDialog.item}
+          mcpServers={mcpServers}
           onClose={() => setTemplateDialog({ open: false })}
           onSaved={() => { setTemplateDialog({ open: false }); reload(); }}
         />

@@ -135,6 +135,29 @@ export interface AgentTemplateItem {
   model: string;
   prompt: string;
   maxTurns?: number;
+  mcpServerIds?: string[];
+  requireReviewBeforeCommit?: boolean;
+}
+
+export type McpEnvValue =
+  | string
+  | { type: "credential"; kind: string; name: string; secretKey: string };
+
+export interface McpServerItem {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, McpEnvValue>;
+  enabled: boolean;
+}
+
+export interface McpServerInput {
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, McpEnvValue>;
+  enabled: boolean;
 }
 
 export const listCredentials = () => request<CredentialListItem[]>("/credentials");
@@ -184,6 +207,22 @@ export const updateAgentTemplate = (id: string, body: Omit<AgentTemplateItem, "i
   });
 export const deleteAgentTemplate = (id: string) =>
   request<{ deleted: boolean }>(`/agent-templates/${id}`, { method: "DELETE" });
+
+export const listMcpServers = () => request<McpServerItem[]>("/mcp-servers");
+export const createMcpServer = (body: McpServerInput) =>
+  request<McpServerItem>("/mcp-servers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const updateMcpServer = (id: string, body: McpServerInput) =>
+  request<McpServerItem>(`/mcp-servers/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+export const deleteMcpServer = (id: string) =>
+  request<{ deleted: boolean }>(`/mcp-servers/${id}`, { method: "DELETE" });
 
 export const listPendingApprovals = () =>
   request<(Approval & { jobId: string; createdAt: string; job: { id: string; jiraIssueKey: string | null } })[]>(

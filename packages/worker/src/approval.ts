@@ -1,4 +1,4 @@
-import { makeRedis, controlChannel, loadConfig } from "@jigit/shared";
+import { loadConfig, waitForApprovalDecision } from "@jigit/shared";
 
 export interface AwaitApprovalOpts {
   approvalId: string;
@@ -13,35 +13,17 @@ export interface AwaitApprovalOpts {
  */
 export async function awaitApproval(opts: AwaitApprovalOpts): Promise<string> {
   const cfg = loadConfig();
-  const redis = makeRedis(cfg.redisUrl);
-  const channel = controlChannel(opts.jobId);
-  await redis.subscribe(channel);
-
-  return new Promise<string>((resolve) => {
-    let resolved = false;
-
-    const timer = setTimeout(async () => {
-      if (resolved) return;
-      resolved = true;
-      await opts.resolveApproval(opts.approvalId, opts.denyOptionId, "system");
-      await redis.quit();
-      resolve(opts.denyOptionId);
-    }, cfg.approvalTimeoutMs);
-
-    redis.on("message", async (_ch: string, msg: string) => {
-      try {
-        const signal = JSON.parse(msg);
-        if (
-          signal.type === "approval" &&
-          signal.approvalId === opts.approvalId &&
-          !resolved
-        ) {
-          resolved = true;
-          clearTimeout(timer);
-          await redis.quit();
-          resolve(signal.chosenOptionId as string);
-        }
-      } catch { /* ignore */ }
-    });
+  const chosen = await waitForApprovalDecision({
+    redisUrl: cfg.redisUrl,
+    jobId: opts.jobId,
+    approvalId: opts.approvalId,
+    timeoutMs: cfg.approvalTimeoutMs,
+    denyOptionId: opts.denyOptionId,
   });
+
+  if (chosen === opts.denyOptionId) {
+    await opts.resolveApproval(opts.approvalId, opts.denyOptionId, "system");
+  }
+
+  return chosen;
 }

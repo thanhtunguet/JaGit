@@ -5,6 +5,7 @@ import { Jobs } from "./pages/Jobs";
 import { JobDetail } from "./pages/JobDetail";
 import { Config } from "./pages/Config";
 import { Approvals } from "./pages/Approvals";
+import { McpServers } from "./pages/McpServers";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/config" element={<Config />} />
+          <Route path="/mcp-servers" element={<McpServers />} />
           <Route path="/approvals" element={<Approvals />} />
         </Routes>
       </AppShell>

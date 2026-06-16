@@ -19,3 +19,6 @@ export * from "./events.js";
 export * from "./types.js";
 export * from "./git-worktree.js";
 export * from "./seed.js";
+export * from "./mcp-config.js";
+export * from "./mcp-servers.js";
+export * from "./approval-bridge.js";

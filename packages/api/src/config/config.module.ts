@@ -7,6 +7,8 @@ import { RepoMappingsService } from "./repo-mappings.service.js";
 import { RepoMappingsController } from "./repo-mappings.controller.js";
 import { AgentTemplatesService } from "./agent-templates.service.js";
 import { AgentTemplatesController } from "./agent-templates.controller.js";
+import { McpServersService } from "./mcp-servers.service.js";
+import { McpServersController } from "./mcp-servers.controller.js";
 
 const keyFactory = {
   provide: "ENCRYPTION_KEY",
@@ -24,11 +26,13 @@ const keyFactory = {
     },
     RepoMappingsService,
     AgentTemplatesService,
+    McpServersService,
   ],
   controllers: [
     CredentialsController,
     RepoMappingsController,
     AgentTemplatesController,
+    McpServersController,
   ],
 })
 export class ConfigModule {}

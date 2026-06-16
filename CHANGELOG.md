@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (mcp-review-dashboard)
+
+**MCP Review + Config Dashboard**: Built-in `jigit` MCP (`jigit_request_review`), MCP server CRUD + `/mcp-servers` page, AgentTemplate MCP assignment, worker injects MCP into ACP session, hard guard blocks commit without human review approval.
+
 ## 2026-06-16 (github-actions-docker)
 
 **GitHub Actions Docker CI**: Workflow test + build/push multi-arch (amd64/arm64) images api/dashboard/worker lên GHCR; thêm Dockerfile dashboard.

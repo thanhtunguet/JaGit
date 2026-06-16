@@ -53,6 +53,7 @@ describe("AgentTemplatesService", () => {
       expect(result).toEqual({
         id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
         prompt: "You are a coding agent.", maxTurns: 3,
+        mcpServerIds: [], requireReviewBeforeCommit: true,
       });
     });
   });
@@ -70,6 +71,7 @@ describe("AgentTemplatesService", () => {
         {
           id: "tpl-1", name: "default", model: "claude-sonnet-4-6",
           prompt: "Stored prompt.", maxTurns: 2,
+          mcpServerIds: [], requireReviewBeforeCommit: true,
         },
       ]);
     });

@@ -72,16 +72,10 @@ this first to know where to resume.
 <!-- BEGIN: Current plan progress (agents update this each session) -->
 ### Current plan progress
 
-- **Active plan:** `docs/superpowers/plans/2026-06-15-config-ui-and-approvals.md` (Tasks 1–11)
-- **Last completed:** Tasks 1–11 — Config UI + Approvals page. All 11 tasks complete:
-  - Shared: credential schemas + mergeSecrets, dashboardApiToken config, approvalsChannel
-  - API: AuthGuard, credentials/repo-mappings/agent-templates CRUD, ConfigModule (replaces config-view), listPending approvals + global SSE + resolved event publish
-  - Worker: publishes approval_requested to global approvals channel
-  - Dashboard: API client (CRUD, auth header, SSE hook), Approvals page (live inline approve/reject), editable Config page with dialogs, nav badge
-  - Build: fixed Prisma CredentialKind collision in shared/index.ts; AgentTemplateBody mapped to Prisma schema
-  - All packages build cleanly; 112 unit tests passing (3 pre-existing webhook failures unrelated to this work)
+- **Active plan:** JiGit MCP Review + MCP Config Dashboard (completed)
+- **Last completed:** Built-in `jigit` MCP (`jigit_request_review`), MCP CRUD API + `/mcp-servers` dashboard, AgentTemplate MCP assignment + review guard before commit
 - **In progress:** _n/a_
-- **Next up:** All planned phases and the Config UI/Approvals feature complete.
+- **Next up:** Run `prisma migrate deploy` on deploy; E2E with real agent session
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch
@@ -131,22 +125,22 @@ This project is indexed by GitNexus as **JaGit** (4997 symbols, 10870 relationsh
 
 ## Resources
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/JaGit/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/JaGit/clusters` | All functional areas |
-| `gitnexus://repo/JaGit/processes` | All execution flows |
-| `gitnexus://repo/JaGit/process/{name}` | Step-by-step execution trace |
+| Resource                               | Use for                                  |
+| -------------------------------------- | ---------------------------------------- |
+| `gitnexus://repo/JaGit/context`        | Codebase overview, check index freshness |
+| `gitnexus://repo/JaGit/clusters`       | All functional areas                     |
+| `gitnexus://repo/JaGit/processes`      | All execution flows                      |
+| `gitnexus://repo/JaGit/process/{name}` | Step-by-step execution trace             |
 
 ## CLI
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Task                                         | Read this skill file                                        |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md`       |
+| Blast radius / "What breaks if I change X?"  | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?"             | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md`       |
+| Rename / extract / split / refactor          | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md`     |
+| Tools, resources, schema reference           | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md`           |
+| Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
 
 <!-- gitnexus:end -->
