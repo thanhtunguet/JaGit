@@ -41,7 +41,10 @@ export class GitlabAdapter implements IGitlabAdapter {
           }),
         }
       );
-      if (!r.ok) throw new Error(`gitlab ${r.status}`);
+      if (!r.ok) {
+        const body = await r.text().catch(() => "");
+        throw new Error(`gitlab ${r.status}${body ? `: ${body}` : ""}`);
+      }
       const data = await r.json() as any;
       return { webUrl: data.web_url, iid: data.iid };
     }, { maxRetries: this.o.maxRetries, baseDelayMs: 500 });

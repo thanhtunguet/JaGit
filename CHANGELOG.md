@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (gitlab-400-error-body)
+
+**Fix lỗi GitLab 400 không có chi tiết**: `GitlabAdapter.openMergeRequest` giờ đọc response body khi request thất bại và đính kèm vào message lỗi, thay vì chỉ throw `"gitlab 400"`. Lý do thật của GitLab (nhánh không tồn tại, MR trùng, v.v.) nay xuất hiện trong `step_error` event và báo cáo Telegram.
+
 ## 2026-06-16 (acp-timeout-and-pause)
 
 **Fix job treo vô hạn + Pause vô dụng**: `AcpSession.request()` nay có timeout (`ACP_REQUEST_TIMEOUT_MS`, default 10 phút) — chặn job kẹt "running" mãi khi subprocess ACP gặp bug "No onPostToolUseHook" và không trả response. `shouldPause` (tồn tại từ đầu project nhưng chưa từng được gọi) giờ được wire vào abort-poll loop: Pause thực sự kill agent session đang chạy và set status `"paused"`.
