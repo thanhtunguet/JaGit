@@ -1,5 +1,5 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction } from "@jigit/shared";
+import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction, buildReportInstruction } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
@@ -140,6 +140,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       const parts = [
         agentTemplate.systemPrompt,
         agentTemplate.requireReviewBeforeCommit ? buildReviewInstruction() : "",
+        buildReportInstruction(),
         `Issue: ${state.jiraIssueKey} — ${state.issueSummary}`,
         `Type: ${state.issueType}`,
         `Description: ${state.issueDescription}`,

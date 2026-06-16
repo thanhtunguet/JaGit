@@ -128,3 +128,11 @@ export function buildReviewInstruction(): string {
     "Do not consider the task complete until review is approved.",
   ].join(" ");
 }
+
+/** Instruction appended to every agent prompt so its final message can be relayed as the job's status report. */
+export function buildReportInstruction(): string {
+  return [
+    "End your final message with a concise 2-4 sentence summary of what you changed",
+    "and why, written for a non-technical reader — it will be relayed to them directly.",
+  ].join(" ");
+}

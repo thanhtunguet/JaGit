@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAcpMcpServers, isAcpMcpServerHttp } from "./mcp-servers.js";
+import { buildAcpMcpServers, isAcpMcpServerHttp, buildReportInstruction } from "./mcp-servers.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -148,5 +148,13 @@ describe("buildAcpMcpServers", () => {
     });
 
     expect(servers.find((s) => s.name === "disabled")).toBeUndefined();
+  });
+});
+
+describe("buildReportInstruction", () => {
+  it("instructs the agent to summarize its work for a non-technical reader", () => {
+    const instruction = buildReportInstruction();
+    expect(instruction).toContain("summary");
+    expect(instruction).toContain("non-technical");
   });
 });
