@@ -37,28 +37,43 @@ describe("McpServersService", () => {
     svc = new McpServersService(fakePrisma(rows));
   });
 
-  it("creates an MCP server config", async () => {
+  it("creates a stdio MCP server config", async () => {
     const out = await svc.create({
       name: "filesystem",
+      transport: "stdio",
       command: "npx",
       args: ["-y", "mcp-fs"],
       env: { FOO: "bar" },
       enabled: true,
     });
     expect(out.name).toBe("filesystem");
+    expect(out.transport).toBe("stdio");
     expect(out.command).toBe("npx");
   });
 
+  it("creates an http MCP server config", async () => {
+    const out = await svc.create({
+      name: "remote",
+      transport: "http",
+      url: "https://mcp.example.com/v1",
+      headers: { Authorization: "Bearer x" },
+      enabled: true,
+    });
+    expect(out.transport).toBe("http");
+    expect(out.url).toBe("https://mcp.example.com/v1");
+    expect(out.command).toBe("");
+  });
+
   it("rejects duplicate name", async () => {
-    await svc.create({ name: "dup", command: "echo", args: [], env: {} });
+    await svc.create({ name: "dup", transport: "stdio", command: "echo", args: [], env: {} });
     await expect(
-      svc.create({ name: "dup", command: "echo", args: [], env: {} }),
+      svc.create({ name: "dup", transport: "stdio", command: "echo", args: [], env: {} }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it("throws not found on update", async () => {
     await expect(
-      svc.update("missing", { name: "x", command: "echo", args: [], env: {} }),
+      svc.update("missing", { name: "x", transport: "stdio", command: "echo", args: [], env: {} }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

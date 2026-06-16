@@ -110,6 +110,7 @@ describe("API client", () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "m1" }) } as any);
     await createMcpServer({
       name: "test",
+      transport: "stdio",
       command: "npx",
       args: [],
       env: {},

@@ -1,18 +1,34 @@
 import { resolveMcpEnv, type CredentialResolver, type McpEnvValue } from "./mcp-config.js";
 
-export interface AcpMcpServer {
+export interface AcpMcpServerStdio {
   name: string;
   command: string;
   args: string[];
   env: { name: string; value: string }[];
 }
 
+export interface AcpMcpServerHttp {
+  type: "http";
+  name: string;
+  url: string;
+  headers: { name: string; value: string }[];
+}
+
+export type AcpMcpServer = AcpMcpServerStdio | AcpMcpServerHttp;
+
+export function isAcpMcpServerHttp(server: AcpMcpServer): server is AcpMcpServerHttp {
+  return "type" in server && server.type === "http";
+}
+
 export interface McpServerConfigRow {
   id: string;
   name: string;
+  transport: string;
   command: string;
   args: unknown;
   env: unknown;
+  url: string | null;
+  headers: unknown;
   enabled: boolean;
 }
 
@@ -33,17 +49,24 @@ export interface BuildAcpMcpServersOpts {
   resolveCredential: CredentialResolver;
 }
 
-function toEnvArray(env: Record<string, string>): { name: string; value: string }[] {
-  return Object.entries(env).map(([name, value]) => ({ name, value }));
+function toKeyValueArray(map: Record<string, string>): { name: string; value: string }[] {
+  return Object.entries(map).map(([name, value]) => ({ name, value }));
 }
 
-function buildJigitServer(opts: BuildAcpMcpServersOpts): AcpMcpServer {
+function parseKeyValues(raw: unknown): Record<string, McpEnvValue> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, McpEnvValue>;
+  }
+  return {};
+}
+
+function buildJigitServer(opts: BuildAcpMcpServersOpts): AcpMcpServerStdio {
   const { jobContext } = opts;
   return {
     name: "jigit",
     command: "node",
     args: [jobContext.jigitServerPath],
-    env: toEnvArray({
+    env: toKeyValueArray({
       JIGIT_JOB_ID: jobContext.jobId,
       REDIS_URL: jobContext.redisUrl,
       PUBLIC_BASE_URL: jobContext.publicBaseUrl,
@@ -63,19 +86,34 @@ export async function buildAcpMcpServers(
   const selected = opts.dbConfigs.filter((c) => idSet.has(c.id) && c.enabled);
 
   for (const config of selected) {
-    const args = Array.isArray(config.args) ? (config.args as string[]) : [];
-    const envRecord: Record<string, McpEnvValue> =
-      config.env && typeof config.env === "object" && !Array.isArray(config.env)
-        ? (config.env as Record<string, McpEnvValue>)
-        : {};
+    const transport = config.transport === "http" ? "http" : "stdio";
 
-    const resolved = await resolveMcpEnv(envRecord, opts.resolveCredential);
+    if (transport === "http") {
+      if (!config.url) continue;
+      const resolvedHeaders = await resolveMcpEnv(
+        parseKeyValues(config.headers),
+        opts.resolveCredential,
+      );
+      servers.push({
+        type: "http",
+        name: config.name,
+        url: config.url,
+        headers: toKeyValueArray(resolvedHeaders),
+      });
+      continue;
+    }
+
+    const args = Array.isArray(config.args) ? (config.args as string[]) : [];
+    const resolvedEnv = await resolveMcpEnv(
+      parseKeyValues(config.env),
+      opts.resolveCredential,
+    );
 
     servers.push({
       name: config.name,
       command: config.command,
       args,
-      env: toEnvArray(resolved),
+      env: toKeyValueArray(resolvedEnv),
     });
   }
 

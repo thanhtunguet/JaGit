@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (mcp-http-transport)
+
+**MCP stdio + HTTP transport**: `McpServerConfig` hỗ trợ `transport` stdio/http; dashboard chọn loại kết nối (command hoặc URL + headers); worker build ACP `mcpServers` theo transport.
+
 ## 2026-06-16 (mcp-review-dashboard)
 
 **MCP Review + Config Dashboard**: Built-in `jigit` MCP (`jigit_request_review`), MCP server CRUD + `/mcp-servers` page, AgentTemplate MCP assignment, worker injects MCP into ACP session, hard guard blocks commit without human review approval.

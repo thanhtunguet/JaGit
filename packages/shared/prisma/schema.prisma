@@ -58,15 +58,19 @@ model AgentTemplate {
 }
 
 // ─── McpServerConfig ───────────────────────────────────────────────────────────
-// Stdio MCP servers injected into ACP session/new via AgentTemplate.mcpServerIds.
-// env values are literals or credential refs (resolved at session spawn).
+// MCP servers injected into ACP session/new via AgentTemplate.mcpServerIds.
+// transport: "stdio" (command/args/env) or "http" (url/headers).
+// env/headers values are literals or credential refs (resolved at session spawn).
 
 model McpServerConfig {
   id        String   @id @default(cuid())
   name      String   @unique
-  command   String
-  args      Json     @default("[]")   // string[]
-  env       Json     @default("{}")   // Record<string, string | credential ref>
+  transport String   @default("stdio") // "stdio" | "http"
+  command   String   @default("")
+  args      Json     @default("[]")   // string[] — stdio only
+  env       Json     @default("{}")   // stdio process env
+  url       String?                    // http only
+  headers   Json     @default("{}")   // http request headers
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

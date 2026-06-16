@@ -143,21 +143,29 @@ export type McpEnvValue =
   | string
   | { type: "credential"; kind: string; name: string; secretKey: string };
 
+export type McpTransport = "stdio" | "http";
+
 export interface McpServerItem {
   id: string;
   name: string;
+  transport: McpTransport;
   command: string;
   args: string[];
   env: Record<string, McpEnvValue>;
+  url: string | null;
+  headers: Record<string, McpEnvValue>;
   enabled: boolean;
 }
 
 export interface McpServerInput {
   name: string;
-  command: string;
-  args: string[];
-  env: Record<string, McpEnvValue>;
+  transport: McpTransport;
   enabled: boolean;
+  command?: string;
+  args?: string[];
+  env?: Record<string, McpEnvValue>;
+  url?: string;
+  headers?: Record<string, McpEnvValue>;
 }
 
 export const listCredentials = () => request<CredentialListItem[]>("/credentials");

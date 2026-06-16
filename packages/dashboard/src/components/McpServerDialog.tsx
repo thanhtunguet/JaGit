@@ -13,10 +13,11 @@ import {
   listCredentials,
   type McpServerItem,
   type McpEnvValue,
+  type McpTransport,
   type CredentialListItem,
 } from "@/api/client";
 
-type EnvRow = {
+type KeyValueRow = {
   key: string;
   mode: "literal" | "credential";
   literal: string;
@@ -41,8 +42,8 @@ function Field({
   );
 }
 
-function envToRows(env: Record<string, McpEnvValue>): EnvRow[] {
-  return Object.entries(env).map(([key, value]) => {
+function keyValuesToRows(map: Record<string, McpEnvValue>): KeyValueRow[] {
+  return Object.entries(map).map(([key, value]) => {
     if (typeof value === "string") {
       return { key, mode: "literal", literal: value, credKind: "gitlab", credName: "default", secretKey: "token" };
     }
@@ -57,7 +58,7 @@ function envToRows(env: Record<string, McpEnvValue>): EnvRow[] {
   });
 }
 
-function rowsToEnv(rows: EnvRow[]): Record<string, McpEnvValue> {
+function rowsToKeyValues(rows: KeyValueRow[]): Record<string, McpEnvValue> {
   const out: Record<string, McpEnvValue> = {};
   for (const row of rows) {
     if (!row.key.trim()) continue;
@@ -75,6 +76,116 @@ function rowsToEnv(rows: EnvRow[]): Record<string, McpEnvValue> {
   return out;
 }
 
+function KeyValueEditor({
+  label,
+  rows,
+  onChange,
+  credentials,
+}: {
+  label: string;
+  rows: KeyValueRow[];
+  onChange: (rows: KeyValueRow[]) => void;
+  credentials: CredentialListItem[];
+}) {
+  const addRow = () => {
+    onChange([
+      ...rows,
+      { key: "", mode: "literal", literal: "", credKind: "gitlab", credName: "default", secretKey: "token" },
+    ]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium">{label}</span>
+        <Button type="button" size="sm" variant="outline" onClick={addRow}>
+          Add
+        </Button>
+      </div>
+      {rows.length === 0 && (
+        <p className="text-xs text-muted-foreground">No entries — optional.</p>
+      )}
+      {rows.map((row, i) => (
+        <div key={i} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2">
+          <div className="col-span-3">
+            <Field
+              label="Key"
+              value={row.key}
+              onChange={(v) => onChange(rows.map((r, j) => (j === i ? { ...r, key: v } : r)))}
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs font-medium mb-1 block">Type</label>
+            <select
+              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={row.mode}
+              onChange={(e) => {
+                const mode = e.target.value as "literal" | "credential";
+                onChange(rows.map((r, j) => (j === i ? { ...r, mode } : r)));
+              }}
+            >
+              <option value="literal">Literal</option>
+              <option value="credential">Credential</option>
+            </select>
+          </div>
+          {row.mode === "literal" ? (
+            <div className="col-span-6">
+              <Field
+                label="Value"
+                value={row.literal}
+                onChange={(v) => onChange(rows.map((r, j) => (j === i ? { ...r, literal: v } : r)))}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="col-span-2">
+                <label className="text-xs font-medium mb-1 block">Credential</label>
+                <select
+                  className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  value={`${row.credKind}:${row.credName}`}
+                  onChange={(e) => {
+                    const [credKind, credName] = e.target.value.split(":");
+                    onChange(
+                      rows.map((r, j) =>
+                        j === i ? { ...r, credKind, credName, secretKey: r.secretKey || "token" } : r,
+                      ),
+                    );
+                  }}
+                >
+                  {credentials.map((c) => (
+                    <option key={c.id} value={`${c.kind}:${c.name}`}>
+                      {c.kind}/{c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-4">
+                <Field
+                  label="Secret key"
+                  value={row.secretKey}
+                  onChange={(v) => onChange(rows.map((r, j) => (j === i ? { ...r, secretKey: v } : r)))}
+                  placeholder="token, apiKey, …"
+                />
+              </div>
+            </>
+          )}
+          <div className="col-span-1 pb-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-destructive"
+              onClick={() => onChange(rows.filter((_, j) => j !== i))}
+            >
+              ×
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function McpServerDialog({
   initial,
   onClose,
@@ -85,12 +196,17 @@ export function McpServerDialog({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [transport, setTransport] = useState<McpTransport>(initial?.transport ?? "stdio");
   const [command, setCommand] = useState(initial?.command ?? "npx");
   const [argsText, setArgsText] = useState((initial?.args ?? []).join(", "));
-  const [enabled, setEnabled] = useState(initial?.enabled ?? true);
-  const [envRows, setEnvRows] = useState<EnvRow[]>(() =>
-    initial?.env ? envToRows(initial.env) : [],
+  const [url, setUrl] = useState(initial?.url ?? "");
+  const [envRows, setEnvRows] = useState<KeyValueRow[]>(() =>
+    initial?.env ? keyValuesToRows(initial.env) : [],
   );
+  const [headerRows, setHeaderRows] = useState<KeyValueRow[]>(() =>
+    initial?.headers ? keyValuesToRows(initial.headers) : [],
+  );
+  const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [credentials, setCredentials] = useState<CredentialListItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,13 +219,24 @@ export function McpServerDialog({
     setSaving(true);
     setError(null);
     try {
-      const body = {
-        name,
-        command,
-        args: argsText.split(",").map((s) => s.trim()).filter(Boolean),
-        env: rowsToEnv(envRows),
-        enabled,
-      };
+      const body =
+        transport === "http"
+          ? {
+              name,
+              transport: "http" as const,
+              url,
+              headers: rowsToKeyValues(headerRows),
+              enabled,
+            }
+          : {
+              name,
+              transport: "stdio" as const,
+              command,
+              args: argsText.split(",").map((s) => s.trim()).filter(Boolean),
+              env: rowsToKeyValues(envRows),
+              enabled,
+            };
+
       if (initial) await updateMcpServer(initial.id, body);
       else await createMcpServer(body);
       onSaved();
@@ -120,13 +247,6 @@ export function McpServerDialog({
     }
   };
 
-  const addEnvRow = () => {
-    setEnvRows((rows) => [
-      ...rows,
-      { key: "", mode: "literal", literal: "", credKind: "gitlab", credName: "default", secretKey: "token" },
-    ]);
-  };
-
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -135,109 +255,56 @@ export function McpServerDialog({
         </DialogHeader>
         <div className="space-y-4">
           <Field label="Name" value={name} onChange={setName} placeholder="filesystem" />
-          <Field label="Command" value={command} onChange={setCommand} placeholder="npx" />
-          <Field
-            label="Args (comma-separated)"
-            value={argsText}
-            onChange={setArgsText}
-            placeholder="-y, @modelcontextprotocol/server-filesystem, /tmp"
-          />
+
+          <div>
+            <label className="text-xs font-medium mb-1 block">Transport</label>
+            <select
+              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={transport}
+              onChange={(e) => setTransport(e.target.value as McpTransport)}
+            >
+              <option value="stdio">stdio — spawn local process</option>
+              <option value="http">http — remote MCP endpoint</option>
+            </select>
+          </div>
+
+          {transport === "stdio" ? (
+            <>
+              <Field label="Command" value={command} onChange={setCommand} placeholder="npx" />
+              <Field
+                label="Args (comma-separated)"
+                value={argsText}
+                onChange={setArgsText}
+                placeholder="-y, @modelcontextprotocol/server-filesystem, /tmp"
+              />
+              <KeyValueEditor
+                label="Environment variables"
+                rows={envRows}
+                onChange={setEnvRows}
+                credentials={credentials}
+              />
+            </>
+          ) : (
+            <>
+              <Field
+                label="URL"
+                value={url}
+                onChange={setUrl}
+                placeholder="https://mcp.example.com/v1"
+              />
+              <KeyValueEditor
+                label="HTTP headers"
+                rows={headerRows}
+                onChange={setHeaderRows}
+                credentials={credentials}
+              />
+            </>
+          )}
+
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
             Enabled
           </label>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium">Environment variables</span>
-              <Button type="button" size="sm" variant="outline" onClick={addEnvRow}>
-                Add variable
-              </Button>
-            </div>
-            {envRows.map((row, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2">
-                <div className="col-span-3">
-                  <Field
-                    label="Key"
-                    value={row.key}
-                    onChange={(v) => {
-                      setEnvRows((rows) => rows.map((r, j) => (j === i ? { ...r, key: v } : r)));
-                    }}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-xs font-medium mb-1 block">Type</label>
-                  <select
-                    className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
-                    value={row.mode}
-                    onChange={(e) => {
-                      const mode = e.target.value as "literal" | "credential";
-                      setEnvRows((rows) => rows.map((r, j) => (j === i ? { ...r, mode } : r)));
-                    }}
-                  >
-                    <option value="literal">Literal</option>
-                    <option value="credential">Credential</option>
-                  </select>
-                </div>
-                {row.mode === "literal" ? (
-                  <div className="col-span-6">
-                    <Field
-                      label="Value"
-                      value={row.literal}
-                      onChange={(v) => {
-                        setEnvRows((rows) => rows.map((r, j) => (j === i ? { ...r, literal: v } : r)));
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <div className="col-span-2">
-                      <label className="text-xs font-medium mb-1 block">Credential</label>
-                      <select
-                        className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
-                        value={`${row.credKind}:${row.credName}`}
-                        onChange={(e) => {
-                          const [credKind, credName] = e.target.value.split(":");
-                          setEnvRows((rows) =>
-                            rows.map((r, j) =>
-                              j === i ? { ...r, credKind, credName, secretKey: r.secretKey || "token" } : r,
-                            ),
-                          );
-                        }}
-                      >
-                        {credentials.map((c) => (
-                          <option key={c.id} value={`${c.kind}:${c.name}`}>
-                            {c.kind}/{c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-span-4">
-                      <Field
-                        label="Secret key"
-                        value={row.secretKey}
-                        onChange={(v) => {
-                          setEnvRows((rows) => rows.map((r, j) => (j === i ? { ...r, secretKey: v } : r)));
-                        }}
-                        placeholder="token, apiKey, …"
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="col-span-1 pb-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive"
-                    onClick={() => setEnvRows((rows) => rows.filter((_, j) => j !== i))}
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>

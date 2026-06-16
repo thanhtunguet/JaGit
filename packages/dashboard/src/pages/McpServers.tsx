@@ -50,8 +50,8 @@ export function McpServers() {
         <div>
           <h2 className="text-2xl font-bold">MCP Servers</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Stdio MCP servers injected into agent sessions via Agent Templates.
-            The built-in <code className="text-xs">jigit</code> review server is always included.
+            MCP servers (stdio or HTTP) injected into agent sessions via Agent Templates.
+            The built-in <code className="text-xs">jigit</code> review server is always included (stdio).
           </p>
         </div>
         <Button onClick={() => setDialog({ open: true })}>
@@ -83,8 +83,8 @@ export function McpServers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Command</TableHead>
-                  <TableHead>Args</TableHead>
+                  <TableHead>Transport</TableHead>
+                  <TableHead>Endpoint</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-24" />
                 </TableRow>
@@ -93,9 +93,15 @@ export function McpServers() {
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{item.command}</TableCell>
-                    <TableCell className="font-mono text-xs max-w-xs truncate">
-                      {item.args.join(" ")}
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-xs uppercase">
+                        {item.transport}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs max-w-md truncate">
+                      {item.transport === "http"
+                        ? item.url ?? "—"
+                        : `${item.command} ${item.args.join(" ")}`.trim()}
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.enabled ? "default" : "secondary"}>

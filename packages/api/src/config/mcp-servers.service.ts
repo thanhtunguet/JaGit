@@ -7,30 +7,55 @@ export type McpServerConfigBody = ReturnType<typeof McpServerConfigBodySchema.pa
 export interface McpServerConfigResponse {
   id: string;
   name: string;
+  transport: "stdio" | "http";
   command: string;
   args: string[];
   env: Record<string, unknown>;
+  url: string | null;
+  headers: Record<string, unknown>;
   enabled: boolean;
 }
 
 function toResponse(row: {
   id: string;
   name: string;
+  transport: string;
   command: string;
   args: unknown;
   env: unknown;
+  url: string | null;
+  headers: unknown;
   enabled: boolean;
 }): McpServerConfigResponse {
   return {
     id: row.id,
     name: row.name,
+    transport: row.transport === "http" ? "http" : "stdio",
     command: row.command,
     args: Array.isArray(row.args) ? (row.args as string[]) : [],
     env:
       row.env && typeof row.env === "object" && !Array.isArray(row.env)
         ? (row.env as Record<string, unknown>)
         : {},
+    url: row.url,
+    headers:
+      row.headers && typeof row.headers === "object" && !Array.isArray(row.headers)
+        ? (row.headers as Record<string, unknown>)
+        : {},
     enabled: row.enabled,
+  };
+}
+
+function toCreateData(parsed: McpServerConfigBody) {
+  return {
+    name: parsed.name,
+    transport: parsed.transport,
+    enabled: parsed.enabled,
+    command: parsed.transport === "stdio" ? (parsed.command ?? "") : "",
+    args: parsed.transport === "stdio" ? parsed.args : [],
+    env: parsed.transport === "stdio" ? parsed.env : {},
+    url: parsed.transport === "http" ? (parsed.url ?? null) : null,
+    headers: parsed.transport === "http" ? parsed.headers : {},
   };
 }
 
@@ -53,13 +78,7 @@ export class McpServersService {
     if (existing) throw new ConflictException(`MCP server name "${parsed.name}" already exists`);
 
     const row = await this.prisma.client.mcpServerConfig.create({
-      data: {
-        name: parsed.name,
-        command: parsed.command,
-        args: parsed.args,
-        env: parsed.env,
-        enabled: parsed.enabled,
-      },
+      data: toCreateData(parsed),
     });
     return toResponse(row);
   }
@@ -78,13 +97,7 @@ export class McpServersService {
 
     const row = await this.prisma.client.mcpServerConfig.update({
       where: { id },
-      data: {
-        name: parsed.name,
-        command: parsed.command,
-        args: parsed.args,
-        env: parsed.env,
-        enabled: parsed.enabled,
-      },
+      data: toCreateData(parsed),
     });
     return toResponse(row);
   }

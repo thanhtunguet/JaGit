@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAcpMcpServers } from "./mcp-servers.js";
+import { buildAcpMcpServers, isAcpMcpServerHttp } from "./mcp-servers.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -31,9 +31,12 @@ describe("buildAcpMcpServers", () => {
 
     expect(servers.some((s) => s.name === "jigit")).toBe(true);
     const jigit = servers.find((s) => s.name === "jigit")!;
-    expect(jigit.command).toBe("node");
-    expect(jigit.args[0]).toBe(jigitServerPath);
-    expect(jigit.env.find((e) => e.name === "JIGIT_JOB_ID")?.value).toBe("job-1");
+    expect(isAcpMcpServerHttp(jigit)).toBe(false);
+    if (!isAcpMcpServerHttp(jigit)) {
+      expect(jigit.command).toBe("node");
+      expect(jigit.args[0]).toBe(jigitServerPath);
+      expect(jigit.env.find((e) => e.name === "JIGIT_JOB_ID")?.value).toBe("job-1");
+    }
   });
 
   it("appends enabled template MCP configs with resolved env", async () => {
@@ -43,12 +46,15 @@ describe("buildAcpMcpServers", () => {
         {
           id: "mcp-1",
           name: "extra",
+          transport: "stdio",
           command: "npx",
           args: ["-y", "some-mcp"],
           env: {
             KEY: "literal",
             TOKEN: { type: "credential", kind: "gitlab", name: "default", secretKey: "token" },
           },
+          url: null,
+          headers: {},
           enabled: true,
         },
       ],
@@ -65,12 +71,53 @@ describe("buildAcpMcpServers", () => {
 
     const extra = servers.find((s) => s.name === "extra");
     expect(extra).toBeDefined();
-    expect(extra!.env).toEqual(
-      expect.arrayContaining([
-        { name: "KEY", value: "literal" },
-        { name: "TOKEN", value: "resolved" },
-      ]),
-    );
+    expect(isAcpMcpServerHttp(extra!)).toBe(false);
+    if (!isAcpMcpServerHttp(extra!)) {
+      expect(extra!.env).toEqual(
+        expect.arrayContaining([
+          { name: "KEY", value: "literal" },
+          { name: "TOKEN", value: "resolved" },
+        ]),
+      );
+    }
+  });
+
+  it("builds http MCP server with resolved headers", async () => {
+    const servers = await buildAcpMcpServers({
+      template: { mcpServerIds: ["mcp-http"], requireReviewBeforeCommit: false },
+      dbConfigs: [
+        {
+          id: "mcp-http",
+          name: "remote",
+          transport: "http",
+          command: "",
+          args: [],
+          env: {},
+          url: "https://mcp.example.com/v1",
+          headers: {
+            Authorization: { type: "credential", kind: "anthropic", name: "default", secretKey: "apiKey" },
+          },
+          enabled: true,
+        },
+      ],
+      jobContext: {
+        jobId: "job-http",
+        redisUrl: "redis://x",
+        publicBaseUrl: "http://localhost:3000",
+        dashboardApiToken: "tok",
+        jigitServerPath,
+        approvalTimeoutMs: 1800000,
+      },
+      resolveCredential: async () => ({ apiKey: "sk-test" }),
+    });
+
+    const remote = servers.find((s) => s.name === "remote");
+    expect(remote).toBeDefined();
+    expect(isAcpMcpServerHttp(remote!)).toBe(true);
+    if (isAcpMcpServerHttp(remote!)) {
+      expect(remote.url).toBe("https://mcp.example.com/v1");
+      expect(remote.headers).toEqual([{ name: "Authorization", value: "sk-test" }]);
+    }
   });
 
   it("skips disabled MCP configs", async () => {
@@ -80,9 +127,12 @@ describe("buildAcpMcpServers", () => {
         {
           id: "mcp-2",
           name: "disabled",
+          transport: "stdio",
           command: "echo",
           args: [],
           env: {},
+          url: null,
+          headers: {},
           enabled: false,
         },
       ],

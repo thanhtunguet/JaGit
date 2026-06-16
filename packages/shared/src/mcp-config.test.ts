@@ -6,9 +6,10 @@ import {
 } from "./mcp-config.js";
 
 describe("McpServerConfigBodySchema", () => {
-  it("parses a valid MCP server config", () => {
+  it("parses a valid stdio MCP server config", () => {
     const body = McpServerConfigBodySchema.parse({
       name: "filesystem",
+      transport: "stdio",
       command: "npx",
       args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
       env: {
@@ -18,7 +19,40 @@ describe("McpServerConfigBodySchema", () => {
       enabled: true,
     });
     expect(body.name).toBe("filesystem");
+    expect(body.transport).toBe("stdio");
     expect(body.args).toHaveLength(3);
+  });
+
+  it("parses a valid http MCP server config", () => {
+    const body = McpServerConfigBodySchema.parse({
+      name: "remote-mcp",
+      transport: "http",
+      url: "https://mcp.example.com/v1",
+      headers: {
+        Authorization: { type: "credential", kind: "anthropic", name: "default", secretKey: "apiKey" },
+      },
+      enabled: true,
+    });
+    expect(body.transport).toBe("http");
+    expect(body.url).toBe("https://mcp.example.com/v1");
+  });
+
+  it("defaults transport to stdio when omitted", () => {
+    const body = McpServerConfigBodySchema.parse({
+      name: "legacy",
+      command: "npx",
+      args: [],
+    });
+    expect(body.transport).toBe("stdio");
+  });
+
+  it("rejects http without url", () => {
+    expect(() =>
+      McpServerConfigBodySchema.parse({
+        name: "bad",
+        transport: "http",
+      }),
+    ).toThrow();
   });
 });
 
