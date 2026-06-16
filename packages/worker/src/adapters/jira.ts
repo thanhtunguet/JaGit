@@ -9,6 +9,29 @@ export interface JiraOpts {
   fetch?: typeof fetch;
 }
 
+const ADF_BLOCK_TYPES = new Set([
+  "paragraph", "heading", "codeBlock", "blockquote", "listItem", "rule", "panel", "table", "tableRow",
+]);
+
+/** Walks an Atlassian Document Format node tree, concatenating text content. */
+function adfToText(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as { type?: string; text?: string; content?: unknown[] };
+  let out = n.type === "text" ? n.text ?? "" : n.type === "hardBreak" ? "\n" : "";
+  if (Array.isArray(n.content)) {
+    for (const child of n.content) out += adfToText(child);
+  }
+  if (n.type && ADF_BLOCK_TYPES.has(n.type)) out += "\n\n";
+  return out;
+}
+
+/** Jira Cloud (`/rest/api/3`) returns `description` as ADF, not plain text. */
+function descriptionToText(description: unknown): string {
+  if (description == null) return "";
+  if (typeof description === "string") return description;
+  return adfToText(description).replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export class JiraAdapter implements IJiraAdapter {
   private readonly fetch: typeof fetch;
   constructor(private readonly o: JiraOpts) {
@@ -30,7 +53,7 @@ export class JiraAdapter implements IJiraAdapter {
         key: data.key,
         type: data.fields?.issuetype?.name ?? "Task",
         summary: data.fields?.summary ?? "",
-        description: data.fields?.description ?? "",
+        description: descriptionToText(data.fields?.description),
       };
     }, { maxRetries: this.o.maxRetries, baseDelayMs: 500 });
   }

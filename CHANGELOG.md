@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (jira-adf-description-fix)
+
+**Fix agent không tuân theo hướng dẫn trong Jira Description**: `JiraAdapter.getIssue` lấy `description` thẳng từ Jira API v3 (Atlassian Document Format — object JSON, không phải string), khiến prompt ACP chỉ nhận được `"Description: [object Object]"`. Giờ có `adfToText`/`descriptionToText` convert ADF sang plain text trước khi đưa vào state/prompt.
+
 ## 2026-06-16 (acp-stop-rejects-pending)
 
 **Fix job kẹt vĩnh viễn ở `runAgent`, Stop/Pause vô tác dụng**: `AcpSession.stop()` chỉ clear timer của các request đang chờ mà không bao giờ `reject()` chúng — khi subprocess bị kill, promise đang `await` (kể cả trong handshake `start()`) không bao giờ settle, treo mãi dù đã click Stop/Pause. Giờ `stop()` reject toàn bộ pending request ngay lập tức với message `"ACP session stopped"`.
