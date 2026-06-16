@@ -206,6 +206,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         title: `${state.jiraIssueKey}: ${state.issueSummary}`,
         description: `Closes ${state.jiraIssueKey}\n\n${state.issueDescription}`,
       });
+      await prisma.job.update({ where: { id: state.jobId }, data: { mrUrl: mr.webUrl } });
       await sink.addEvent(state.jobId, { type: "mr_opened", message: mr.webUrl });
       return { mrUrl: mr.webUrl };
     });

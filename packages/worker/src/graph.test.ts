@@ -89,6 +89,10 @@ describe("buildGraph", () => {
     expect(final.mrUrl).toBe("https://gitlab/mr/1");
     expect(deps.sink.setUsage).toHaveBeenCalledWith("j-1", 100, 0.05);
     expect(deps.sink.setStatus).toHaveBeenCalledWith("j-1", "done");
+    expect(deps.prisma.job.update).toHaveBeenCalledWith({
+      where: { id: "j-1" },
+      data: { mrUrl: "https://gitlab/mr/1" },
+    });
   });
 
   it("skips openMergeRequest and jiraWorklog when there are no changes", async () => {
