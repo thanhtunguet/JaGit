@@ -224,7 +224,10 @@ export class AcpSession {
   }
 
   async stop(): Promise<void> {
-    for (const { timer } of this.pending.values()) clearTimeout(timer);
+    for (const { reject, timer } of this.pending.values()) {
+      clearTimeout(timer);
+      reject(new Error("ACP session stopped"));
+    }
     this.pending.clear();
     try { this.proc.kill("SIGTERM"); } catch { /* ignore */ }
   }

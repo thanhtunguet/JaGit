@@ -171,3 +171,23 @@ describe("AcpSession request timeout", () => {
     await session.stop();
   });
 }, { timeout: 10000 });
+
+describe("AcpSession stop() while a request is pending", () => {
+  it("rejects the in-flight request immediately instead of hanging until the timeout", async () => {
+    const session = new AcpSession({
+      command: "node",
+      args: ["-e", HANGING_AGENT_SCRIPT],
+      cwd: process.cwd(),
+      requestTimeoutMs: 60_000,
+      onUpdate: () => {},
+      onPermission: async () => "allow",
+    });
+
+    await session.start();
+    const runPromise = session.runPrompt("Implement the feature");
+
+    await session.stop();
+
+    await expect(runPromise).rejects.toThrow(/stopped/i);
+  });
+}, { timeout: 10000 });

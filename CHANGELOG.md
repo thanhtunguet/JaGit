@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (acp-stop-rejects-pending)
+
+**Fix job kẹt vĩnh viễn ở `runAgent`, Stop/Pause vô tác dụng**: `AcpSession.stop()` chỉ clear timer của các request đang chờ mà không bao giờ `reject()` chúng — khi subprocess bị kill, promise đang `await` (kể cả trong handshake `start()`) không bao giờ settle, treo mãi dù đã click Stop/Pause. Giờ `stop()` reject toàn bộ pending request ngay lập tức với message `"ACP session stopped"`.
+
 ## 2026-06-16 (skip-mr-when-no-changes)
 
 **Fix GitLab 400 "source_branch does not exist"**: branch được tạo trong worktree nhưng không bao giờ push lên remote khi agent không tạo thay đổi nào, nên `openMergeRequest` luôn fail. Graph giờ có conditional edge sau `commitAndPush`: không có thay đổi → bỏ qua `openMergeRequest`/`jiraWorklog`, báo cáo "done, no MR opened" thay vì gọi GitLab API với branch chưa tồn tại trên remote.
