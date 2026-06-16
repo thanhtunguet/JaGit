@@ -73,9 +73,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** JiGit MCP Review + MCP Config Dashboard (completed)
-- **Last completed:** Built-in `jigit` MCP (`jigit_request_review`), MCP CRUD API + `/mcp-servers` dashboard, AgentTemplate MCP assignment + review guard before commit
+- **Last completed:** `requireReviewBeforeCommit` default changed `true` → `false` (schema/API/worker/dashboard) — fixes jobs failing with "Human review required before commit" when the agent never calls `jigit_request_review`. Tool is still always injected into the ACP session; review is now opt-in per AgentTemplate (set flag `true`, or instruct the agent via system prompt/skill) instead of enforced by default.
 - **In progress:** _n/a_
-- **Next up:** Run `prisma migrate deploy` on deploy; E2E with real agent session
+- **Next up:** Run `prisma migrate deploy` on deploy (new migration `20260616120000_review_default_false`); investigate pre-existing `webhooks.controller.test.ts` 401 failures (unrelated, found during this session); E2E with real agent session
 <!-- END: Current plan progress -->
 
 ## Secrets — never touch

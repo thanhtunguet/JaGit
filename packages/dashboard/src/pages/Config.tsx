@@ -310,7 +310,7 @@ function AgentTemplateDialog({
     prompt: initial?.prompt ?? "",
     maxTurns: String(initial?.maxTurns ?? ""),
     mcpServerIds: initial?.mcpServerIds ?? [] as string[],
-    requireReviewBeforeCommit: initial?.requireReviewBeforeCommit ?? true,
+    requireReviewBeforeCommit: initial?.requireReviewBeforeCommit ?? false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

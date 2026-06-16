@@ -67,9 +67,11 @@ async function bootstrap() {
     wildcard: false,
   });
 
-  await app.listen(cfg.apiPort, "0.0.0.0");
-  console.log(`JiGit API listening on :${cfg.apiPort}`);
-  console.log(`Swagger UI → http://localhost:${cfg.apiPort}/api/docs`);
+  const host = "0.0.0.0";
+
+  await app.listen(cfg.apiPort, host);
+  console.log(`JiGit API listening on ${host}:${cfg.apiPort}`);
+  console.log(`Swagger UI → http://${host}:${cfg.apiPort}/api/docs`);
 }
 
 bootstrap();

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (review-default-false)
+
+**Tắt enforcement cứng review**: `requireReviewBeforeCommit` đổi default `true` → `false` (schema, API, worker, dashboard) — job không còn tự fail nếu agent không gọi `jigit_request_review`; tool vẫn luôn sẵn có, người dùng tự hướng dẫn agent qua prompt/skill khi cần review.
+
 ## 2026-06-16 (mcp-http-transport)
 
 **MCP stdio + HTTP transport**: `McpServerConfig` hỗ trợ `transport` stdio/http; dashboard chọn loại kết nối (command hoặc URL + headers); worker build ACP `mcpServers` theo transport.

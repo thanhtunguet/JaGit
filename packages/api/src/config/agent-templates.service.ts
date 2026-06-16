@@ -43,7 +43,7 @@ function toResponse(row: {
     prompt: row.systemPrompt,
     maxTurns: row.maxConcurrent,
     mcpServerIds: Array.isArray(row.mcpServerIds) ? (row.mcpServerIds as string[]) : [],
-    requireReviewBeforeCommit: row.requireReviewBeforeCommit ?? true,
+    requireReviewBeforeCommit: row.requireReviewBeforeCommit ?? false,
   };
 }
 
@@ -66,7 +66,7 @@ export class AgentTemplatesService {
         allowedTools: body.allowedTools ?? [],
         skills: body.skills ?? [],
         mcpServerIds: body.mcpServerIds ?? [],
-        requireReviewBeforeCommit: body.requireReviewBeforeCommit ?? true,
+        requireReviewBeforeCommit: body.requireReviewBeforeCommit ?? false,
       },
     });
     return toResponse(row);

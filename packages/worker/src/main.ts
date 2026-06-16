@@ -155,7 +155,7 @@ const worker = createWorker(
         const mcpServers = await buildAcpMcpServers({
           template: {
             mcpServerIds: mcpIds,
-            requireReviewBeforeCommit: template?.requireReviewBeforeCommit ?? true,
+            requireReviewBeforeCommit: template?.requireReviewBeforeCommit ?? false,
           },
           dbConfigs: dbMcpConfigs,
           jobContext: {
@@ -215,7 +215,7 @@ const worker = createWorker(
       repoMapping: mapping as any,
       agentTemplate: {
         systemPrompt: jobRow.agentTemplate?.systemPrompt ?? "",
-        requireReviewBeforeCommit: jobRow.agentTemplate?.requireReviewBeforeCommit ?? true,
+        requireReviewBeforeCommit: jobRow.agentTemplate?.requireReviewBeforeCommit ?? false,
       },
       sink: new PrismaJobSink(),
       signals: redisSignals,
