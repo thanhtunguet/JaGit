@@ -55,7 +55,12 @@ const fakeDeps = () => ({
     push: vi.fn().mockResolvedValue(undefined),
   },
   acp: {
-    run: vi.fn().mockResolvedValue({ stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 }), // (prompt, onPermission, cwd)
+    run: vi.fn().mockImplementation(
+      async (_prompt: string, _onPermission: any, onOutput: (o: any) => void) => {
+        onOutput({ kind: "text", text: "Fixed the login bug by validating the session token." });
+        return { stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 };
+      },
+    ),
   },
   repoMapping: {
     gitlabProjectId: "proj-5",
@@ -87,23 +92,43 @@ describe("buildGraph", () => {
     const graph = buildGraph(deps as any);
     const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
     expect(final.mrUrl).toBe("https://gitlab/mr/1");
+    expect(final.agentSummary).toBe("Fixed the login bug by validating the session token.");
     expect(deps.sink.setUsage).toHaveBeenCalledWith("j-1", 100, 0.05);
     expect(deps.sink.setStatus).toHaveBeenCalledWith("j-1", "done");
+    expect(deps.prisma.job.update).toHaveBeenCalledWith({
+      where: { id: "j-1" },
+      data: { mrUrl: "https://gitlab/mr/1" },
+    });
+    expect(deps.sendTelegram).toHaveBeenCalledWith(
+      expect.stringContaining("Fixed the login bug by validating the session token."),
+    );
+    expect(deps.sendTelegram).toHaveBeenCalledWith(
+      expect.stringContaining("https://gitlab/mr/1"),
+    );
   });
 
   it("skips openMergeRequest and jiraWorklog when there are no changes", async () => {
     const deps = fakeDeps();
     deps.git.hasChanges = vi.fn().mockResolvedValue(false);
+    deps.acp.run = vi.fn().mockImplementation(
+      async (_prompt: string, _onPermission: any, onOutput: (o: any) => void) => {
+        onOutput({ kind: "text", text: "No code changes were needed — the behavior already matched the issue." });
+        return { stopReason: "end_turn", tokensUsed: 100, costUsd: 0.05 };
+      },
+    );
     const graph = buildGraph(deps as any);
     const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
 
     expect(final.status).toBe("done");
     expect(final.mrUrl).toBeFalsy();
+    expect(final.agentSummary).toBe("No code changes were needed — the behavior already matched the issue.");
     expect(deps.git.commitAll).not.toHaveBeenCalled();
     expect(deps.git.push).not.toHaveBeenCalled();
     expect(deps.gitlab.openMergeRequest).not.toHaveBeenCalled();
     expect(deps.jira.addWorklog).not.toHaveBeenCalled();
-    expect(deps.sendTelegram).toHaveBeenCalledWith(expect.stringContaining("No changes"));
+    expect(deps.sendTelegram).toHaveBeenCalledWith(
+      expect.stringContaining("No code changes were needed — the behavior already matched the issue."),
+    );
   });
 
   it("halts with status=stopped when stop signal fires before runAgent", async () => {

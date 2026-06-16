@@ -1,5 +1,5 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction } from "@jigit/shared";
+import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction, buildReportInstruction } from "@jigit/shared";
 import type { PrismaClient } from "@jigit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
@@ -32,6 +32,8 @@ const JobStateAnnotation = Annotation.Root({
   /** Worktree path: repoDir/.worktrees/<branch> — this is where the agent works */
   workdir: Annotation<string>(),
   mrUrl: Annotation<string>(),
+  /** Agent's last uninterrupted text output — relayed as the Telegram report body. */
+  agentSummary: Annotation<string>(),
   status: Annotation<string>(),
   hasChanges: Annotation<boolean>(),
 });
@@ -140,6 +142,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       const parts = [
         agentTemplate.systemPrompt,
         agentTemplate.requireReviewBeforeCommit ? buildReviewInstruction() : "",
+        buildReportInstruction(),
         `Issue: ${state.jiraIssueKey} — ${state.issueSummary}`,
         `Type: ${state.issueType}`,
         `Description: ${state.issueDescription}`,
@@ -149,10 +152,18 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
       const prompt = parts.join("\n\n");
 
+      const summaryBuffer: string[] = [];
+
       const result = await acp.run(
         prompt,
         (req) => requestToolApproval(state, req),
         (output) => {
+          if (output.kind === "text" && output.text) {
+            summaryBuffer.push(output.text);
+          } else if (output.kind === "tool_use" || output.kind === "tool_result") {
+            summaryBuffer.length = 0;
+          }
+
           let message = "";
           if (output.kind === "text" && output.text) message = output.text;
           else if (output.kind === "tool_use" && output.toolCall) message = `→ ${output.toolCall.name}`;
@@ -179,7 +190,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         payload: result,
       });
       await sink.setUsage(state.jobId, result.tokensUsed, result.costUsd);
-      return {};
+      return { agentSummary: summaryBuffer.join("").trim().slice(0, 1500) };
     });
   }
 
@@ -206,6 +217,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         title: `${state.jiraIssueKey}: ${state.issueSummary}`,
         description: `Closes ${state.jiraIssueKey}\n\n${state.issueDescription}`,
       });
+      await prisma.job.update({ where: { id: state.jobId }, data: { mrUrl: mr.webUrl } });
       await sink.addEvent(state.jobId, { type: "mr_opened", message: mr.webUrl });
       return { mrUrl: mr.webUrl };
     });
@@ -221,8 +233,8 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
   async function report(state: JobState): Promise<Partial<JobState>> {
     return runStep(sink, state.jobId, "report", async () => {
       const message = state.mrUrl
-        ? `✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`
-        : `✅ ${state.jiraIssueKey} done\nNo changes — no MR opened`;
+        ? `✅ ${state.jiraIssueKey} done\n${state.agentSummary}\n\nMR: ${state.mrUrl}`
+        : `✅ ${state.jiraIssueKey} done\n${state.agentSummary || "No changes were made."}`;
       await sendTelegram(message);
       await sink.setStatus(state.jobId, "done");
       return { status: "done" };
@@ -309,6 +321,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
         repoDir: "",
         workdir: "",
         mrUrl: "",
+        agentSummary: "",
         status: "running",
       });
       return result as JobState;
