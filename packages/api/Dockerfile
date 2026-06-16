@@ -22,6 +22,7 @@ RUN pnpm --filter @jigit/api build
 # Runtime
 FROM base AS runner
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=builder /app/packages/shared/prisma ./packages/shared/prisma
