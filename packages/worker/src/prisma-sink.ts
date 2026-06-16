@@ -25,6 +25,17 @@ export class PrismaJobSink implements IJobSink {
     const step = await prisma.jobStep.create({
       data: { jobId, name, status: "running", startedAt: new Date() },
     });
+    await publishEvent(this.cfg.redisUrl, jobChannel(jobId), {
+      type: "step_changed",
+      step: {
+        id: step.id,
+        name: step.name,
+        status: step.status,
+        detail: {},
+        startedAt: step.startedAt?.toISOString() ?? null,
+        finishedAt: null,
+      },
+    });
     return step.id;
   }
 
