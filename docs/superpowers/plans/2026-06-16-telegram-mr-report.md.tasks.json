@@ -4,22 +4,22 @@
     {
       "id": 0,
       "subject": "Task 1: Persist mrUrl when the merge request is opened",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** `Job.mrUrl` in the database reflects the real MR URL as soon as `openMergeRequest` succeeds, instead of staying null forever.\n\n**Files:**\n- Modify: `packages/worker/src/graph.ts:200-212` (the `openMergeRequest` node)\n- Test: `packages/worker/src/graph.test.ts:85-92` (the \"runs to done and records mrUrl\" test)\n\n**Acceptance Criteria:**\n- After a successful `gitlab.openMergeRequest` call, `prisma.job.update` is called with `{ where: { id: state.jobId }, data: { mrUrl: <the returned webUrl> } }`.\n- The existing \"runs to done and records mrUrl\" test asserts this call happened.\n\n**Verify:** `pnpm --filter @jigit/worker test -- graph.test.ts`\n\n```json:metadata\n{\"files\": [\"packages/worker/src/graph.ts\", \"packages/worker/src/graph.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/worker test -- graph.test.ts\", \"acceptanceCriteria\": [\"prisma.job.update called with mrUrl after openMergeRequest succeeds\", \"test asserts the persistence call\"]}\n```"
     },
     {
       "id": 1,
       "subject": "Task 2: Add buildReportInstruction and wire it into the agent prompt",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Every agent run is instructed to end its final message with a concise summary of what it changed, so that summary can later be relayed as the job's status report.\n\n**Files:**\n- Modify: `packages/shared/src/mcp-servers.ts` (add new exported function after `buildReviewInstruction`)\n- Test: `packages/shared/src/mcp-servers.test.ts` (add a new `describe` block)\n- Modify: `packages/worker/src/graph.ts:140-148` (the `runAgent` prompt-parts array)\n\n**Acceptance Criteria:**\n- `buildReportInstruction()` is exported from `packages/shared/src/mcp-servers.ts` and re-exported from `@jigit/shared`.\n- `runAgent`'s prompt includes the instruction's text on every run, unconditionally.\n\n**Verify:** `pnpm --filter @jigit/shared test -- mcp-servers.test.ts && pnpm --filter @jigit/worker build`\n\n```json:metadata\n{\"files\": [\"packages/shared/src/mcp-servers.ts\", \"packages/shared/src/mcp-servers.test.ts\", \"packages/worker/src/graph.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/shared test -- mcp-servers.test.ts && pnpm --filter @jigit/worker build\", \"acceptanceCriteria\": [\"buildReportInstruction exported and re-exported from @jigit/shared\", \"runAgent appends it unconditionally to the prompt\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 3: Capture the agent's final summary and compose the Telegram report from it",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "**Goal:** The `report` step's Telegram message is built from the agent's own trailing text output and the real `mrUrl`/`hasChanges` facts, replacing the two hardcoded strings.\n\n**Files:**\n- Modify: `packages/worker/src/graph.ts` (`JobStateAnnotation`, the `runAgent` node's `onOutput` callback, the `report` node)\n- Test: `packages/worker/src/graph.test.ts` (the \"runs to done and records mrUrl\" and \"skips openMergeRequest and jiraWorklog when there are no changes\" tests)\n\n**Acceptance Criteria:**\n- `JobStateAnnotation` has a new `agentSummary: Annotation<string>()` field.\n- `runAgent` returns `{ agentSummary }` populated from the agent's last uninterrupted run of `kind: \"text\"` output chunks (a `tool_use`/`tool_result` chunk resets the buffer).\n- `report()` builds the Telegram message from `state.agentSummary` and `state.mrUrl` per the spec's template strings, falling back to `\"No changes were made.\"` only when `agentSummary` is empty and there's no `mrUrl`.\n- Both updated tests pass, and the assertions check the agent's own text appears in the message.\n\n**Verify:** `pnpm --filter @jigit/worker test -- graph.test.ts`\n\n```json:metadata\n{\"files\": [\"packages/worker/src/graph.ts\", \"packages/worker/src/graph.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/worker test -- graph.test.ts\", \"acceptanceCriteria\": [\"agentSummary added to JobStateAnnotation and initial state\", \"runAgent captures trailing text into agentSummary, resetting on tool_use/tool_result\", \"report() composes message from agentSummary + mrUrl facts\", \"both updated tests pass\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-06-17T00:00:00Z"
+  "lastUpdated": "2026-06-17T01:00:00Z"
 }
