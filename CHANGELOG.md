@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-16 (skip-mr-when-no-changes)
+
+**Fix GitLab 400 "source_branch does not exist"**: branch được tạo trong worktree nhưng không bao giờ push lên remote khi agent không tạo thay đổi nào, nên `openMergeRequest` luôn fail. Graph giờ có conditional edge sau `commitAndPush`: không có thay đổi → bỏ qua `openMergeRequest`/`jiraWorklog`, báo cáo "done, no MR opened" thay vì gọi GitLab API với branch chưa tồn tại trên remote.
+
 ## 2026-06-16 (gitlab-400-error-body)
 
 **Fix lỗi GitLab 400 không có chi tiết**: `GitlabAdapter.openMergeRequest` giờ đọc response body khi request thất bại và đính kèm vào message lỗi, thay vì chỉ throw `"gitlab 400"`. Lý do thật của GitLab (nhánh không tồn tại, MR trùng, v.v.) nay xuất hiện trong `step_error` event và báo cáo Telegram.

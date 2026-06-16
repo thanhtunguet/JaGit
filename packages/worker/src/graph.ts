@@ -33,6 +33,7 @@ const JobStateAnnotation = Annotation.Root({
   workdir: Annotation<string>(),
   mrUrl: Annotation<string>(),
   status: Annotation<string>(),
+  hasChanges: Annotation<boolean>(),
 });
 
 export type JobState = typeof JobStateAnnotation.State;
@@ -192,7 +193,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       } else {
         await sink.addEvent(state.jobId, { type: "no_changes", message: "No changes to commit" });
       }
-      return {};
+      return { hasChanges };
     });
   }
 
@@ -219,7 +220,10 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
   async function report(state: JobState): Promise<Partial<JobState>> {
     return runStep(sink, state.jobId, "report", async () => {
-      await sendTelegram(`✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`);
+      const message = state.mrUrl
+        ? `✅ ${state.jiraIssueKey} done\nMR: ${state.mrUrl}`
+        : `✅ ${state.jiraIssueKey} done\nNo changes — no MR opened`;
+      await sendTelegram(message);
       await sink.setStatus(state.jobId, "done");
       return { status: "done" };
     });
@@ -248,6 +252,10 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
   function stopCheck(state: JobState) {
     return signals.shouldStop(state.jobId) ? "stop" : "continue";
+  }
+
+  function changesCheck(state: JobState) {
+    return state.hasChanges ? "hasChanges" : "noChanges";
   }
 
   async function reviewCheck(state: JobState): Promise<"continue" | "blocked"> {
@@ -279,7 +287,10 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
       blocked: "reportFailedReview",
     })
     .addEdge("reportFailedReview", END)
-    .addEdge("commitAndPush", "openMergeRequest")
+    .addConditionalEdges("commitAndPush", changesCheck, {
+      hasChanges: "openMergeRequest",
+      noChanges: "report",
+    })
     .addEdge("openMergeRequest", "jiraWorklog")
     .addEdge("jiraWorklog", "report")
     .addEdge("report", END)

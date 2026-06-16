@@ -91,6 +91,21 @@ describe("buildGraph", () => {
     expect(deps.sink.setStatus).toHaveBeenCalledWith("j-1", "done");
   });
 
+  it("skips openMergeRequest and jiraWorklog when there are no changes", async () => {
+    const deps = fakeDeps();
+    deps.git.hasChanges = vi.fn().mockResolvedValue(false);
+    const graph = buildGraph(deps as any);
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+
+    expect(final.status).toBe("done");
+    expect(final.mrUrl).toBeFalsy();
+    expect(deps.git.commitAll).not.toHaveBeenCalled();
+    expect(deps.git.push).not.toHaveBeenCalled();
+    expect(deps.gitlab.openMergeRequest).not.toHaveBeenCalled();
+    expect(deps.jira.addWorklog).not.toHaveBeenCalled();
+    expect(deps.sendTelegram).toHaveBeenCalledWith(expect.stringContaining("No changes"));
+  });
+
   it("halts with status=stopped when stop signal fires before runAgent", async () => {
     const deps = fakeDeps();
     deps.signals.shouldStop = vi.fn().mockReturnValue(true);
