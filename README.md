@@ -134,6 +134,20 @@ Whichever channel (Telegram or dashboard) responds first wins; an unanswered
 approval auto-expires (deny) after `APPROVAL_TIMEOUT_MS` so it can't pin a
 worker slot forever.
 
+## Screenshots
+
+| Overview | Job detail |
+|---|---|
+| ![Dashboard overview](assets/Screenshot-01-dashboard.png) | ![Job detail timeline](assets/Screenshot-02-JobDetails.png) |
+
+| MCP servers config | Token usage |
+|---|---|
+| ![MCP servers](assets/Screenshot-03-MCP_Servers.png) | ![Token usage and cost](assets/Screenshot-06-TokenUsage.png) |
+
+| Telegram alerts | GitLab merge request |
+|---|---|
+| ![Telegram completion alerts](assets/Screenshot-04-Alerts.png) | ![GitLab MR opened by the agent](assets/Screenshot-07-GitLabMR.png) |
+
 ## Setup
 
 ### Prerequisites
