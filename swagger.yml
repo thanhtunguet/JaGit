@@ -1,0 +1,441 @@
+---
+openapi: 3.0.0
+paths:
+  "/api/webhooks/jira":
+    post:
+      operationId: WebhooksController_jira
+      parameters:
+        - name: x-hub-signature
+          in: header
+          description: HMAC-SHA256 from Jira (sha256=<hex>)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ignored or duplicate
+        "202":
+          description: Job enqueued
+        "401":
+          description: Bad signature
+      summary: Receive Jira issue-updated webhook
+      tags:
+        - Webhooks
+  "/api/webhooks/gitlab":
+    post:
+      operationId: WebhooksController_gitlab
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: Receive GitLab webhook (Phase 2+ — stub)
+      tags:
+        - Webhooks
+  "/api/jobs":
+    get:
+      operationId: JobsController_listJobs
+      parameters: []
+      responses:
+        "200":
+          description: Array of jobs
+      summary: List all jobs (newest first, max 100)
+      tags:
+        - Jobs
+  "/api/jobs/{id}":
+    get:
+      operationId: JobsController_getJob
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job details
+        "404":
+          description: Job not found
+      summary: Get job details with steps, events, and pending approvals
+      tags:
+        - Jobs
+    delete:
+      operationId: JobsController_deleteJob
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job deleted
+      summary: Delete a job (stops and cleans up if still active)
+      tags:
+        - Jobs
+  "/api/jobs/{id}/stop":
+    post:
+      operationId: JobsController_stop
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "202":
+          description: ""
+      summary: Send stop signal to the running job
+      tags:
+        - Jobs
+  "/api/jobs/{id}/pause":
+    post:
+      operationId: JobsController_pause
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "202":
+          description: ""
+      summary: Pause a running job (saves checkpoint)
+      tags:
+        - Jobs
+  "/api/jobs/{id}/resume":
+    post:
+      operationId: JobsController_resume
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "202":
+          description: ""
+      summary: Resume a paused job
+      tags:
+        - Jobs
+  "/api/jobs/{id}/retry":
+    post:
+      operationId: JobsController_retry
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "202":
+          description: ""
+      summary: Re-enqueue a failed job
+      tags:
+        - Jobs
+  "/api/approvals":
+    get:
+      operationId: ApprovalsController_listPending
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: List pending approvals across all jobs
+      tags:
+        - Approvals
+  "/api/approvals/stream":
+    get:
+      operationId: ApprovalsController_stream
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: SSE stream of global approval events (requested + resolved)
+      tags:
+        - Approvals
+  "/api/approvals/{id}/decide":
+    post:
+      operationId: ApprovalsController_decide
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Approval CUID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/DecideDto"
+      responses:
+        "200":
+          description: ""
+      summary: Approve or reject a pending approval (idempotent)
+      tags:
+        - Approvals
+  "/api/review-requests":
+    post:
+      operationId: ReviewRequestsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ReviewRequestDto"
+      responses:
+        "201":
+          description: ""
+      summary: Create a human review approval (used by jigit MCP)
+      tags:
+        - Approvals
+  "/api/jobs/{id}/stream":
+    get:
+      operationId: SseController_stream
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Job CUID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: SSE stream of live job events
+      tags:
+        - Jobs
+  "/api/credentials":
+    get:
+      operationId: CredentialsController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: List credentials (secrets redacted)
+      tags:
+        - Config
+    post:
+      operationId: CredentialsController_create
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      summary: Create a credential
+      tags:
+        - Config
+  "/api/credentials/{id}":
+    patch:
+      operationId: CredentialsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Update a credential (blank secret keeps existing)
+      tags:
+        - Config
+    delete:
+      operationId: CredentialsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Delete a credential
+      tags:
+        - Config
+  "/api/repo-mappings":
+    get:
+      operationId: RepoMappingsController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: List repo mappings
+      tags:
+        - Config
+    post:
+      operationId: RepoMappingsController_create
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      summary: Create a repo mapping
+      tags:
+        - Config
+  "/api/repo-mappings/{id}":
+    put:
+      operationId: RepoMappingsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Update a repo mapping
+      tags:
+        - Config
+    delete:
+      operationId: RepoMappingsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Delete a repo mapping
+      tags:
+        - Config
+  "/api/agent-templates":
+    get:
+      operationId: AgentTemplatesController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: List agent templates
+      tags:
+        - Config
+    post:
+      operationId: AgentTemplatesController_create
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      summary: Create an agent template
+      tags:
+        - Config
+  "/api/agent-templates/{id}":
+    put:
+      operationId: AgentTemplatesController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Update an agent template
+      tags:
+        - Config
+    delete:
+      operationId: AgentTemplatesController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Delete an agent template
+      tags:
+        - Config
+  "/api/mcp-servers":
+    get:
+      operationId: McpServersController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      summary: List MCP server configurations
+      tags:
+        - Config
+    post:
+      operationId: McpServersController_create
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      summary: Create an MCP server configuration
+      tags:
+        - Config
+  "/api/mcp-servers/{id}":
+    put:
+      operationId: McpServersController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Update an MCP server configuration
+      tags:
+        - Config
+    delete:
+      operationId: McpServersController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      summary: Delete an MCP server configuration
+      tags:
+        - Config
+  "/api/stats/overview":
+    get:
+      operationId: StatsController_getOverview
+      parameters: []
+      responses:
+        "200":
+          description: Aggregated dashboard stats
+      summary: Dashboard overview metrics (jobs, throughput, activity)
+      tags:
+        - Stats
+info:
+  title: JiGit API
+  description: AI coding orchestration — Jira + GitLab + Claude Code
+  version: "1.0"
+  contact: {}
+tags:
+  - name: Jobs
+    description: ""
+  - name: Webhooks
+    description: ""
+  - name: Approvals
+    description: ""
+  - name: Config (read-only)
+    description: ""
+  - name: Stats
+    description: ""
+servers: []
+components:
+  schemas:
+    DecideDto:
+      type: object
+      properties: {}
+    ReviewRequestDto:
+      type: object
+      properties: {}
