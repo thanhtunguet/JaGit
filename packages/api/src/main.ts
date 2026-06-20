@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import fastifyStatic from "@fastify/static";
+import multipart from "@fastify/multipart";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -66,6 +67,9 @@ async function bootstrap() {
     index: "index.html",
     wildcard: false,
   });
+
+  // Register multipart for file uploads
+  await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
 
   const host = "0.0.0.0";
 

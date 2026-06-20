@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/multipart": "^10.0.0",
     "@fastify/static": "^9.1.3",
     "@jigit/shared": "workspace:*",
     "@nestjs/common": "^11.1.26",
