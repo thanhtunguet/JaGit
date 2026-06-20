@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { listUsageUsers, type UsageUser } from "@/api/client.js";
 import { useUsageData, type Period } from "@/hooks/useUsageData.js";
 import { UserSelector } from "@/components/usage/UserSelector.js";
@@ -14,8 +15,11 @@ import { ProjectsChart } from "@/components/usage/ProjectsChart.js";
 import { SessionsTable } from "@/components/usage/SessionsTable.js";
 import { ToolsChart } from "@/components/usage/ToolsChart.js";
 import { ShellCommandsChart } from "@/components/usage/ShellCommandsChart.js";
+import { LiveSessionsTab } from "@/components/sessions/LiveSessionsTab.js";
 
-export function Usage() {
+type UsageTab = "historical" | "sessions";
+
+function HistoricalView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState<UsageUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -53,8 +57,7 @@ export function Usage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">AI Usage</h2>
+      <div className="flex items-center justify-end">
         <PeriodToggle selected={period} onChange={setPeriod} />
       </div>
 
@@ -109,6 +112,46 @@ export function Usage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function Usage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: UsageTab = tabParam === "sessions" ? "sessions" : "historical";
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (value === "historical") {
+        next.delete("tab");
+      } else {
+        next.set("tab", value);
+      }
+      setSearchParams(next);
+    },
+    [searchParams, setSearchParams],
+  );
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">AI Usage</h2>
+
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
+          <TabsTrigger value="historical">Historical (CodeBurn)</TabsTrigger>
+          <TabsTrigger value="sessions">Live Sessions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="historical">
+          <HistoricalView />
+        </TabsContent>
+
+        <TabsContent value="sessions">
+          <LiveSessionsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

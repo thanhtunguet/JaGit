@@ -1,0 +1,19 @@
+{
+  "name": "@jigit/hook-copilot",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "jigit-hook-copilot": "dist/index.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jigit/agent-reporter": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "vitest": "^2.1.9"
+  }
+}

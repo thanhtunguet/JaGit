@@ -1,0 +1,42 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AgentSessionRow } from "@/api/client.js";
+
+interface Props {
+  rows: AgentSessionRow[];
+  total: number;
+}
+
+export function SessionSummaryCards({ rows, total }: Props) {
+  const inputTokens = rows.reduce((sum, r) => sum + r.inputTokens, 0);
+  const outputTokens = rows.reduce((sum, r) => sum + r.outputTokens, 0);
+  const knownCostRows = rows.filter((r) => r.costUsd != null);
+  const cost = knownCostRows.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
+  const missingCostCount = rows.length - knownCostRows.length;
+
+  const stats = [
+    { label: "Sessions (total)", value: total.toLocaleString(), sub: null as string | null },
+    { label: "Input tokens (page)", value: inputTokens.toLocaleString(), sub: null },
+    { label: "Output tokens (page)", value: outputTokens.toLocaleString(), sub: null },
+    {
+      label: "Cost (page)",
+      value: `$${cost.toFixed(2)}`,
+      sub: missingCostCount > 0 ? `${missingCostCount} missing cost` : null,
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((s) => (
+        <Card key={s.label}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{s.value}</div>
+            {s.sub && <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

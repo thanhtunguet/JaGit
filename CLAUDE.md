@@ -73,6 +73,38 @@ this first to know where to resume.
 
 ### Current plan progress
 
+- **Active plan:** Agent Session Reporting Phase 1 (implementation-complete) —
+  spec `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`,
+  plan `docs/superpowers/plans/2026-06-20-agent-session-reporting.md`,
+  spike `docs/superpowers/specs/2026-06-20-codex-copilot-spike-findings.md`.
+- **Last completed:** All 13 plan tasks on branch
+  `feature/agent-session-reporting`. New `@jigit/agent-reporter` shared package
+  (Zod payload schema + `resolveGitUsername` + `reportSession` with `withRetry`),
+  `AgentTool` enum + `AgentSession` Prisma model + migration
+  `20260620120000_add_agent_session` (authored offline via `migrate diff` —
+  needs `migrate deploy` on a live DB), `AgentSessionModule`
+  (`packages/api/src/agent-sessions/`: idempotent `POST /api/agent-sessions`
+  upsert + `GET` list/detail, `AuthGuard` reuse), three hook bin packages
+  `@jigit/hook-{claude-code,codex,copilot}`, dashboard client methods + a
+  `/usage` "Live Sessions" tab + Overview live-token widget. `pnpm -r build`
+  clean; `pnpm -r test` green except the 2 pre-existing unrelated
+  `webhooks.controller.test.ts` 401 failures. Notes:
+  `docs/changelogs/2026-06-20-2230-agent-session-reporting.md`.
+- **In progress:** _n/a_ — branch is implementation-complete; next step is
+  `finishing-a-development-branch` (merge/PR/cleanup) for both
+  `feature/agent-session-reporting` and the earlier
+  `feature/codeburn-consolidation`.
+- **Next up:** `prisma migrate deploy` on deploy; publish the 4 new packages to
+  npm (so `npx -y @jigit/hook-*` works); add `@testing-library/react` to test
+  the new `components/sessions/` UI (currently only build-verified); Claude Code
+  `costUsd` pricing lookup; dedicated aggregate endpoint for summary cards /
+  Overview (currently page-bounded, 200-row cap); investigate the pre-existing
+  `webhooks.controller.test.ts` 401 failures. Deferred per spec §6: OpenCode &
+  Cursor adapters, Copilot VS Code Chat, per-turn timeline, per-user API keys,
+  rate limiting, SSE.
+
+### Previous plan progress (CodeBurn Consolidation — completed)
+
 - **Active plan:** CodeBurn Consolidation into JiGit (completed) — see
   `docs/superpowers/specs/2026-06-20-codeburn-consolidation-design.md` and
   `docs/superpowers/plans/2026-06-20-codeburn-phase{1,2,3}-*.md`

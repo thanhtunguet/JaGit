@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (agent-session-reporting-impl)
+
+Implemented agent session reporting Phase 1: new `@jigit/agent-reporter` shared package, `AgentSession` Prisma model + migration, `AgentSessionModule` (`POST/GET /api/agent-sessions`, idempotent upsert), three hook bin packages (`@jigit/hook-{claude-code,codex,copilot}`), and a `/usage` "Live Sessions" tab + Overview live-token widget. `pnpm -r build` clean; tests green except 2 pre-existing webhook 401s. See `docs/changelogs/2026-06-20-2230-agent-session-reporting.md`.
+
 ## 2026-06-20 (agent-session-reporting-design-complete)
 
 Completed all six sections of the agent session reporting design (data model, API contract, hook adapters for Claude Code / Codex / Copilot CLI, dashboard surface, out-of-scope list). Spec self-review pass clean. Ready for `writing-plans`. See `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`.
