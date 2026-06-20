@@ -70,6 +70,7 @@ task/step is done, what's in progress, and what's next. The next session reads
 this first to know where to resume.
 
 <!-- BEGIN: Current plan progress (agents update this each session) -->
+
 ### Current plan progress
 
 - **Active plan:** CodeBurn Consolidation into JiGit (completed) — see
@@ -104,9 +105,10 @@ docker-compose up -d postgres redis
 ```
 
 <!-- gitnexus:start -->
+
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **JaGit** (1934 symbols, 3523 relationships, 95 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **JaGit** (1961 symbols, 3550 relationships, 95 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
