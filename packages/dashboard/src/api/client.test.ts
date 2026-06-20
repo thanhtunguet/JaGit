@@ -6,6 +6,7 @@ import {
   listPendingApprovals, getStoredToken, setStoredToken,
   listMcpServers, createMcpServer, deleteMcpServer,
   listUsageUsers, getUserUploads, getLatestUpload, deleteUsageUser,
+  listAgentSessions, getAgentSession,
 } from "./client.js";
 
 vi.stubGlobal("fetch", vi.fn());
@@ -174,5 +175,23 @@ describe("API client", () => {
       "/api/usage/users/alice",
       expect.objectContaining({ method: "DELETE" }),
     );
+  });
+
+  it("listAgentSessions builds query string from filters", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ rows: [], total: 0 }) } as any);
+    await listAgentSessions({ tool: "claude-code", username: "alice", limit: 50, offset: 0 });
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toContain("/api/agent-sessions?");
+    expect(url).toContain("tool=claude-code");
+    expect(url).toContain("username=alice");
+    expect(url).toContain("limit=50");
+  });
+
+  it("getAgentSession builds /agent-sessions/:id", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "as1" }) } as any);
+    const row = await getAgentSession("as1");
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/agent-sessions/as1");
+    expect(row.id).toBe("as1");
   });
 });

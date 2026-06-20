@@ -354,6 +354,55 @@ export const deleteUsageUser = (username: string) =>
     method: "DELETE",
   });
 
+// ─── Agent Sessions API ─────────────────────────────────────────────────────
+
+export type AgentSessionTool = "claude-code" | "codex" | "copilot";
+
+export interface AgentSessionRow {
+  id: string;
+  tool: string; // enum form from API: claude_code | codex | copilot
+  sessionId: string;
+  model: string;
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  costUsd: number | null;
+  toolCallCount: number | null;
+  startedAt: string;
+  lastUpdatedAt: string;
+  createdAt: string;
+  rawPayload?: Record<string, unknown>;
+  user: { username: string };
+}
+
+export interface AgentSessionListResponse {
+  rows: AgentSessionRow[];
+  total: number;
+}
+
+export interface AgentSessionFilters {
+  tool?: AgentSessionTool;
+  username?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export const listAgentSessions = (filters: AgentSessionFilters = {}) => {
+  const qs = new URLSearchParams();
+  if (filters.tool) qs.set("tool", filters.tool);
+  if (filters.username) qs.set("username", filters.username);
+  if (filters.from) qs.set("from", filters.from);
+  if (filters.to) qs.set("to", filters.to);
+  if (filters.limit != null) qs.set("limit", String(filters.limit));
+  if (filters.offset != null) qs.set("offset", String(filters.offset));
+  return request<AgentSessionListResponse>(`/agent-sessions?${qs.toString()}`);
+};
+
+export const getAgentSession = (id: string) =>
+  request<AgentSessionRow>(`/agent-sessions/${encodeURIComponent(id)}`);
+
 // ─── Token helper ─────────────────────────────────────────────────────────────
 
 export const getStoredToken = () => sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
