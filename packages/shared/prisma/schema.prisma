@@ -204,10 +204,11 @@ model Approval {
 // Represents a user for usage tracking (CodeBurn consolidation).
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  createdAt DateTime @default(now())
-  uploads   UsageUpload[]
+  id            String         @id @default(cuid())
+  username      String         @unique
+  createdAt     DateTime       @default(now())
+  uploads       UsageUpload[]
+  agentSessions AgentSession[]
 }
 
 // ─── UsageUpload ─────────────────────────────────────────────────────────────
@@ -222,4 +223,35 @@ model UsageUpload {
   data       Json     // structured JSON containing all parsed CSV data
 
   @@index([userId, uploadedAt])
+}
+
+// ─── AgentSession ────────────────────────────────────────────────────────────
+// Live per-session usage snapshots pushed by per-tool hook adapters.
+
+enum AgentTool {
+  claude_code
+  codex
+  copilot
+}
+
+model AgentSession {
+  id                String    @id @default(cuid())
+  tool              AgentTool
+  sessionId         String
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model             String
+  inputTokens       Int       @default(0)
+  cachedInputTokens Int       @default(0)
+  outputTokens      Int       @default(0)
+  costUsd           Float?
+  toolCallCount     Int?
+  startedAt         DateTime
+  lastUpdatedAt     DateTime  @updatedAt
+  rawPayload        Json      @default("{}")
+  createdAt         DateTime  @default(now())
+
+  @@unique([tool, sessionId])
+  @@index([userId, lastUpdatedAt])
+  @@index([tool, lastUpdatedAt])
 }
