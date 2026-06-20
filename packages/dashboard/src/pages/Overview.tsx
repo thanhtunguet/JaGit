@@ -27,6 +27,7 @@ import {
   listJobs,
   listUsageUsers,
   getLatestUpload,
+  listAgentSessions,
   type Job,
   type OverviewStats,
   type UsageUser,
@@ -73,6 +74,7 @@ export function Overview() {
   const [error, setError] = useState<string | null>(null);
   const [usageUsers, setUsageUsers] = useState<UsageUser[] | null>(null);
   const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [liveTokens7d, setLiveTokens7d] = useState<number | null>(null);
 
   const refreshJobs = () => listJobs().then(setJobs).catch((e) => setError((e as Error).message));
 
@@ -96,6 +98,22 @@ export function Overview() {
       })
       .catch(() => {
         /* usage widget is optional; ignore errors */
+      });
+  }, []);
+
+  useEffect(() => {
+    // Coarse Phase-1 figure: sums input+output tokens across up to 200 of the
+    // most recent AgentSession rows in the last 7 days. A dedicated aggregate
+    // endpoint is deferred until this proves useful.
+    const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    listAgentSessions({ from, limit: 200 })
+      .then((res) => {
+        const total = res.rows.reduce((sum, r) => sum + r.inputTokens + r.outputTokens, 0);
+        setLiveTokens7d(total);
+      })
+      .catch(() => {
+        /* live token widget is optional; ignore errors */
+        setLiveTokens7d(0);
       });
   }, []);
 
@@ -317,6 +335,22 @@ export function Overview() {
           </Button>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex items-baseline justify-between border-b pb-3">
+            <div>
+              <div className="text-2xl font-bold">
+                {liveTokens7d === null ? "—" : liveTokens7d.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground">Live tokens (7d)</div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/usage">Historical</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/usage?tab=sessions">Live</Link>
+              </Button>
+            </div>
+          </div>
           {usageUsers === null ? (
             <Skeleton className="h-8 w-full" />
           ) : usageUsers.length === 0 ? (
