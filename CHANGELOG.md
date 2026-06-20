@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (codeburn-consolidation)
+
+**Gộp CodeBurn vào JiGit như một trang dashboard mới**: Port backend Go của CodeBurn (upload ZIP CSV, list users, lấy data) sang `UsageModule` trong NestJS/Fastify, lưu trữ ở Postgres dạng JSONB (`User` + `UsageUpload` models) thay vì filesystem. Thêm trang `/usage` với đầy đủ charts/tables (Summary, Daily, Activity, Models, Projects, Sessions, Tools, Shell Commands) và widget "AI Usage" trên Overview.
+
 ## 2026-06-16 (jira-adf-description-fix)
 
 **Fix agent không tuân theo hướng dẫn trong Jira Description**: `JiraAdapter.getIssue` lấy `description` thẳng từ Jira API v3 (Atlassian Document Format — object JSON, không phải string), khiến prompt ACP chỉ nhận được `"Description: [object Object]"`. Giờ có `adfToText`/`descriptionToText` convert ADF sang plain text trước khi đưa vào state/prompt.
