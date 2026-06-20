@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (agent-session-reporting-brainstorm)
+
+Started design for agent session reporting (per-session token/cost snapshots from Claude Code, Codex, GitHub Copilot via a shared `@jagit/agent-reporter` core). Section 1 (architecture) confirmed; paused mid-spec. See `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`.
+
 ## 2026-06-20 (auth-guard-api-key)
 
 **`AuthGuard` chấp nhận thêm `x-api-key`**: ngoài `Authorization: Bearer <token>`, giờ guard còn fallback sang header `x-api-key`, tạm thời verify cả hai cùng giá trị `DASHBOARD_API_TOKEN` (`loadConfig().dashboardApiToken`). Không đổi constructor nên 10 call site `@UseGuards(new AuthGuard(...))` hiện có không bị ảnh hưởng.
