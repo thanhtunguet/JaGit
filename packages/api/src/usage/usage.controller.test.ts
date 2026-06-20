@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { Test } from "@nestjs/testing";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+import multipart from "@fastify/multipart";
 import { UsageController } from "./usage.controller.js";
 import { UsageService } from "./usage.service.js";
 import { PrismaService } from "../common/prisma.module.js";
@@ -30,6 +31,7 @@ describe("UsageController", () => {
 
     app = module.createNestApplication(new FastifyAdapter());
     app.setGlobalPrefix("api");
+    await app.register(multipart);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });
@@ -63,5 +65,40 @@ describe("UsageController", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toMatchObject({ deleted: true });
+  });
+
+  it("POST /api/usage/upload with auth → captures username from form field", async () => {
+    const boundary = "----jigit-test-boundary";
+    const body = [
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="username"',
+      "",
+      "alice",
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="file"; filename="usage.zip"',
+      "Content-Type: application/zip",
+      "",
+      "fake-zip-bytes",
+      `--${boundary}--`,
+      "",
+    ].join("\r\n");
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/usage/upload",
+      headers: {
+        authorization: "Bearer test-dashboard-token",
+        "content-type": `multipart/form-data; boundary=${boundary}`,
+      },
+      payload: body,
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(mockUsageService.uploadUsageData).toHaveBeenCalledWith("alice", expect.any(Buffer));
+  });
+
+  it("POST /api/usage/upload without auth → 401", async () => {
+    const res = await app.inject({ method: "POST", url: "/api/usage/upload" });
+    expect(res.statusCode).toBe(401);
   });
 });
