@@ -3,83 +3,90 @@ import { z } from "zod";
 export const PeriodSchema = z.enum(["today", "7days", "30days"]);
 export type Period = z.infer<typeof PeriodSchema>;
 
+// CSV cells are parsed as raw strings (PapaParse dynamicTyping disabled); an
+// empty cell arrives as "" and should map to null rather than coercing to 0.
+const nullableCoerceNumber = z.preprocess(
+  (val) => (val === "" ? null : val),
+  z.coerce.number().nullable(),
+);
+
 export const SummaryRowSchema = z.object({
   Period: z.string(),
-  "Cost (USD)": z.number(),
-  "Saved (USD)": z.number(),
-  "API Calls": z.number(),
-  Sessions: z.number(),
-  Projects: z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Saved (USD)": z.coerce.number(),
+  "API Calls": z.coerce.number(),
+  Sessions: z.coerce.number(),
+  Projects: z.coerce.number(),
 });
 
 export const DailyRowSchema = z.object({
   Period: z.string(),
   Date: z.string(),
-  "Cost (USD)": z.number(),
-  "Saved (USD)": z.number(),
-  "API Calls": z.number(),
-  Sessions: z.number(),
-  "Input Tokens": z.number(),
-  "Output Tokens": z.number(),
-  "Cache Read Tokens": z.number(),
-  "Cache Write Tokens": z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Saved (USD)": z.coerce.number(),
+  "API Calls": z.coerce.number(),
+  Sessions: z.coerce.number(),
+  "Input Tokens": z.coerce.number(),
+  "Output Tokens": z.coerce.number(),
+  "Cache Read Tokens": z.coerce.number(),
+  "Cache Write Tokens": z.coerce.number(),
 });
 
 export const ActivityRowSchema = z.object({
   Period: z.string(),
   Activity: z.string(),
-  "Cost (USD)": z.number(),
-  "Share (%)": z.number(),
-  Turns: z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Share (%)": z.coerce.number(),
+  Turns: z.coerce.number(),
 });
 
 export const ModelRowSchema = z.object({
   Period: z.string(),
   Model: z.string(),
-  "Cost (USD)": z.number(),
-  "Saved (USD)": z.number(),
-  "Share (%)": z.number(),
-  "API Calls": z.number(),
-  "Edit Turns": z.number(),
-  "One-shot Rate (%)": z.number().nullable(),
-  "Retries/Edit": z.number().nullable(),
-  "Cost/Edit (USD)": z.number().nullable(),
-  "Input Tokens": z.number(),
-  "Output Tokens": z.number(),
-  "Cache Read Tokens": z.number(),
-  "Cache Write Tokens": z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Saved (USD)": z.coerce.number(),
+  "Share (%)": z.coerce.number(),
+  "API Calls": z.coerce.number(),
+  "Edit Turns": z.coerce.number(),
+  "One-shot Rate (%)": nullableCoerceNumber,
+  "Retries/Edit": nullableCoerceNumber,
+  "Cost/Edit (USD)": nullableCoerceNumber,
+  "Input Tokens": z.coerce.number(),
+  "Output Tokens": z.coerce.number(),
+  "Cache Read Tokens": z.coerce.number(),
+  "Cache Write Tokens": z.coerce.number(),
 });
 
 export const ProjectRowSchema = z.object({
   Project: z.string(),
-  "Cost (USD)": z.number(),
-  "Saved (USD)": z.number(),
-  "Avg/Session (USD)": z.number(),
-  "Share (%)": z.number(),
-  "API Calls": z.number(),
-  Sessions: z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Saved (USD)": z.coerce.number(),
+  "Avg/Session (USD)": z.coerce.number(),
+  "Share (%)": z.coerce.number(),
+  "API Calls": z.coerce.number(),
+  Sessions: z.coerce.number(),
 });
 
 export const SessionRowSchema = z.object({
   Project: z.string(),
   "Session ID": z.string(),
   "Started At": z.string(),
-  "Cost (USD)": z.number(),
-  "Saved (USD)": z.number(),
-  "API Calls": z.number(),
-  Turns: z.number(),
+  "Cost (USD)": z.coerce.number(),
+  "Saved (USD)": z.coerce.number(),
+  "API Calls": z.coerce.number(),
+  Turns: z.coerce.number(),
 });
 
 export const ToolRowSchema = z.object({
   Tool: z.string(),
-  Calls: z.number(),
-  "Share (%)": z.number(),
+  Calls: z.coerce.number(),
+  "Share (%)": z.coerce.number(),
 });
 
 export const ShellCommandRowSchema = z.object({
   Command: z.string(),
-  Calls: z.number(),
-  "Share (%)": z.number(),
+  Calls: z.coerce.number(),
+  "Share (%)": z.coerce.number(),
 });
 
 export const UsageDataSchema = z.object({

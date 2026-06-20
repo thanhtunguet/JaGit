@@ -80,7 +80,7 @@ export class UsageService {
       if (!ALLOWED_CSV_FILES.includes(name as typeof ALLOWED_CSV_FILES[number])) continue;
 
       const csvText = entry.getData().toString("utf-8");
-      const parsed = Papa.parse(csvText, { header: true, dynamicTyping: true, skipEmptyLines: true });
+      const parsed = Papa.parse(csvText, { header: true, dynamicTyping: false, skipEmptyLines: true });
 
       if (parsed.errors.length > 0) {
         throw new BadRequestException(`Failed to parse ${name}: ${parsed.errors[0].message}`);

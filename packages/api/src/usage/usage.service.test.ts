@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Test } from "@nestjs/testing";
+import AdmZip from "adm-zip";
 import { UsageService } from "./usage.service.js";
 import { PrismaService } from "../common/prisma.module.js";
 
@@ -63,5 +64,26 @@ describe("UsageService", () => {
   it("uploadUsageData throws on invalid ZIP", async () => {
     await expect(service.uploadUsageData("alice", Buffer.from("not a zip")))
       .rejects.toThrow("Invalid ZIP file");
+  });
+
+  it("uploadUsageData accepts a numeric-looking Project value in projects.csv", async () => {
+    const zip = new AdmZip();
+    zip.addFile(
+      "summary.csv",
+      Buffer.from("Period,Cost (USD),Saved (USD),API Calls,Sessions,Projects\n30 Days,1,0,1,1,1\n"),
+    );
+    zip.addFile(
+      "projects.csv",
+      Buffer.from(
+        "Project,Cost (USD),Saved (USD),Avg/Session (USD),Share (%),API Calls,Sessions\n13,0,0,0,0,3,1\n",
+      ),
+    );
+
+    const result = await service.uploadUsageData("alice", zip.toBuffer());
+
+    expect(result.filesProcessed).toContain("projects.csv");
+    expect(mockPrisma.client.usageUpload.create).toHaveBeenCalled();
+    const savedData = mockPrisma.client.usageUpload.create.mock.calls[0][0].data.data;
+    expect(savedData.projects[0].Project).toBe("13");
   });
 });
