@@ -237,6 +237,123 @@ export const listPendingApprovals = () =>
     "/approvals",
   );
 
+// ─── Usage API ────────────────────────────────────────────────────────────────
+
+export interface UsageUser {
+  id: string;
+  username: string;
+  createdAt: string;
+  _count: { uploads: number };
+}
+
+export interface UsageUpload {
+  id: string;
+  userId: string;
+  uploadedAt: string;
+  period: string;
+  data: UsageData;
+}
+
+export interface UsageData {
+  summary: SummaryRow[];
+  daily: DailyRow[];
+  activity: ActivityRow[];
+  models: ModelRow[];
+  projects: ProjectRow[];
+  sessions: SessionRow[];
+  tools: ToolRow[];
+  shellCommands: ShellCommandRow[];
+}
+
+export interface SummaryRow {
+  Period: string;
+  "Cost (USD)": number;
+  "Saved (USD)": number;
+  "API Calls": number;
+  Sessions: number;
+  Projects: number;
+}
+
+export interface DailyRow {
+  Period: string;
+  Date: string;
+  "Cost (USD)": number;
+  "Saved (USD)": number;
+  "API Calls": number;
+  Sessions: number;
+  "Input Tokens": number;
+  "Output Tokens": number;
+  "Cache Read Tokens": number;
+  "Cache Write Tokens": number;
+}
+
+export interface ActivityRow {
+  Period: string;
+  Activity: string;
+  "Cost (USD)": number;
+  "Share (%)": number;
+  Turns: number;
+}
+
+export interface ModelRow {
+  Period: string;
+  Model: string;
+  "Cost (USD)": number;
+  "Saved (USD)": number;
+  "Share (%)": number;
+  "API Calls": number;
+  "Edit Turns": number;
+  "One-shot Rate (%)": number | null;
+  "Retries/Edit": number | null;
+  "Cost/Edit (USD)": number | null;
+  "Input Tokens": number;
+  "Output Tokens": number;
+  "Cache Read Tokens": number;
+  "Cache Write Tokens": number;
+}
+
+export interface ProjectRow {
+  Project: string;
+  "Cost (USD)": number;
+  "Saved (USD)": number;
+  "Avg/Session (USD)": number;
+  "Share (%)": number;
+  "API Calls": number;
+  Sessions: number;
+}
+
+export interface SessionRow {
+  Project: string;
+  "Session ID": string;
+  "Started At": string;
+  "Cost (USD)": number;
+  "Saved (USD)": number;
+  "API Calls": number;
+  Turns: number;
+}
+
+export interface ToolRow {
+  Tool: string;
+  Calls: number;
+  "Share (%)": number;
+}
+
+export interface ShellCommandRow {
+  Command: string;
+  Calls: number;
+  "Share (%)": number;
+}
+
+export const listUsageUsers = () => request<UsageUser[]>("/usage/users");
+export const getUserUploads = (username: string) =>
+  request<UsageUpload[]>(`/usage/users/${encodeURIComponent(username)}`);
+export const getLatestUpload = (username: string) =>
+  request<UsageUpload | { data: null }>(`/usage/users/${encodeURIComponent(username)}/latest`);
+export const deleteUsageUser = (username: string) =>
+  request<{ deleted: boolean }>(`/usage/users/${encodeURIComponent(username)}`, {
+    method: "DELETE",
+  });
+
 // ─── Token helper ─────────────────────────────────────────────────────────────
 
 export const getStoredToken = () => sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";

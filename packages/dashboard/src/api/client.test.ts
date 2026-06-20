@@ -5,6 +5,7 @@ import {
   listCredentials, createCredential, updateCredential, deleteCredential,
   listPendingApprovals, getStoredToken, setStoredToken,
   listMcpServers, createMcpServer, deleteMcpServer,
+  listUsageUsers, getUserUploads, getLatestUpload, deleteUsageUser,
 } from "./client.js";
 
 vi.stubGlobal("fetch", vi.fn());
@@ -144,5 +145,34 @@ describe("API client", () => {
     setStoredToken("abc123");
     expect(getStoredToken()).toBe("abc123");
     setStoredToken("");
+  });
+
+  it("listUsageUsers calls GET /api/usage/users", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
+    await listUsageUsers();
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/usage/users");
+  });
+
+  it("getUserUploads calls GET /api/usage/users/:username", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as any);
+    await getUserUploads("alice");
+    const [url] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/usage/users/alice");
+  });
+
+  it("getLatestUpload calls GET /api/usage/users/:username/latest", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ id: "up1", data: {} }) } as any);
+    await getLatestUpload("alice");
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/usage/users/alice/latest", expect.anything());
+  });
+
+  it("deleteUsageUser calls DELETE /api/usage/users/:username", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ deleted: true }) } as any);
+    await deleteUsageUser("alice");
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      "/api/usage/users/alice",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 });
