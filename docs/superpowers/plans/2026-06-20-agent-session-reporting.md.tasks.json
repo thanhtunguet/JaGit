@@ -4,91 +4,91 @@
     {
       "id": 0,
       "subject": "Task 0: Codex & Copilot reporting spikes",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Resolve Codex/Copilot mechanism questions (spec §4.2/§4.3) so Tasks 7–8 are fully specified. Research only.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/specs/2026-06-20-codex-copilot-spike-findings.md\"],\"verifyCommand\":\"\",\"acceptanceCriteria\":[\"Codex JSONL schema documented\",\"Codex mechanism (A daemon vs B shim) chosen\",\"Codex cumulative-vs-delta confirmed\",\"Copilot telemetry + synthetic sessionId documented\",\"Copilot install form chosen\"]}\n```"
     },
     {
       "id": 1,
       "subject": "Task 1: @jigit/agent-reporter — payload schema",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Create shared package skeleton + single-source-of-truth Zod AgentSessionPayloadSchema.\n\n```json:metadata\n{\"files\":[\"packages/agent-reporter/package.json\",\"packages/agent-reporter/tsconfig.json\",\"packages/agent-reporter/src/schema.ts\",\"packages/agent-reporter/src/schema.test.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/agent-reporter test\",\"acceptanceCriteria\":[\"pnpm install links package\",\"schema validates good + rejects bad\",\"AGENT_TOOLS exported\",\"AgentSessionPayload type exported\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: @jigit/agent-reporter — resolveGitUsername",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "**Goal:** Resolve identity env → git user.email → git user.name → \"unknown\", never throwing.\n\n```json:metadata\n{\"files\":[\"packages/agent-reporter/src/git-username.ts\",\"packages/agent-reporter/src/git-username.test.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/agent-reporter test\",\"acceptanceCriteria\":[\"JAGIT_GIT_USERNAME wins\",\"falls back email→name→unknown\",\"never throws\"]}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: @jigit/agent-reporter — reportSession + index",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2],
       "description": "**Goal:** POST validated payload with x-api-key, retry 5xx via withRetry, fail-fast 4xx, never throw.\n\n```json:metadata\n{\"files\":[\"packages/agent-reporter/src/report.ts\",\"packages/agent-reporter/src/index.ts\",\"packages/agent-reporter/src/report.test.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/agent-reporter test\",\"acceptanceCriteria\":[\"validates before send\",\"x-api-key header\",\"retries 5xx not 4xx\",\"missing env logs+returns\",\"swallows all errors\",\"index re-exports\"]}\n```"
     },
     {
       "id": 4,
       "subject": "Task 4: Prisma AgentSession model + migration",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "**Goal:** Add AgentTool enum + AgentSession model keyed by (tool,sessionId), User relation, migration.\n\n```json:metadata\n{\"files\":[\"packages/shared/prisma/schema.prisma\",\"packages/shared/prisma/migrations\"],\"verifyCommand\":\"pnpm --filter @jigit/shared exec prisma validate && pnpm --filter @jigit/shared build\",\"acceptanceCriteria\":[\"User.agentSessions added\",\"model matches spec §2\",\"migration generated\",\"build clean\"]}\n```"
     },
     {
       "id": 5,
       "subject": "Task 5: AgentSessionService — upsert/list/get",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Prisma data layer: idempotent upsert (overwrite-not-merge, find-or-create user), filtered+paginated list, get with rawPayload.\n\n```json:metadata\n{\"files\":[\"packages/api/src/agent-sessions/agent-sessions.service.ts\",\"packages/api/src/agent-sessions/agent-sessions.service.test.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/api test agent-sessions.service\",\"acceptanceCriteria\":[\"upsert maps wire→enum, preserves startedAt\",\"rawPayload defaults {}\",\"list filters + orders + total\",\"get throws NotFound\"]}\n```"
     },
     {
       "id": 6,
       "subject": "Task 6: AgentSessionController + module + app wiring",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [4, 5],
       "description": "**Goal:** Expose POST + 2 GET /api/agent-sessions with auth + Zod validation + enum→wire response; register module.\n\n```json:metadata\n{\"files\":[\"packages/api/src/agent-sessions/agent-sessions.controller.ts\",\"packages/api/src/agent-sessions/agent-sessions.module.ts\",\"packages/api/src/agent-sessions/agent-sessions.controller.test.ts\",\"packages/api/src/app.module.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/api test agent-sessions.controller && pnpm --filter @jigit/api build\",\"acceptanceCriteria\":[\"POST 401/201/400\",\"wire tool in response\",\"GET list defaults 50/0\",\"GET by id\",\"module registered\"]}\n```"
     },
     {
       "id": 7,
       "subject": "Task 7: @jigit/hook-claude-code adapter",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [6],
       "description": "**Goal:** bin package parsing Claude Code Stop-hook transcript JSONL, summing cumulative usage, calling reportSession; exit 0 always.\n\n```json:metadata\n{\"files\":[\"packages/hook-claude-code/package.json\",\"packages/hook-claude-code/tsconfig.json\",\"packages/hook-claude-code/src/index.ts\",\"packages/hook-claude-code/src/index.test.ts\",\"packages/hook-claude-code/README.md\"],\"verifyCommand\":\"pnpm --filter @jigit/hook-claude-code test\",\"acceptanceCriteria\":[\"buildPayload sums per §4.1\",\"CLI exits 0 on error\",\"bin jigit-hook-claude-code\",\"README leads with npx -y\"]}\n```"
     },
     {
       "id": 8,
       "subject": "Task 8: @jigit/hook-codex + @jigit/hook-copilot adapters",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [4],
       "description": "**Goal:** Codex + Copilot CLI bin adapters per Task 0 spike findings; buildPayload + reportSession; exit 0 always.\n\n```json:metadata\n{\"files\":[\"packages/hook-codex\",\"packages/hook-copilot\"],\"verifyCommand\":\"pnpm --filter @jigit/hook-codex test && pnpm --filter @jigit/hook-copilot test\",\"acceptanceCriteria\":[\"codex buildPayload per spike\",\"codex install per spike\",\"copilot synthetic sessionId + null cost\",\"both exit 0\",\"bin entries set\",\"READMEs npx -y\"]}\n```"
     },
     {
       "id": 9,
       "subject": "Task 9: Dashboard API client — agent-sessions methods",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1, 4],
       "description": "**Goal:** Add typed listAgentSessions/getAgentSession + types; test URLs/params.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/api/client.ts\",\"packages/dashboard/src/api/client.test.ts\"],\"verifyCommand\":\"pnpm --filter @jigit/dashboard test client\",\"acceptanceCriteria\":[\"types exported\",\"listAgentSessions builds query\",\"getAgentSession builds /:id\",\"tests pass\"]}\n```"
     },
     {
       "id": 10,
       "subject": "Task 10: Dashboard Live Sessions tab",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [9],
       "description": "**Goal:** Historical|Live Sessions tab strip on /usage; filters, 4 summary cards, paginated table, detail drawer with raw-payload viewer.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/components/sessions/LiveSessionsTab.tsx\",\"packages/dashboard/src/components/sessions/SessionsFilters.tsx\",\"packages/dashboard/src/components/sessions/SessionSummaryCards.tsx\",\"packages/dashboard/src/components/sessions/LiveSessionsTable.tsx\",\"packages/dashboard/src/components/sessions/SessionDetailDrawer.tsx\",\"packages/dashboard/src/pages/Usage.tsx\"],\"verifyCommand\":\"pnpm --filter @jigit/dashboard build && pnpm --filter @jigit/dashboard test\",\"acceptanceCriteria\":[\"tab strip, historical unchanged\",\"filters w/ URL state\",\"4 summary cards\",\"table cols + pagination 50\",\"row→drawer w/ raw payload\",\"build clean\"]}\n```"
     },
     {
       "id": 11,
       "subject": "Task 11: Overview AI Usage widget — live token volume",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [10],
       "description": "**Goal:** Add 7-day live token volume from AgentSession to Overview AI Usage widget + links to both tabs; keep CodeBurn content.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/pages/Overview.tsx\"],\"verifyCommand\":\"pnpm --filter @jigit/dashboard build\",\"acceptanceCriteria\":[\"7d live token number\",\"links to /usage and ?tab=sessions\",\"CodeBurn content unchanged\",\"build clean\"]}\n```"
     },
     {
       "id": 12,
       "subject": "Task 12: Full-repo verification, docs, changelog",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [7, 8, 9, 11],
       "description": "**Goal:** pnpm -r build/test green; document env vars; write changelog; update progress.\n\n```json:metadata\n{\"files\":[\".env.example\",\"CHANGELOG.md\",\"CLAUDE.md\",\"docs/changelogs/2026-06-20-HHMM-agent-session-reporting.md\"],\"verifyCommand\":\"pnpm -r build && pnpm -r test\",\"acceptanceCriteria\":[\"build clean\",\"tests green except known 2 webhook 401\",\"env vars documented\",\"changelog + progress updated\",\"detect_changes run\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-06-20T00:00:00.000Z"
+  "lastUpdated": "2026-06-20T22:35:00.000Z"
 }
