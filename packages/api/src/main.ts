@@ -48,7 +48,7 @@ async function bootstrap() {
       .addTag("Stats")
       .build(),
   );
-  SwaggerModule.setup("docs", app, document, {
+  SwaggerModule.setup("/api/docs", app, document, {
     swaggerOptions: { persistAuthorization: true },
   });
 
