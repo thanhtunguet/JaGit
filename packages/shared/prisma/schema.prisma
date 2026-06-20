@@ -199,3 +199,27 @@ model Approval {
 
   @@index([jobId, status])
 }
+
+// ─── User ────────────────────────────────────────────────────────────────────
+// Represents a user for usage tracking (CodeBurn consolidation).
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  createdAt DateTime @default(now())
+  uploads   UsageUpload[]
+}
+
+// ─── UsageUpload ─────────────────────────────────────────────────────────────
+// Stores parsed usage data (e.g., from CSV uploads) per user and period.
+
+model UsageUpload {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+  period     String   // "today", "7days", "30days"
+  data       Json     // structured JSON containing all parsed CSV data
+
+  @@index([userId, uploadedAt])
+}
