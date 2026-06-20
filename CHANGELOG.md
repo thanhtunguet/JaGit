@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (agent-session-reporting-design-complete)
+
+Completed all six sections of the agent session reporting design (data model, API contract, hook adapters for Claude Code / Codex / Copilot CLI, dashboard surface, out-of-scope list). Spec self-review pass clean. Ready for `writing-plans`. See `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`.
+
 ## 2026-06-20 (agent-session-reporting-brainstorm)
 
 Started design for agent session reporting (per-session token/cost snapshots from Claude Code, Codex, GitHub Copilot via a shared `@jagit/agent-reporter` core). Section 1 (architecture) confirmed; paused mid-spec. See `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`.
