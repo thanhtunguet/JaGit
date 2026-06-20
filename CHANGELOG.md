@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (auth-guard-api-key)
+
+**`AuthGuard` chấp nhận thêm `x-api-key`**: ngoài `Authorization: Bearer <token>`, giờ guard còn fallback sang header `x-api-key`, tạm thời verify cả hai cùng giá trị `DASHBOARD_API_TOKEN` (`loadConfig().dashboardApiToken`). Không đổi constructor nên 10 call site `@UseGuards(new AuthGuard(...))` hiện có không bị ảnh hưởng.
+
 ## 2026-06-20 (codeburn-consolidation-review-fix)
 
 **Fix code review CodeBurn consolidation**: `POST /usage/upload` không đọc được field `username` từ multipart form (do `@fastify/multipart` ở stream mode không populate `req.body`) — mọi upload bị gắn sai vào user `"unknown"`. Đọc từ `data.fields.username`. Đổi `AuthGuard` token source từ đọc `process.env` trực tiếp sang `loadConfig().dashboardApiToken` để đồng bộ với các controller khác (fail fast lúc boot nếu thiếu token). Thêm integration test upload với multipart body thật.

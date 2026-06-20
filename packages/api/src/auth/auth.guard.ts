@@ -18,15 +18,22 @@ export function verifyToken(expected: string, provided: string): boolean {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  // TODO: split into a dedicated API key secret once issued; reuses dashboardApiToken for now.
   constructor(private readonly token: string) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const header = request.headers.authorization as string | undefined;
     const bearer = extractBearer(header);
-    if (!bearer || !verifyToken(this.token, bearer)) {
-      throw new UnauthorizedException();
+    if (bearer && verifyToken(this.token, bearer)) {
+      return true;
     }
-    return true;
+
+    const apiKey = request.headers["x-api-key"] as string | undefined;
+    if (apiKey && verifyToken(this.token, apiKey)) {
+      return true;
+    }
+
+    throw new UnauthorizedException();
   }
 }

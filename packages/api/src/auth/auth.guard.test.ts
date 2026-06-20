@@ -48,34 +48,47 @@ describe("verifyToken", () => {
 describe("AuthGuard", () => {
   const guard = new AuthGuard(VALID_TOKEN);
 
-  function createMockContext(authHeader?: string): ExecutionContext {
+  function createMockContext(headers: Record<string, string>): ExecutionContext {
     const http = {
-      getRequest: () => ({
-        headers: authHeader ? { authorization: authHeader } : {},
-      }),
+      getRequest: () => ({ headers }),
     };
     return {
       switchToHttp: () => http,
     } as ExecutionContext;
   }
 
-  it("throws UnauthorizedException for missing Authorization header", () => {
-    const ctx = createMockContext();
+  it("throws UnauthorizedException for missing Authorization and x-api-key headers", () => {
+    const ctx = createMockContext({});
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
   it("throws UnauthorizedException for malformed Authorization header", () => {
-    const ctx = createMockContext("Basic abc123");
+    const ctx = createMockContext({ authorization: "Basic abc123" });
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
   it("throws UnauthorizedException for wrong Bearer token", () => {
-    const ctx = createMockContext("Bearer wrong-token");
+    const ctx = createMockContext({ authorization: "Bearer wrong-token" });
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
   it("returns true for correct Bearer token", () => {
-    const ctx = createMockContext("Bearer correct-token");
+    const ctx = createMockContext({ authorization: "Bearer correct-token" });
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
+
+  it("returns true for correct x-api-key header", () => {
+    const ctx = createMockContext({ "x-api-key": VALID_TOKEN });
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
+
+  it("throws UnauthorizedException for wrong x-api-key header", () => {
+    const ctx = createMockContext({ "x-api-key": WRONG_TOKEN });
+    expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
+  });
+
+  it("returns true when x-api-key is correct even if Authorization header is malformed", () => {
+    const ctx = createMockContext({ authorization: "Basic abc123", "x-api-key": VALID_TOKEN });
     expect(guard.canActivate(ctx)).toBe(true);
   });
 });
