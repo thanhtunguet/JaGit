@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -19,7 +21,17 @@ import {
   Cell,
 } from "recharts";
 import { Activity, CheckCircle, Hash, Clock } from "lucide-react";
-import { getOverviewStats, isActiveJob, listJobs, type Job, type OverviewStats } from "@/api/client";
+import {
+  getOverviewStats,
+  isActiveJob,
+  listJobs,
+  listUsageUsers,
+  getLatestUpload,
+  type Job,
+  type OverviewStats,
+  type UsageUser,
+  type UsageData,
+} from "@/api/client";
 
 const STATUS_COLORS: Record<string, string> = {
   done: "#22c55e",
@@ -59,6 +71,8 @@ export function Overview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usageUsers, setUsageUsers] = useState<UsageUser[] | null>(null);
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
 
   const refreshJobs = () => listJobs().then(setJobs).catch((e) => setError((e as Error).message));
 
@@ -67,6 +81,22 @@ export function Overview() {
       .then(setStats)
       .catch((e) => setError((e as Error).message));
     refreshJobs();
+  }, []);
+
+  useEffect(() => {
+    listUsageUsers()
+      .then(async (users) => {
+        setUsageUsers(users);
+        if (users.length > 0) {
+          const latest = await getLatestUpload(users[0].username);
+          if ("data" in latest && latest.data !== null) {
+            setUsageData((latest as { data: UsageData }).data);
+          }
+        }
+      })
+      .catch(() => {
+        /* usage widget is optional; ignore errors */
+      });
   }, []);
 
   const runningJobs = useMemo(
@@ -274,6 +304,52 @@ export function Overview() {
                 <span>{e.message}</span>
               </div>
             ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI Usage Widget */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm">AI Usage</CardTitle>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/usage">View details</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {usageUsers === null ? (
+            <Skeleton className="h-8 w-full" />
+          ) : usageUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">No usage data uploaded yet.</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                {usageUsers.slice(0, 3).map((u) => (
+                  <div key={u.id} className="flex-1">
+                    <div className="text-sm font-medium">{u.username}</div>
+                    <div className="text-xs text-muted-foreground">{u._count.uploads} uploads</div>
+                  </div>
+                ))}
+              </div>
+              {usageData && usageData.daily.length > 0 && (
+                <ResponsiveContainer width="100%" height={120}>
+                  <BarChart
+                    data={usageData.daily
+                      .filter((r) => r.Period === "30 Days")
+                      .map((r) => ({ date: r.Date.slice(5), cost: r["Cost (USD)"] }))}
+                    margin={{ top: 0, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v.toFixed(0)}`} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                      formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, "Cost"]}
+                    />
+                    <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
