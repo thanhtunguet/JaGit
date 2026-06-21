@@ -63,6 +63,7 @@ export class StatsService {
       agentSessionAggregate,
       latestUploads,
       recentEvents,
+      baseRate,
     ] = await Promise.all([
       this.prisma.client.job.count({
         where: { status: { notIn: [...TERMINAL_STATUSES] } },
@@ -103,6 +104,7 @@ export class StatsService {
         take: 15,
         include: { job: { select: { jiraIssueKey: true } } },
       }),
+      this.pricing.getBaseTokenRate(),
     ]);
 
     const liveTokens =
@@ -135,7 +137,6 @@ export class StatsService {
 
     const totalTokensUsed = liveTokens + codeburnTokens;
 
-    const baseRate = await this.pricing.getBaseTokenRate();
     const totalBaseTokens = this.pricing.toBaseTokens(
       agentSessionAggregate._sum.costUsd ?? 0,
       baseRate,
