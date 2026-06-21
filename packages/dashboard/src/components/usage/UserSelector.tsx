@@ -6,11 +6,11 @@ interface Props {
 
 export function UserSelector({ users, selected, onSelect }: Props) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex items-center gap-3">
+      <div className="flex flex-nowrap gap-2">
         <button
           onClick={() => onSelect("")}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+          className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
             !selected
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -22,7 +22,7 @@ export function UserSelector({ users, selected, onSelect }: Props) {
           <button
             key={u}
             onClick={() => onSelect(u)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
               selected === u
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"

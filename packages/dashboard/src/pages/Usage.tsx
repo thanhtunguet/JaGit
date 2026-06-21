@@ -149,17 +149,20 @@ function HistoricalView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <PeriodToggle selected={period} onChange={setPeriod} />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0 overflow-x-auto pb-2 -mb-2 custom-scrollbar">
+          {usersLoading ? (
+            <Skeleton className="h-8 w-64" />
+          ) : usersError ? (
+            <p className="text-sm text-destructive">{usersError}</p>
+          ) : (
+            <UserSelector users={usernames} selected={selectedUser} onSelect={handleSelectUser} />
+          )}
+        </div>
+        <div className="flex-shrink-0 pb-2 -mb-2">
+          <PeriodToggle selected={period} onChange={setPeriod} />
+        </div>
       </div>
-
-      {usersLoading ? (
-        <Skeleton className="h-8 w-64" />
-      ) : usersError ? (
-        <p className="text-sm text-destructive">{usersError}</p>
-      ) : (
-        <UserSelector users={usernames} selected={selectedUser} onSelect={handleSelectUser} />
-      )}
 
       {!selectedUser && globalLoading && (
         <div className="space-y-4">
