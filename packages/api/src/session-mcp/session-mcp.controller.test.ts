@@ -48,7 +48,11 @@ describe("SessionMcpController — MCP Protocol", () => {
     await app?.close();
   });
 
-  const validHeaders = { "x-git-username": "testuser", authorization: "Bearer test-dashboard-token" };
+  const validHeaders = {
+    "x-git-username": "testuser",
+    authorization: "Bearer test-dashboard-token",
+    accept: "application/json, text/event-stream",
+  };
 
   describe("MCP tools/list", () => {
     it("should list activate-jira tool with correct schema", async () => {
@@ -142,7 +146,7 @@ describe("SessionMcpController — MCP Protocol", () => {
       expect((body.result.content[0] as TextContent).text).toContain("Already");
     });
 
-    it("should return MCP error for unknown tool", async () => {
+    it("should return isError:true for unknown tool (not a transport-level error)", async () => {
       const res = await app.inject({
         method: "POST",
         url: "/api/session-mcp",
@@ -154,9 +158,12 @@ describe("SessionMcpController — MCP Protocol", () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body);
-      expect(body.error).toBeDefined();
-      expect(body.error.code).toBe(-32601); // Method not found
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      // The MCP SDK reports "tool not found" as a CallToolResult with isError:true
+      // (per spec, tool-execution errors are returned in-band so the LLM can see them),
+      // not as a top-level JSON-RPC error object.
+      expect(body.result.isError).toBe(true);
+      expect((body.result.content[0] as TextContent).text).toContain("not found");
     });
   });
 

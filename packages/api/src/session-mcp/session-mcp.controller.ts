@@ -1,8 +1,11 @@
-import { Controller, Post, Body, Headers, UseGuards, BadRequestException } from "@nestjs/common";
+import { Controller, Post, Headers, Req, Res, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { loadConfig } from "@jagit/shared";
 import { AuthGuard } from "../auth/auth.guard.js";
 import { SessionMcpService } from "./session-mcp.service.js";
+import { createSessionMcpServer } from "./session-mcp.server.js";
 
 @ApiTags("SessionMcp")
 @Controller("session-mcp")
@@ -11,26 +14,29 @@ export class SessionMcpController {
   constructor(private readonly svc: SessionMcpService) {}
 
   @Post()
-  @ApiOperation({ summary: "MCP tool: activate-jira" })
-  @ApiResponse({ status: 200, description: "Tool executed" })
+  @ApiOperation({ summary: "MCP JSON-RPC endpoint (tools/list, tools/call activate-jira)" })
+  @ApiResponse({ status: 200, description: "MCP JSON-RPC response" })
+  @ApiResponse({ status: 400, description: "Missing x-git-username header" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  async executeTool(
-    @Body() body: { name: string; arguments: { ticketId: string; sessionId: string } },
-    @Headers("x-git-username") username: string
-  ) {
+  async handleMcp(
+    @Headers("x-git-username") username: string,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: false }) reply: FastifyReply
+  ): Promise<void> {
     if (!username) {
       throw new BadRequestException("x-git-username header required");
     }
 
-    if (body.name !== "activate-jira") {
-      throw new BadRequestException(`Unknown tool: ${body.name}`);
-    }
+    const server = createSessionMcpServer({ username, service: this.svc });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
 
-    const { ticketId, sessionId } = body.arguments;
-    if (!ticketId || !sessionId) {
-      throw new BadRequestException("ticketId and sessionId required");
-    }
+    await server.connect(transport);
 
-    return this.svc.activateJira(sessionId, username, ticketId);
+    await transport.handleRequest(request.raw, reply.raw, request.body as object);
+    await transport.close();
+    await server.close();
   }
 }
