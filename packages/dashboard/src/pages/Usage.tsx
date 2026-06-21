@@ -123,7 +123,15 @@ function HistoricalView() {
 
   const handleSelectUser = useCallback(
     (username: string) => {
-      setSearchParams({ u: username });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (username) {
+          next.set("u", username);
+        } else {
+          next.delete("u");
+        }
+        return next;
+      });
     },
     [setSearchParams],
   );
