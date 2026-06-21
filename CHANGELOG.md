@@ -1,3 +1,6 @@
+## 2026-06-22
+- Add session tracking fields (`jiraTicketId`, `durationMs`, LOC metrics) to `AgentSession` model (Prisma schema + migration).
+
 ## 2026-06-21 (base-tokens)
 
 **Base Tokens (BT)**: Added a normalized cost unit — `1 BT = price of 1 input token of claude-haiku-4-5` — computed backend-side from `costUsd / baseRate`. Surfaced as a "BT" column in the Live Sessions table, the Overview "Total Tokens Used" headline, and tooltips on the Input/Output/Cost summary cards. Includes DRY'd pricing helpers and a Redis-cached, failure-safe model-pricing lookup. Details: `docs/changelogs/2026-06-21-2130-base-tokens.md`.

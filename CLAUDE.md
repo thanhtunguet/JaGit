@@ -73,6 +73,13 @@ this first to know where to resume.
 
 ### Current plan progress
 
+- **Active plan:** Base Tokens / Session Tracking Enhancement
+- **Last completed:** Task 1: Database Migration for Session Tracking Fields (`jiraTicketId`, `initialCommitSha`, `durationMs`, LOC).
+- **In progress:** _n/a_
+- **Next up:** Task 2: Jira Worklog Service.
+
+### Previous plan progress (Agent Session Reporting Phase 1)
+
 - **Active plan:** Agent Session Reporting Phase 1 (implementation-complete) —
   spec `docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`,
   plan `docs/superpowers/plans/2026-06-20-agent-session-reporting.md`,

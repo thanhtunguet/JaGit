@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -252,9 +253,21 @@ model AgentSession {
   rawPayload               Json      @default("{}")
   createdAt                DateTime  @default(now())
 
+  // Jira association
+  jiraTicketId             String?
+
+  // Time tracking
+  initialCommitSha         String?
+  durationMs               Int?
+
+  // Lines of code
+  linesAdded               Int?
+  linesRemoved             Int?
+
   @@unique([tool, sessionId])
   @@index([userId, lastUpdatedAt])
   @@index([tool, lastUpdatedAt])
+  @@index([jiraTicketId])
 }
 
 // ─── ModelPricing ────────────────────────────────────────────────────────────
