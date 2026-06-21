@@ -14,7 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jagit/agent-reporter": "workspace:*"
+    "@jagit/agent-reporter": "workspace:*",
+    "@jagit/shared": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

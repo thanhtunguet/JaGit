@@ -1,5 +1,5 @@
 {
-  "name": "@jigit/hook-claude-code-time-tracking",
+  "name": "@jagit/hook-claude-code-time-tracking",
   "version": "0.0.1",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/agent-reporter": "workspace:*"
+    "@jagit/agent-reporter": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

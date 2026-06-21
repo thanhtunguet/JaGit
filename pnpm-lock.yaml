@@ -215,6 +215,22 @@ importers:
       '@jagit/agent-reporter':
         specifier: workspace:*
         version: link:../agent-reporter
+      '@jagit/shared':
+        specifier: workspace:^
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.3
+        version: 25.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.9.3)(jsdom@25.0.1)
+
+  packages/hook-claude-code-time-tracking:
+    dependencies:
+      '@jagit/agent-reporter':
+        specifier: workspace:*
+        version: link:../agent-reporter
     devDependencies:
       '@types/node':
         specifier: ^25.9.3

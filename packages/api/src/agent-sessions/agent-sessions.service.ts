@@ -55,6 +55,11 @@ export class AgentSessionService {
       costUsd: costUsd,
       toolCallCount: payload.toolCallCount,
       rawPayload: raw as never,
+      jiraTicketId: payload.jiraTicketId ?? null,
+      initialCommitSha: payload.initialCommitSha ?? null,
+      durationMs: payload.durationMs ?? null,
+      linesAdded: payload.linesAdded ?? null,
+      linesRemoved: payload.linesRemoved ?? null,
     };
 
     return this.prisma.client.agentSession.upsert({

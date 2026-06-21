@@ -16,6 +16,11 @@ export const AgentSessionPayloadSchema = z.object({
   toolCallCount: z.number().int().nonnegative().nullable(),
   startedAt: z.string().datetime(),
   rawPayload: z.record(z.string(), z.unknown()).optional(),
+  jiraTicketId: z.string().nullable().optional(),
+  initialCommitSha: z.string().nullable().optional(),
+  durationMs: z.number().int().nonnegative().nullable().optional(),
+  linesAdded: z.number().int().nonnegative().nullable().optional(),
+  linesRemoved: z.number().int().nonnegative().nullable().optional(),
 });
 
 export type AgentSessionPayload = z.infer<typeof AgentSessionPayloadSchema>;
