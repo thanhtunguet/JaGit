@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20 (fix-hook-claude-code-symlink)
+
+Fixed `@jigit/hook-claude-code` silently failing when installed globally: the `main()` guard used `import.meta.url === file://${process.argv[1]}`, which fails for symlinked packages because `import.meta.url` resolves to the real path while `process.argv[1]` preserves the symlink path. Changed to `realpathSync()` comparison so `main()` actually runs. See `docs/changelogs/2026-06-20-2330-fix-hook-claude-code-symlink.md`.
+
 ## 2026-06-20 (agent-session-reporting-impl)
 
 Implemented agent session reporting Phase 1: new `@jigit/agent-reporter` shared package, `AgentSession` Prisma model + migration, `AgentSessionModule` (`POST/GET /api/agent-sessions`, idempotent upsert), three hook bin packages (`@jigit/hook-{claude-code,codex,copilot}`), and a `/usage` "Live Sessions" tab + Overview live-token widget. `pnpm -r build` clean; tests green except 2 pre-existing webhook 401s. See `docs/changelogs/2026-06-20-2230-agent-session-reporting.md`.

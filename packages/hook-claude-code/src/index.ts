@@ -1,6 +1,16 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, appendFileSync } from "node:fs";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jigit/agent-reporter";
+
+// Debug logging to a file we can check after the hook runs
+const DEBUG_FILE = "/tmp/jigit-hook-debug.log";
+function debug(msg: string): void {
+  try {
+    appendFileSync(DEBUG_FILE, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch {}
+}
 
 interface StopStdin { session_id: string; transcript_path: string; cwd?: string }
 interface TranscriptEntry {
@@ -67,15 +77,55 @@ export function buildPayload(
 }
 
 async function main(): Promise<void> {
+  debug("=== HOOK STARTED ===");
+  debug(`import.meta.url: ${import.meta.url}`);
+  debug(`argv[1]: ${process.argv[1]}`);
+  debug(`isMain check: ${import.meta.url.startsWith("file://")}`);
   try {
+    const realMeta = realpathSync(fileURLToPath(import.meta.url));
+    const realArgv = realpathSync(process.argv[1]);
+    debug(`realMeta: ${realMeta}`);
+    debug(`realArgv: ${realArgv}`);
+    debug(`match: ${realMeta === realArgv}`);
+  } catch (e) {
+    debug(`realpath error: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  try {
+    debug("Reading stdin...");
     const raw = readFileSync(0, "utf-8");
+    debug(`stdin length: ${raw.length}`);
+    debug(`stdin: ${raw.substring(0, 500)}`);
+
     const stdin = JSON.parse(raw) as StopStdin;
-    await reportSession(buildPayload(stdin));
+    debug(`Parsed: session_id=${stdin.session_id}, transcript_path=${stdin.transcript_path}, cwd=${stdin.cwd}`);
+
+    const payload = buildPayload(stdin);
+    debug(`Payload: ${JSON.stringify(payload)}`);
+
+    // Check env vars before calling reportSession
+    debug(`JAGIT_BASE_URL: ${process.env.JAGIT_BASE_URL ? "SET" : "UNSET"}`);
+    debug(`JAGIT_API_KEY: ${process.env.JAGIT_API_KEY ? "SET (len=" + process.env.JAGIT_API_KEY.length + ")" : "UNSET"}`);
+
+    await reportSession(payload);
+    debug("reportSession completed (check stderr for API errors)");
   } catch (err) {
-    console.error("[hook-claude-code]", err instanceof Error ? err.message : err);
+    const msg = err instanceof Error ? err.message : String(err);
+    debug(`ERROR: ${msg}`);
+    console.error("[hook-claude-code]", msg);
   } finally {
+    debug("=== HOOK FINISHED ===\n");
     process.exit(0);
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) void main();
+const isMain = import.meta.url.startsWith("file://") &&
+  realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+if (isMain) {
+  debug("isMain=true, calling main()");
+  void main();
+} else {
+  debug("isMain=false, NOT calling main()");
+  debug(`import.meta.url: ${import.meta.url}`);
+  debug(`process.argv[1]: ${process.argv[1]}`);
+}

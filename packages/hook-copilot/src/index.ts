@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jigit/agent-reporter";
 
 export interface CopilotInfo {
@@ -34,4 +36,6 @@ async function main(): Promise<void> {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) void main();
+const isMain = import.meta.url.startsWith("file://") &&
+  realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+if (isMain) void main();

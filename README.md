@@ -78,12 +78,12 @@ flowchart LR
 
 **Services**
 
-| Package | Role |
-|---|---|
-| `packages/shared` | Config, crypto, Prisma client, BullMQ/Redis helpers, retry policy, branch logic, shared types |
-| `packages/api` | Fastify: webhook receivers, REST + SSE for the dashboard, Telegram bot, serves the built dashboard |
-| `packages/worker` | BullMQ consumer running a per-job LangGraph graph (Postgres checkpointer) that drives Claude Code over ACP |
-| `packages/dashboard` | React + Vite + shadcn/ui |
+| Package              | Role                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `packages/shared`    | Config, crypto, Prisma client, BullMQ/Redis helpers, retry policy, branch logic, shared types              |
+| `packages/api`       | Fastify: webhook receivers, REST + SSE for the dashboard, Telegram bot, serves the built dashboard         |
+| `packages/worker`    | BullMQ consumer running a per-job LangGraph graph (Postgres checkpointer) that drives Claude Code over ACP |
+| `packages/dashboard` | React + Vite + shadcn/ui                                                                                   |
 
 Postgres is the source of truth (jobs/steps/events/approvals + LangGraph
 checkpoints); Redis is the queue plus live pub/sub.
@@ -136,16 +136,16 @@ worker slot forever.
 
 ## Screenshots
 
-| Overview | Job detail |
-|---|---|
+| Overview                                                  | Job detail                                                  |
+| --------------------------------------------------------- | ----------------------------------------------------------- |
 | ![Dashboard overview](assets/Screenshot-01-dashboard.png) | ![Job detail timeline](assets/Screenshot-02-JobDetails.png) |
 
-| MCP servers config | Token usage |
-|---|---|
+| MCP servers config                                   | Token usage                                                  |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
 | ![MCP servers](assets/Screenshot-03-MCP_Servers.png) | ![Token usage and cost](assets/Screenshot-06-TokenUsage.png) |
 
-| Telegram alerts | GitLab merge request |
-|---|---|
+| Telegram alerts                                                | GitLab merge request                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------------------- |
 | ![Telegram completion alerts](assets/Screenshot-04-Alerts.png) | ![GitLab MR opened by the agent](assets/Screenshot-07-GitLabMR.png) |
 
 ## Setup
@@ -207,8 +207,90 @@ pnpm db:studio          # Prisma Studio
 pnpm test:e2e           # end-to-end smoke test
 ```
 
+## Agent usage reporting (hooks)
+
+JiGit can collect live per-session token/cost/model metadata from the AI coding
+agents your team runs locally and show it on the dashboard under **Usage →
+Live Sessions**. Each supported tool gets a thin hook adapter that, when a
+session finishes, parses that tool's session log and POSTs a snapshot to
+`POST /api/agent-sessions` (idempotent per `(tool, sessionId)`).
+
+### Configure the reporter (once per machine)
+
+Set these in your shell rc (`~/.zshrc`, `~/.bashrc`):
+
+```bash
+export JAGIT_BASE_URL="https://your-jigit-host"   # JiGit API base URL
+export JAGIT_API_KEY="<your DASHBOARD_API_TOKEN>" # same value as the server's DASHBOARD_API_TOKEN
+# Optional — identity defaults to `git config user.email`:
+# export JAGIT_GIT_USERNAME="you@example.com"
+```
+
+Reporting never blocks or crashes the agent: missing config or a failed POST is
+logged to stderr and ignored.
+
+### Claude Code
+
+Add a `Stop` hook to `~/.claude/settings.json` (or per-project
+`.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "Stop": [{
+      "matcher": "",
+      "hooks": [{ "type": "command", "command": "npx -y @jigit/hook-claude-code" }]
+    }]
+  }
+}
+```
+
+The hook reads the transcript, sums the session's cumulative token usage, and
+reports on every turn group. No install needed (`npx -y` fetches on demand);
+for a permanent binary run `npm i -g @jigit/hook-claude-code`.
+
+### Codex CLI
+
+Codex has no native hook, so wrap it with a shell function in your rc that runs
+the reporter after the real `codex` exits:
+
+```bash
+codex() {
+  command codex "$@"
+  local status=$?
+  npx -y @jigit/hook-codex >/dev/null 2>&1 || true
+  return $status
+}
+```
+
+The reporter finds the most recent `~/.codex/sessions/**/*.jsonl`, takes the
+session's final cumulative token totals, and reports. (Global install:
+`npm i -g @jigit/hook-codex`, then the binary is `jigit-hook-codex`; it also
+accepts `--file <path>`.)
+
+### GitHub Copilot CLI
+
+Same wrapper approach (Copilot is seat-based, so `cost` is always reported as
+unknown):
+
+```bash
+copilot() {
+  command copilot "$@"
+  local status=$?
+  npx -y @jigit/hook-copilot >/dev/null 2>&1 || true
+  return $status
+}
+```
+
+> **Note:** the `@jigit/hook-*` packages must be published to your npm registry
+> for `npx -y` to resolve. Until then, run them from a local checkout
+> (`pnpm --filter @jigit/hook-claude-code build`, then point the hook command at
+> the built `dist/index.js`). Each package's README has the full per-tool
+> details.
+
 ## Docs
 
 - Design: [`docs/superpowers/specs/2026-06-14-jigit-mvp-design.md`](docs/superpowers/specs/2026-06-14-jigit-mvp-design.md)
 - Implementation plan: [`docs/superpowers/plans/2026-06-14-jigit-mvp.md`](docs/superpowers/plans/2026-06-14-jigit-mvp.md)
+- Agent session reporting: [`docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md`](docs/superpowers/specs/2026-06-20-agent-session-reporting-design.md)
 - Session changelogs: [`docs/changelogs/`](docs/changelogs/), rolled up in [`CHANGELOG.md`](CHANGELOG.md)
