@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { AgentSessionTool } from "@/api/client.js";
 
 export interface SessionsFiltersValue {
@@ -22,6 +23,21 @@ const TOOL_OPTIONS: { value: "" | AgentSessionTool; label: string }[] = [
 const selectClassName = "rounded-md border bg-background px-3 py-2 text-sm";
 
 export function SessionsFilters({ tool, username, from, to, usernames, onChange }: Props) {
+  const fromRef = useRef<HTMLInputElement>(null);
+  const toRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (fromRef.current && fromRef.current.value !== from) {
+      fromRef.current.value = from;
+    }
+  }, [from]);
+
+  useEffect(() => {
+    if (toRef.current && toRef.current.value !== to) {
+      toRef.current.value = to;
+    }
+  }, [to]);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <select
@@ -50,16 +66,18 @@ export function SessionsFilters({ tool, username, from, to, usernames, onChange 
       </select>
 
       <input
+        ref={fromRef}
         type="date"
         className={selectClassName}
-        value={from}
+        defaultValue={from}
         onChange={(e) => onChange({ from: e.target.value })}
       />
 
       <input
+        ref={toRef}
         type="date"
         className={selectClassName}
-        value={to}
+        defaultValue={to}
         onChange={(e) => onChange({ to: e.target.value })}
       />
     </div>

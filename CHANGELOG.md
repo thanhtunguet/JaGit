@@ -1,3 +1,7 @@
+## 2026-06-21 (fix-live-sessions-date-picker)
+
+**Fix Live Sessions Date Picker**: Added `color-scheme: dark` to global CSS to make the native date picker icon visible in dark mode, and changed date inputs to use uncontrolled `defaultValue` with `ref` syncing to fix a bug where typing a year manually would reset the input.
+
 ## 2026-06-21 (pricing-review-fixes)
 
 **Pricing Review Fixes**: Verified an external review of the ccusage pricing work; fixed real issues — `hook-claude-code` no longer conflates cache-read and cache-creation tokens (was undercosting cache writes by ~12x), `PricingService`'s LiteLLM fetch now has a 10s timeout, and the per-model upsert loop runs in parallel. The "double-counting input tokens" claim was a false positive (Anthropic's `input_tokens` already excludes cache tokens).
