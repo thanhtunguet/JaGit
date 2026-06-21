@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { listUsageUsers, type UsageUser } from "@/api/client.js";
+import { listUsageUsers, type UsageUser, getLatestUpload, type UsageUpload, type UsageData, type AgentSessionAggregateResponse } from "@/api/client.js";
 import { useUsageData, type Period } from "@/hooks/useUsageData.js";
 import { UserSelector } from "@/components/usage/UserSelector.js";
 import { PeriodToggle } from "@/components/usage/PeriodToggle.js";
@@ -16,6 +16,8 @@ import { SessionsTable } from "@/components/usage/SessionsTable.js";
 import { ToolsChart } from "@/components/usage/ToolsChart.js";
 import { ShellCommandsChart } from "@/components/usage/ShellCommandsChart.js";
 import { LiveSessionsTab } from "@/components/sessions/LiveSessionsTab.js";
+import { SessionSummaryCards } from "@/components/sessions/SessionSummaryCards.js";
+import { LiveSessionsCharts } from "@/components/sessions/LiveSessionsCharts.js";
 
 type UsageTab = "historical" | "sessions";
 
@@ -30,12 +32,94 @@ function HistoricalView() {
 
   const { data, loading, error } = useUsageData(selectedUser, period);
 
+  const [globalTotal, setGlobalTotal] = useState<number>(0);
+  const [globalAgg, setGlobalAgg] = useState<AgentSessionAggregateResponse | null>(null);
+  const [globalLoading, setGlobalLoading] = useState(false);
+
   useEffect(() => {
     listUsageUsers()
       .then(setUsers)
       .catch((e: Error) => setUsersError(e.message))
       .finally(() => setUsersLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!selectedUser) {
+      if (users.length === 0) {
+        setGlobalTotal(0);
+        setGlobalAgg(null);
+        return;
+      }
+      
+      setGlobalLoading(true);
+
+      Promise.all(
+        users.map((u) => getLatestUpload(u.username).then((upload) => ({ username: u.username, upload })))
+      )
+        .then((results) => {
+          let totalSessions = 0;
+          let totalCostUsd = 0;
+          const totalTokens = { newInput: 0, cachedInput: 0, output: 0 };
+          
+          const byUserMap = new Map<string, number>();
+          const byModelMap = new Map<string, number>();
+          const byToolMap = new Map<string, number>();
+
+          for (const { username, upload } of results) {
+            if ("data" in upload && upload.data === null) continue;
+            const uData = (upload as UsageUpload).data;
+            if (!uData) continue;
+            
+            const summaryRow = uData.summary?.find((r) => r.Period === period);
+            if (summaryRow) {
+              totalSessions += summaryRow.Sessions || 0;
+              totalCostUsd += summaryRow["Cost (USD)"] || 0;
+              byUserMap.set(username, summaryRow["Cost (USD)"] || 0);
+            }
+            
+            const modelRows = uData.models?.filter((r) => r.Period === period) || [];
+            for (const m of modelRows) {
+              const cost = m["Cost (USD)"] || 0;
+              byModelMap.set(m.Model, (byModelMap.get(m.Model) || 0) + cost);
+              
+              totalTokens.newInput += (m["Input Tokens"] || 0) + (m["Cache Write Tokens"] || 0);
+              totalTokens.cachedInput += (m["Cache Read Tokens"] || 0);
+              totalTokens.output += (m["Output Tokens"] || 0);
+            }
+            
+            const toolRows = uData.tools || [];
+            for (const t of toolRows) {
+              // Faking costUsd as calls for the pie chart
+              byToolMap.set(t.Tool, (byToolMap.get(t.Tool) || 0) + (t.Calls || 0));
+            }
+          }
+
+          const byUser = Array.from(byUserMap.entries())
+            .map(([username, costUsd]) => ({ username, costUsd }))
+            .sort((a, b) => b.costUsd - a.costUsd);
+
+          const byModel = Array.from(byModelMap.entries())
+            .map(([model, costUsd]) => ({ model, costUsd }))
+            .sort((a, b) => b.costUsd - a.costUsd);
+
+          const byTool = Array.from(byToolMap.entries())
+            .map(([tool, costUsd]) => ({ tool, costUsd }))
+            .sort((a, b) => b.costUsd - a.costUsd);
+
+          setGlobalTotal(totalSessions);
+          setGlobalAgg({
+            byUser,
+            byModel,
+            byTool,
+            totalTokens,
+            totalCostUsd,
+            missingCostCount: 0,
+          });
+        })
+        .catch(console.error)
+        .finally(() => setGlobalLoading(false));
+    }
+  }, [selectedUser, period, users]);
 
   const handleSelectUser = useCallback(
     (username: string) => {
@@ -69,12 +153,18 @@ function HistoricalView() {
         <UserSelector users={usernames} selected={selectedUser} onSelect={handleSelectUser} />
       )}
 
-      {!selectedUser && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Select a user to view usage data.</p>
-          </CardContent>
-        </Card>
+      {!selectedUser && globalLoading && (
+        <div className="space-y-4">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      )}
+
+      {!selectedUser && !globalLoading && (
+        <div className="space-y-4">
+          <SessionSummaryCards total={globalTotal} aggData={globalAgg} />
+          {globalAgg && <LiveSessionsCharts data={globalAgg} />}
+        </div>
       )}
 
       {selectedUser && loading && (
@@ -119,12 +209,12 @@ function HistoricalView() {
 export function Usage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab: UsageTab = tabParam === "sessions" ? "sessions" : "historical";
+  const activeTab: UsageTab = tabParam === "historical" ? "historical" : "sessions";
 
   const handleTabChange = useCallback(
     (value: string) => {
       const next = new URLSearchParams(searchParams);
-      if (value === "historical") {
+      if (value === "sessions") {
         next.delete("tab");
       } else {
         next.set("tab", value);
@@ -140,16 +230,16 @@ export function Usage() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="historical">Historical (CodeBurn)</TabsTrigger>
           <TabsTrigger value="sessions">Live Sessions</TabsTrigger>
+          <TabsTrigger value="historical">Historical (CodeBurn)</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="historical">
-          <HistoricalView />
-        </TabsContent>
 
         <TabsContent value="sessions">
           <LiveSessionsTab />
+        </TabsContent>
+
+        <TabsContent value="historical">
+          <HistoricalView />
         </TabsContent>
       </Tabs>
     </div>
