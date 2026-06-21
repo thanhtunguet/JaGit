@@ -106,7 +106,7 @@ export class AgentSessionService {
       };
     }
 
-    const [byUserRaw, byModelRaw, byToolRaw] = await Promise.all([
+    const [byUserRaw, byModelRaw, byToolRaw, tokensAgg] = await Promise.all([
       this.prisma.client.agentSession.groupBy({
         by: ["userId"],
         _sum: { costUsd: true },
@@ -120,6 +120,15 @@ export class AgentSessionService {
       this.prisma.client.agentSession.groupBy({
         by: ["tool"],
         _sum: { costUsd: true },
+        where: where as any,
+      }),
+      this.prisma.client.agentSession.aggregate({
+        _sum: {
+          inputTokens: true,
+          cachedInputTokens: true,
+          cacheCreationInputTokens: true,
+          outputTokens: true,
+        },
         where: where as any,
       }),
     ]);
@@ -155,7 +164,13 @@ export class AgentSessionService {
       .filter((t) => t.costUsd > 0)
       .sort((a, b) => b.costUsd - a.costUsd);
 
-    return { byUser, byModel, byTool };
+    const totalTokens = {
+      newInput: (tokensAgg._sum.inputTokens ?? 0) + (tokensAgg._sum.cacheCreationInputTokens ?? 0),
+      cachedInput: tokensAgg._sum.cachedInputTokens ?? 0,
+      output: tokensAgg._sum.outputTokens ?? 0,
+    };
+
+    return { byUser, byModel, byTool, totalTokens };
   }
 
   async get(id: string) {

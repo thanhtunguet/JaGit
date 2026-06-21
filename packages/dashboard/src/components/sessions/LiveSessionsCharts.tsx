@@ -34,8 +34,14 @@ export function LiveSessionsCharts({ data }: Props) {
     toolName: TOOL_DISPLAY_NAMES[t.tool] || t.tool,
   }));
 
+  const tokenData = data.totalTokens ? [
+    { name: "Cached Input", value: data.totalTokens.cachedInput },
+    { name: "New Input", value: data.totalTokens.newInput },
+    { name: "Output", value: data.totalTokens.output },
+  ].filter((d) => d.value > 0) : [];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Cost by User</CardTitle>
@@ -50,6 +56,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
+                label={({ name }) => name}
               >
                 {data.byUser.slice(0, 10).map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -79,6 +86,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
+                label={({ name }) => name}
               >
                 {data.byModel.slice(0, 10).map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -108,6 +116,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
+                label={({ name }) => name}
               >
                 {toolData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -122,6 +131,38 @@ export function LiveSessionsCharts({ data }: Props) {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {tokenData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Tokens Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={tokenData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ name }) => name}
+                >
+                  {tokenData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                  formatter={(value: any, name: any) => [Number(value ?? 0).toLocaleString(), String(name ?? "")]}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

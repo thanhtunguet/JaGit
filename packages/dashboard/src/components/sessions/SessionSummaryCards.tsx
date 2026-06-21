@@ -7,7 +7,13 @@ interface Props {
 }
 
 export function SessionSummaryCards({ rows, total }: Props) {
-  const inputTokens = rows.reduce((sum, r) => sum + r.inputTokens, 0);
+  const rawInputTokens = rows.reduce((sum, r) => sum + r.inputTokens, 0);
+  const cacheCreationTokens = rows.reduce((sum, r) => sum + (r.cacheCreationInputTokens || 0), 0);
+  const cachedInputTokens = rows.reduce((sum, r) => sum + (r.cachedInputTokens || 0), 0);
+  
+  const totalInputTokens = rawInputTokens + cacheCreationTokens + cachedInputTokens;
+  const cachedPercentage = totalInputTokens > 0 ? Math.round((cachedInputTokens / totalInputTokens) * 100) : 0;
+  
   const outputTokens = rows.reduce((sum, r) => sum + r.outputTokens, 0);
   const knownCostRows = rows.filter((r) => r.costUsd != null);
   const cost = knownCostRows.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
@@ -15,7 +21,11 @@ export function SessionSummaryCards({ rows, total }: Props) {
 
   const stats = [
     { label: "Sessions (total)", value: total.toLocaleString(), sub: null as string | null },
-    { label: "Input tokens (page)", value: inputTokens.toLocaleString(), sub: null },
+    { 
+      label: cachedPercentage > 0 ? `Input tokens (Cached ${cachedPercentage}%)` : "Input tokens (page)", 
+      value: totalInputTokens.toLocaleString(), 
+      sub: null 
+    },
     { label: "Output tokens (page)", value: outputTokens.toLocaleString(), sub: null },
     {
       label: "Cost (page)",

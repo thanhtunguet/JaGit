@@ -409,6 +409,7 @@ export interface AgentSessionAggregateResponse {
   byUser: { username: string; costUsd: number }[];
   byModel: { model: string; costUsd: number }[];
   byTool: { tool: string; costUsd: number }[];
+  totalTokens: { newInput: number; cachedInput: number; output: number };
 }
 
 export const aggregateAgentSessions = (filters: Omit<AgentSessionFilters, "limit" | "offset"> = {}) => {

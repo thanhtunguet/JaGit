@@ -1,3 +1,10 @@
+## 2026-06-21 (tokens-breakdown-chart)
+
+**Tokens Breakdown Chart**: Added a fourth pie chart to the Live Sessions page (`LiveSessionsCharts.tsx`) showing the breakdown of Cached Input vs New Input vs Output tokens across the current filter. This data is driven by a new token aggregation query in the backend (`AgentSessionService.aggregate`).
+
+## 2026-06-21 (add-cache-percentage)
+**Add Cached Percentage to Input tokens**: Updated `SessionSummaryCards` in `@jigit/dashboard` to display the total input tokens and dynamically calculate and show the cached token percentage in the label (e.g. `Input tokens (Cached 85%)`).
+
 ## 2026-06-21 (fix-redis-unhandled-rejections)
 
 **Fix Redis Unhandled Rejections**: Added `.on("error")` listeners to `ioredis` and BullMQ instances across `packages/shared` and `packages/worker` to prevent the Node.js API and Worker processes from crashing with `Error: Connection is closed.` when the Redis connection fails or drops. Also bumped `requestTimeoutMs` in ACP client tests to fix a flaky test.
