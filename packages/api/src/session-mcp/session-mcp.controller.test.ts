@@ -5,6 +5,11 @@ import { SessionMcpController } from "./session-mcp.controller.js";
 import { SessionMcpService } from "./session-mcp.service.js";
 import { PrismaService } from "../common/prisma.module.js";
 import { NotFoundException, ConflictException } from "@nestjs/common";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+
+// CallToolResult["content"] is a discriminated union (text/image/audio/resource);
+// these tests only ever produce text content blocks.
+type TextContent = Extract<CallToolResult["content"][number], { type: "text" }>;
 
 const mockSvc = {
   activateJira: vi.fn(),
@@ -87,12 +92,12 @@ describe("SessionMcpController — MCP Protocol", () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
       expect(body.jsonrpc).toBe("2.0");
       expect(body.result).toBeDefined();
       expect(body.result.content).toBeInstanceOf(Array);
       expect(body.result.content[0].type).toBe("text");
-      const text = body.result.content[0].text;
+      const text = (body.result.content[0] as TextContent).text;
       const data = JSON.parse(text);
       expect(data.success).toBe(true);
       expect(data.jiraTicketId).toBe("PROJ-123");
@@ -112,10 +117,10 @@ describe("SessionMcpController — MCP Protocol", () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
       expect(body.result.isError).toBe(true);
       expect(body.result.content[0].type).toBe("text");
-      expect(body.result.content[0].text).toContain("not found");
+      expect((body.result.content[0] as TextContent).text).toContain("not found");
     });
 
     it("should return isError:true for ticket conflict (not HTTP 409)", async () => {
@@ -132,9 +137,9 @@ describe("SessionMcpController — MCP Protocol", () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
       expect(body.result.isError).toBe(true);
-      expect(body.result.content[0].text).toContain("Already");
+      expect((body.result.content[0] as TextContent).text).toContain("Already");
     });
 
     it("should return MCP error for unknown tool", async () => {
