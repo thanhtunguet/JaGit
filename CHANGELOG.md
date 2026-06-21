@@ -1,3 +1,7 @@
+## 2026-06-21 (fix-redis-unhandled-rejections)
+
+**Fix Redis Unhandled Rejections**: Added `.on("error")` listeners to `ioredis` and BullMQ instances across `packages/shared` and `packages/worker` to prevent the Node.js API and Worker processes from crashing with `Error: Connection is closed.` when the Redis connection fails or drops. Also bumped `requestTimeoutMs` in ACP client tests to fix a flaky test.
+
 ## 2026-06-21 (live-sessions-aggregate-charts)
 
 **Live Sessions Aggregate Charts**: Added aggregate cost data charts (Cost by User, Model, Tool) to the Live Sessions page. Implemented `aggregate` endpoint in `AgentSessionService` to query Prisma `groupBy` and fetch aggregate data dynamically based on filters.

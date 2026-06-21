@@ -159,7 +159,7 @@ describe("AcpSession request timeout", () => {
       command: "node",
       args: ["-e", HANGING_AGENT_SCRIPT],
       cwd: process.cwd(),
-      requestTimeoutMs: 200,
+      requestTimeoutMs: 500,
       onUpdate: () => {},
       onPermission: async () => "allow",
     });

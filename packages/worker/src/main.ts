@@ -88,7 +88,9 @@ const worker = createWorker(
     if (!mapping) throw new Error(`No repo mapping for job ${jobId}`);
 
     const redisSignals = new RedisSignals(
-      new IORedis(cfg.redisUrl, { maxRetriesPerRequest: null }) as InstanceType<typeof IORedis>,
+      new IORedis(cfg.redisUrl, { maxRetriesPerRequest: null }).on("error", (err) => {
+        console.error("RedisSignals client error:", err.message);
+      }) as InstanceType<typeof IORedis>,
       jobId,
       async () => { await abortJobAgent(jobId); },
     );

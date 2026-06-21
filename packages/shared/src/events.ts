@@ -11,7 +11,11 @@ export const controlChannel = (jobId: string) => `control:${jobId}`;
 export const approvalsChannel = "approvals";
 
 export function makeRedis(url: string): Redis {
-  return new Redis(url, { maxRetriesPerRequest: null, lazyConnect: false });
+  const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: false });
+  client.on("error", (err) => {
+    console.error("Redis client error:", err.message);
+  });
+  return client;
 }
 
 /** Publish any JSON-serialisable payload to a channel */
