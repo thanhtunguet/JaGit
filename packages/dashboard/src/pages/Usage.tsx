@@ -205,12 +205,12 @@ function HistoricalView() {
           </div>
 
           <ProjectsChart rows={data.projects} />
-          <SessionsTable rows={data.sessions} />
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ToolsChart rows={data.tools} />
             <ShellCommandsChart rows={data.shellCommands} />
           </div>
+
+          <SessionsTable rows={data.sessions} />
         </div>
       )}
     </div>

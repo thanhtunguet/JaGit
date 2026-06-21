@@ -1,3 +1,7 @@
+## 2026-06-21 (reorder-usage-cards)
+
+**Reorder Usage Cards**: Reordered the Historical Usage tab layout so that the Tools and Shell Commands charts appear above the Top Sessions table.
+
 ## 2026-06-21 (daily-spend-modes)
 
 **Daily Spend Modes**: Added a toggle to the Daily Spend chart allowing users to switch between "Individual" and "Cumulative" cost display. The cumulative mode calculates a running total of token costs chronologically.
