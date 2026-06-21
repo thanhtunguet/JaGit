@@ -21,6 +21,11 @@ describe("PricingService", () => {
   beforeEach(() => {
     prisma = makePrisma();
     svc = new PricingService(prisma);
+    // Inject a fake redis so every lookup is a cache miss → falls through to mocked prisma.
+    (svc as any)._redis = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue("OK"),
+    };
     global.fetch = vi.fn();
   });
 
@@ -200,6 +205,21 @@ describe("PricingService", () => {
       outputCostPerToken: 0.000004,
     });
     expect(await svc.getBaseTokenRate()).toBeNull();
+  });
+
+  it("getBaseTokenRate returns cached pricing without hitting the DB on cache hit", async () => {
+    (svc as any)._redis.get.mockResolvedValue(
+      JSON.stringify({
+        inputCostPerToken: 0.0000008,
+        outputCostPerToken: 0.000004,
+        cacheReadInputTokenCost: null,
+        cacheCreationInputTokenCost: null,
+      }),
+    );
+    const rate = await svc.getBaseTokenRate();
+    expect(rate).toBe(0.0000008);
+    expect((prisma as any).client.modelPricing.findUnique).not.toHaveBeenCalled();
+    expect((prisma as any).client.modelPricing.findFirst).not.toHaveBeenCalled();
   });
 
   it("toBaseTokens divides cost by base rate", () => {

@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { makeRedis, loadConfig } from "@jagit/shared";
 import { PrismaService } from "../common/prisma.module.js";
 
 export interface LiteLlmPricingResponse {
@@ -18,6 +19,13 @@ export class PricingService implements OnModuleInit {
   private readonly logger = new Logger(PricingService.name);
   private readonly LITELLM_PRICING_URL =
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
+
+  private readonly cfg = loadConfig();
+  private _redis: ReturnType<typeof makeRedis> | null = null;
+  private get redis() {
+    if (!this._redis) this._redis = makeRedis(this.cfg.redisUrl);
+    return this._redis;
+  }
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -84,58 +92,30 @@ export class PricingService implements OnModuleInit {
     cachedInputTokens: number = 0,
     cacheCreationInputTokens: number = 0,
   ): Promise<number | null> {
-    let pricing = await this.prisma.client.modelPricing.findUnique({
-      where: { model },
-    });
-
-    if (!pricing) {
-      const normalizedModel = model.toLowerCase();
-
-      // Try exact case-insensitive match
-      pricing = await this.prisma.client.modelPricing.findFirst({
-        where: {
-          model: {
-            equals: normalizedModel,
-            mode: "insensitive",
-          },
-        },
-      });
-
-      // Try contains case-insensitive match
-      if (!pricing) {
-        pricing = await this.prisma.client.modelPricing.findFirst({
-          where: {
-            model: {
-              contains: normalizedModel,
-              mode: "insensitive",
-            },
-          },
-        });
-      }
-    }
+    const pricing = await this.findPricingCached(model);
 
     if (!pricing) {
       // Return null if pricing for model is unknown
       return null;
     }
 
+    const eff = this.effectiveRates(pricing);
+
     let cost = 0;
 
     // Normal input tokens
-    cost += inputTokens * pricing.inputCostPerToken;
+    cost += inputTokens * eff.input;
 
     // Output tokens
-    cost += outputTokens * pricing.outputCostPerToken;
+    cost += outputTokens * eff.output;
 
     // Cached (cache read) input tokens
     // Default to 10% of input cost if not explicitly defined, like in ccusage
-    const cacheReadCost = pricing.cacheReadInputTokenCost ?? (pricing.inputCostPerToken * 0.1);
-    cost += cachedInputTokens * cacheReadCost;
+    cost += cachedInputTokens * eff.cacheRead;
 
     // Cache creation (cache write) input tokens
     // Default to 1.25x input cost if not explicitly defined, like in ccusage
-    const cacheCreationCost = pricing.cacheCreationInputTokenCost ?? (pricing.inputCostPerToken * 1.25);
-    cost += cacheCreationInputTokens * cacheCreationCost;
+    cost += cacheCreationInputTokens * eff.cacheCreation;
 
     return cost;
   }
@@ -158,8 +138,40 @@ export class PricingService implements OnModuleInit {
     return pricing;
   }
 
+  private async findPricingCached(model: string) {
+    const key = `pricing:model:${model.toLowerCase()}`;
+    try {
+      const cached = await this.redis.get(key);
+      if (cached !== null) return JSON.parse(cached);
+    } catch {
+      /* ignore cache read errors — fall back to DB */
+    }
+    const pricing = await this.findPricing(model);
+    try {
+      // Cache negative results too (shorter TTL) so we recover once the cron populates pricing.
+      await this.redis.set(key, JSON.stringify(pricing ?? null), "EX", pricing ? 3600 : 300);
+    } catch {
+      /* ignore cache write errors */
+    }
+    return pricing;
+  }
+
+  effectiveRates(p: {
+    inputCostPerToken: number;
+    outputCostPerToken: number;
+    cacheReadInputTokenCost: number | null;
+    cacheCreationInputTokenCost: number | null;
+  }) {
+    return {
+      input: p.inputCostPerToken,
+      output: p.outputCostPerToken,
+      cacheRead: p.cacheReadInputTokenCost ?? p.inputCostPerToken * 0.1,
+      cacheCreation: p.cacheCreationInputTokenCost ?? p.inputCostPerToken * 1.25,
+    };
+  }
+
   async getBaseTokenRate(): Promise<number | null> {
-    const pricing = await this.findPricing(BASE_TOKEN_MODEL);
+    const pricing = await this.findPricingCached(BASE_TOKEN_MODEL);
     if (!pricing || pricing.inputCostPerToken <= 0) return null;
     return pricing.inputCostPerToken;
   }
@@ -170,7 +182,7 @@ export class PricingService implements OnModuleInit {
     cacheReadInputTokenCost: number | null;
     cacheCreationInputTokenCost: number | null;
   } | null> {
-    const p = await this.findPricing(model);
+    const p = await this.findPricingCached(model);
     if (!p) return null;
     return {
       inputCostPerToken: p.inputCostPerToken,

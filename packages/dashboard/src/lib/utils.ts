@@ -30,5 +30,5 @@ export function formatTokens(tokens: number): string {
 
 export function formatBaseTokens(bt: number | null): string {
   if (bt == null) return "—";
-  return formatTokens(bt);
+  return formatTokens(Math.round(bt));
 }

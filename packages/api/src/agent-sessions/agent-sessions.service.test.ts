@@ -39,6 +39,12 @@ describe("AgentSessionService", () => {
         model === "known"
           ? { inputCostPerToken: 0.000001, outputCostPerToken: 0.000005, cacheReadInputTokenCost: null, cacheCreationInputTokenCost: null }
           : null),
+      effectiveRates: vi.fn((p: any) => ({
+        input: p.inputCostPerToken,
+        output: p.outputCostPerToken,
+        cacheRead: p.cacheReadInputTokenCost ?? p.inputCostPerToken * 0.1,
+        cacheCreation: p.cacheCreationInputTokenCost ?? p.inputCostPerToken * 1.25,
+      })),
     } as unknown as PricingService;
     svc = new AgentSessionService(prisma, pricing); 
   });
@@ -92,12 +98,13 @@ describe("AgentSessionService", () => {
     (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([{ id: "u1", username: "alice" }]);
 
     const res = await svc.aggregate({});
-    // input USD = 1000 * 0.000001 = 0.001 -> /0.0000008 = 1250
-    // output USD = 2000 * 0.000005 = 0.01 -> /0.0000008 = 12500
+    // total is anchored to stored cost: totalCostUsd / baseRate = 0.5 / 0.0000008
+    // input:output ratio from tokens × rates: 0.001 : 0.01 => input share 0.0909...
     expect(res.baseTokens).not.toBeNull();
-    expect(res.baseTokens!.input).toBeCloseTo(1250, 5);
-    expect(res.baseTokens!.output).toBeCloseTo(12500, 5);
-    expect(res.baseTokens!.total).toBeCloseTo(res.baseTokens!.input + res.baseTokens!.output, 5);
+    expect(res.baseTokens!.total).toBeCloseTo(0.5 / 0.0000008, 2);
+    expect(res.baseTokens!.input + res.baseTokens!.output).toBeCloseTo(res.baseTokens!.total, 2);
+    expect(res.baseTokens!.input).toBeGreaterThan(0);
+    expect(res.baseTokens!.output).toBeGreaterThan(res.baseTokens!.input);
   });
 
   it("aggregate returns null baseTokens when base rate unavailable", async () => {
@@ -128,9 +135,12 @@ describe("AgentSessionService", () => {
     (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([]);
 
     const res = await svc.aggregate({});
-    // Only "known" contributes: input 1000*0.000001=0.001 -> 1250; output 2000*0.000005=0.01 -> 12500
-    expect(res.baseTokens!.input).toBeCloseTo(1250, 5);
-    expect(res.baseTokens!.output).toBeCloseTo(12500, 5);
+    // Unpriced "mystery" model must not break things; total anchors to stored cost.
+    // Only "known" contributes to the input:output ratio.
+    expect(res.baseTokens!.total).toBeCloseTo(0.5 / 0.0000008, 2);
+    expect(res.baseTokens!.input + res.baseTokens!.output).toBeCloseTo(res.baseTokens!.total, 2);
+    expect(res.baseTokens!.input).toBeGreaterThan(0);
+    expect(res.baseTokens!.output).toBeGreaterThan(res.baseTokens!.input);
   });
 
   it("get returns row with rawPayload", async () => {

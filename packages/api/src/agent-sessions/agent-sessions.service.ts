@@ -195,18 +195,21 @@ export class AgentSessionService {
       for (const m of byModelRaw) {
         const rates = await this.pricing.getModelRates(m.model);
         if (!rates) continue;
+        const eff = this.pricing.effectiveRates(rates);
         const inTok = m._sum.inputTokens ?? 0;
         const cachedTok = m._sum.cachedInputTokens ?? 0;
         const cacheCreateTok = m._sum.cacheCreationInputTokens ?? 0;
         const outTok = m._sum.outputTokens ?? 0;
-        const cacheReadCost = rates.cacheReadInputTokenCost ?? rates.inputCostPerToken * 0.1;
-        const cacheCreateCost = rates.cacheCreationInputTokenCost ?? rates.inputCostPerToken * 1.25;
-        inputUsd += inTok * rates.inputCostPerToken + cachedTok * cacheReadCost + cacheCreateTok * cacheCreateCost;
-        outputUsd += outTok * rates.outputCostPerToken;
+        inputUsd += inTok * eff.input + cachedTok * eff.cacheRead + cacheCreateTok * eff.cacheCreation;
+        outputUsd += outTok * eff.output;
       }
-      const input = inputUsd / baseRate;
-      const output = outputUsd / baseRate;
-      baseTokens = { input, output, total: input + output };
+      const total = totalCostUsd / baseRate; // anchor to stored cost
+      const recomputedTotal = inputUsd + outputUsd; // from tokens × rates
+      // Split the cost-anchored total by the input:output ratio implied by token pricing.
+      const inputShare = recomputedTotal > 0 ? inputUsd / recomputedTotal : 0;
+      const input = total * inputShare;
+      const output = total - input;
+      baseTokens = { input, output, total };
     }
 
     return { byUser, byModel, byTool, totalTokens, totalCostUsd, missingCostCount, baseTokens };
