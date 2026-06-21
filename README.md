@@ -231,12 +231,20 @@ logged to stderr and ignored.
 
 ### Claude Code
 
-Add a `Stop` hook to `~/.claude/settings.json` (or per-project
+Add `Stop` and `UserPromptSubmit` hooks, plus the session MCP server to `~/.claude/settings.json` (or per-project
 `.claude/settings.json`):
 
 ```json
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "npx -y @jagit/hook-claude-code-time-tracking" }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
@@ -245,13 +253,27 @@ Add a `Stop` hook to `~/.claude/settings.json` (or per-project
         ]
       }
     ]
+  },
+  "mcpServers": {
+    "jagit-session": {
+      "command": "curl",
+      "args": [
+        "-s",
+        "-X", "POST",
+        "-H", "x-api-key: ${JAGIT_API_KEY}",
+        "-H", "x-git-username: ${JAGIT_GIT_USERNAME}",
+        "-H", "Content-Type: application/json",
+        "-d", "@-",
+        "${JAGIT_BASE_URL}/api/session-mcp"
+      ]
+    }
   }
 }
 ```
 
-The hook reads the transcript, sums the session's cumulative token usage, and
-reports on every turn group. No install needed (`npx -y` fetches on demand);
-for a permanent binary run `npm i -g @jagit/hook-claude-code`.
+The hooks read the transcript, track session duration, calculate lines-of-code changes, sum the cumulative token usage, and
+report on every turn group. If you activate a Jira ticket during your session using the `activate-jira` MCP tool, JiGit will automatically create a worklog on that ticket when the session ends. No install needed (`npx -y` fetches on demand);
+for a permanent binary run `npm i -g @jagit/hook-claude-code` and `npm i -g @jagit/hook-claude-code-time-tracking`.
 
 ### Codex CLI
 
