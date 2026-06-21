@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Param, Query, Body, UseGuards, BadRequestException, Patch } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { AgentSessionPayloadSchema, AGENT_TOOLS, type AgentSessionPayload } from "@jagit/agent-reporter";
 import { loadConfig } from "@jagit/shared";
@@ -71,5 +71,17 @@ export class AgentSessionController {
   @ApiOperation({ summary: "Get a single agent session with raw payload" })
   async get(@Param("id") id: string) {
     return this.svc.get(id);
+  }
+
+  @Patch(":sessionId/time-tracking")
+  @ApiOperation({ summary: "Update time tracking fields for a session" })
+  @ApiResponse({ status: 200, description: "Updated" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Session not found" })
+  async updateTimeTracking(
+    @Param("sessionId") sessionId: string,
+    @Body() body: { initialCommitSha?: string; durationMs?: number }
+  ) {
+    return this.svc.updateTimeTracking(sessionId, body);
   }
 }

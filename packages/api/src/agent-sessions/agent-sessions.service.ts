@@ -223,4 +223,27 @@ export class AgentSessionService {
     if (!row) throw new NotFoundException(`AgentSession ${id} not found`);
     return row;
   }
+
+  async updateTimeTracking(
+    id: string,
+    data: { initialCommitSha?: string; durationMs?: number }
+  ) {
+    const session = await this.prisma.client.agentSession.findUnique({ where: { id } });
+    if (!session) throw new NotFoundException(`AgentSession ${id} not found`);
+
+    const updateData: { initialCommitSha?: string; durationMs?: number } = {};
+    if (data.initialCommitSha !== undefined) updateData.initialCommitSha = data.initialCommitSha;
+    if (data.durationMs !== undefined) updateData.durationMs = data.durationMs;
+
+    return this.prisma.client.agentSession.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        sessionId: true,
+        initialCommitSha: true,
+        durationMs: true,
+      },
+    });
+  }
 }

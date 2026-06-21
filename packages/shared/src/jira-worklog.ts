@@ -1,4 +1,4 @@
-import { prismaClient } from "./prisma.js";
+import { prisma } from "./prisma.js";
 import { withRetry } from "./retry.js";
 
 export interface CreateWorklogOpts {
@@ -28,7 +28,7 @@ function formatBT(bt: number): string {
 
 export async function createJiraWorklog(opts: CreateWorklogOpts): Promise<void> {
   try {
-    const credential = await prismaClient.credential.findUnique({
+    const credential = await prisma.credential.findUnique({
       where: { kind_name: { kind: "jira", name: "default" } },
     });
 

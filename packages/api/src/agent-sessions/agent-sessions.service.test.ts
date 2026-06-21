@@ -13,6 +13,7 @@ function makePrisma() {
         findMany: vi.fn().mockResolvedValue([{ id: "as1", costUsd: 0.0008, user: { username: "alice" } }]),
         count: vi.fn().mockResolvedValue(1),
         findUnique: vi.fn().mockResolvedValue({ id: "as1", rawPayload: { a: 1 } }),
+        update: vi.fn(),
       },
     },
   } as unknown as PrismaService;
@@ -150,7 +151,53 @@ describe("AgentSessionService", () => {
   });
 
   it("get throws NotFound when missing", async () => {
-    (prisma as any).client.agentSession.findUnique.mockResolvedValueOnce(null);
+    (prisma as any).client.agentSession.findUnique.mockResolvedValue(null);
     await expect(svc.get("nope")).rejects.toBeInstanceOf(NotFoundException);
+
+  });
+
+  describe("updateTimeTracking", () => {
+    it("should update durationMs", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-1", initialCommitSha: null });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-1", sessionId: "s1", initialCommitSha: null, durationMs: 3600000
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-1", { durationMs: 3600000 });
+      expect(updated.durationMs).toBe(3600000);
+      expect(updated.initialCommitSha).toBeNull();
+    });
+
+    it("should update initialCommitSha", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-2", durationMs: null });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-2", sessionId: "s2", initialCommitSha: "abc123", durationMs: null
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-2", { initialCommitSha: "abc123" });
+      expect(updated.initialCommitSha).toBe("abc123");
+      expect(updated.durationMs).toBeNull();
+    });
+
+    it("should update both fields", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-3" });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-3", sessionId: "s3", initialCommitSha: "def456", durationMs: 7200000
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-3", {
+        durationMs: 7200000,
+        initialCommitSha: "def456",
+      });
+      expect(updated.durationMs).toBe(7200000);
+      expect(updated.initialCommitSha).toBe("def456");
+    });
+
+    it("should throw NotFoundException for invalid session", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue(null);
+      await expect(
+        svc.updateTimeTracking("nonexistent", { durationMs: 1000 })
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 });
