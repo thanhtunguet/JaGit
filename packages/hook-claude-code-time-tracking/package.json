@@ -1,0 +1,21 @@
+{
+  "name": "@jigit/hook-claude-code-time-tracking",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "jagit-hook-claude-code-time-tracking": "dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jigit/agent-reporter": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "vitest": "^2.1.9"
+  }
+}
