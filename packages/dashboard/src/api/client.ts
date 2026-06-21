@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { storage } from "@/lib/storage";
 
 const BASE = "/api"; // same origin; vite proxy handles /jobs → http://localhost:3000
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
+  const token = storage.getItem("DASHBOARD_API_TOKEN") ?? "";
   const headers: Record<string, string> = {
     ...(init?.headers as Record<string, string>),
   };
@@ -405,8 +406,8 @@ export const getAgentSession = (id: string) =>
 
 // ─── Token helper ─────────────────────────────────────────────────────────────
 
-export const getStoredToken = () => sessionStorage.getItem("DASHBOARD_API_TOKEN") ?? "";
-export const setStoredToken = (t: string) => sessionStorage.setItem("DASHBOARD_API_TOKEN", t);
+export const getStoredToken = () => storage.getItem("DASHBOARD_API_TOKEN") ?? "";
+export const setStoredToken = (t: string) => storage.setItem("DASHBOARD_API_TOKEN", t);
 
 // ─── useSSE hook ──────────────────────────────────────────────────────────────
 
