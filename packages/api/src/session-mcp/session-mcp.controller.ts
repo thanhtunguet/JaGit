@@ -30,13 +30,19 @@ export class SessionMcpController {
     const server = createSessionMcpServer({ username, service: this.svc });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
+      // Without this, the SDK defaults to SSE-framed responses; this endpoint
+      // is a stateless single-shot tool-call endpoint, so plain JSON is required.
       enableJsonResponse: true,
     });
 
     await server.connect(transport);
 
-    await transport.handleRequest(request.raw, reply.raw, request.body as object);
-    await transport.close();
-    await server.close();
+    try {
+      // Fastify's JSON body parser already guarantees an object/array here.
+      await transport.handleRequest(request.raw, reply.raw, request.body as object);
+    } finally {
+      await transport.close();
+      await server.close();
+    }
   }
 }
