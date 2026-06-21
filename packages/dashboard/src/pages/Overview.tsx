@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { formatTokens } from "@/lib/utils";
+import { formatTokens, formatBaseTokens } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -171,9 +171,13 @@ export function Overview() {
             />
             <StatCard
               title="Total Tokens Used"
-              value={formatTokens(stats.totalTokensUsed)}
+              value={
+                stats.totalBaseTokens == null
+                  ? "—"
+                  : `${formatBaseTokens(stats.totalBaseTokens)} BT`
+              }
               icon={Hash}
-              description="Live sessions & historical"
+              description={`${formatTokens(stats.totalTokensUsed)} tokens · live BT`}
             />
             <StatCard
               title="Approval Queue"
