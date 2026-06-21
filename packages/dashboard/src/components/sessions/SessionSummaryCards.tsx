@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { AgentSessionRow } from "@/api/client.js";
+import type { AgentSessionAggregateResponse } from "@/api/client.js";
 
 interface Props {
-  rows: AgentSessionRow[];
   total: number;
+  aggData: AgentSessionAggregateResponse | null;
 }
 
 function formatTokens(tokens: number): string {
@@ -19,28 +19,18 @@ function formatTokens(tokens: number): string {
   return `${(tokens / 1_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}k`;
 }
 
-export function SessionSummaryCards({ rows, total }: Props) {
-  const rawInputTokens = rows.reduce((sum, r) => sum + r.inputTokens, 0);
-  const cacheCreationTokens = rows.reduce(
-    (sum, r) => sum + (r.cacheCreationInputTokens || 0),
-    0,
-  );
-  const cachedInputTokens = rows.reduce(
-    (sum, r) => sum + (r.cachedInputTokens || 0),
-    0,
-  );
-
-  const totalInputTokens =
-    rawInputTokens + cacheCreationTokens + cachedInputTokens;
+export function SessionSummaryCards({ total, aggData }: Props) {
+  const totalInputTokens = aggData
+    ? aggData.totalTokens.newInput + aggData.totalTokens.cachedInput
+    : 0;
   const cachedPercentage =
-    totalInputTokens > 0
-      ? Math.round((cachedInputTokens / totalInputTokens) * 100)
+    totalInputTokens > 0 && aggData
+      ? Math.round((aggData.totalTokens.cachedInput / totalInputTokens) * 100)
       : 0;
 
-  const outputTokens = rows.reduce((sum, r) => sum + r.outputTokens, 0);
-  const knownCostRows = rows.filter((r) => r.costUsd != null);
-  const cost = knownCostRows.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
-  const missingCostCount = rows.length - knownCostRows.length;
+  const outputTokens = aggData ? aggData.totalTokens.output : 0;
+  const cost = aggData ? aggData.totalCostUsd : 0;
+  const missingCostCount = aggData ? aggData.missingCostCount : 0;
 
   const stats = [
     {
@@ -49,7 +39,7 @@ export function SessionSummaryCards({ rows, total }: Props) {
       sub: null as string | null,
     },
     {
-      label: "Input tokens (page)",
+      label: "Input tokens (total)",
       value:
         cachedPercentage > 0
           ? `${formatTokens(totalInputTokens)} (${cachedPercentage}%)`
@@ -57,12 +47,12 @@ export function SessionSummaryCards({ rows, total }: Props) {
       sub: null,
     },
     {
-      label: "Output tokens (page)",
+      label: "Output tokens (total)",
       value: formatTokens(outputTokens),
       sub: null,
     },
     {
-      label: "Cost (page)",
+      label: "Cost (total)",
       value: `$${cost.toFixed(2)}`,
       sub: missingCostCount > 0 ? `${missingCostCount} missing cost` : null,
     },

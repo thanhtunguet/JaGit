@@ -130,7 +130,7 @@ export function LiveSessionsTab() {
 
       {!loading && !error && (
         <>
-          <SessionSummaryCards rows={rows} total={total} />
+          <SessionSummaryCards total={total} aggData={aggData} />
           {aggData && <LiveSessionsCharts data={aggData} />}
           <LiveSessionsTable
             rows={rows}
