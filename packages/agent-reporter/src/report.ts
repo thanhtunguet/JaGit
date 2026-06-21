@@ -33,13 +33,10 @@ export async function reportSession(payload: AgentSessionPayload, opts: ReportOp
         headers: { "content-type": "application/json", "x-api-key": apiKey },
         body: JSON.stringify(parsed.data),
       });
-      if (res.ok) {
-        console.error(`[agent-reporter] POST ${url} -> ${res.status} OK`);
-        return;
-      }
+      if (res.ok) return;
       const detail = await res.text().catch(() => "");
-      console.error(`[agent-reporter] POST ${url} -> ${res.status}: ${detail}`);
       if (res.status >= 500) throw new RetryableError(`${res.status} ${detail}`);
+      console.error(`[agent-reporter] non-retryable ${res.status}: ${detail}`);
     }, { maxRetries, baseDelayMs });
   } catch (err) {
     console.error("[agent-reporter] report failed:", err instanceof Error ? err.message : err);

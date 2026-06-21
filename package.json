@@ -13,7 +13,12 @@
     "db:migrate": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate deploy",
     "db:migrate:dev": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma migrate dev",
     "db:studio": "dotenv -e .env -- pnpm --filter @jigit/shared exec prisma studio",
-    "test:e2e": "vitest run --config e2e/vitest.config.ts"
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
+    "publish:hooks": "tsx scripts/publish-hooks.ts",
+    "publish:hooks:dry": "tsx scripts/publish-hooks.ts --dry-run",
+    "publish:hooks:patch": "tsx scripts/publish-hooks.ts --version patch",
+    "publish:hooks:minor": "tsx scripts/publish-hooks.ts --version minor",
+    "publish:hooks:major": "tsx scripts/publish-hooks.ts --version major"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
