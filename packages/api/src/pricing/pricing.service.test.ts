@@ -8,6 +8,7 @@ function makePrisma() {
       modelPricing: {
         upsert: vi.fn(),
         findUnique: vi.fn(),
+        findFirst: vi.fn(),
       },
     },
   } as unknown as PrismaService;
@@ -126,7 +127,52 @@ describe("PricingService", () => {
 
   it("calculateCost returns null if model not found", async () => {
     (prisma as any).client.modelPricing.findUnique.mockResolvedValue(null);
+    (prisma as any).client.modelPricing.findFirst.mockResolvedValue(null);
     const cost = await svc.calculateCost("test-model", 10, 20, 5);
     expect(cost).toBeNull();
+  });
+
+  it("calculateCost falls back to case-insensitive exact match if model not found", async () => {
+    (prisma as any).client.modelPricing.findUnique.mockResolvedValue(null);
+    (prisma as any).client.modelPricing.findFirst.mockImplementation(async ({ where }: any) => {
+      if (where?.model?.equals === "test-model") {
+        return {
+          inputCostPerToken: 3,
+          outputCostPerToken: 15,
+          cacheReadInputTokenCost: 0.3,
+        };
+      }
+      return null;
+    });
+
+    const cost = await svc.calculateCost("TEST-MODEL", 10, 20, 5);
+    expect(cost).toBe(331.5);
+    expect((prisma as any).client.modelPricing.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { model: { equals: "test-model", mode: "insensitive" } },
+      })
+    );
+  });
+
+  it("calculateCost falls back to case-insensitive contains match if exact and equals matches not found", async () => {
+    (prisma as any).client.modelPricing.findUnique.mockResolvedValue(null);
+    (prisma as any).client.modelPricing.findFirst.mockImplementation(async ({ where }: any) => {
+      if (where?.model?.contains === "kimi-k2.6") {
+        return {
+          inputCostPerToken: 3,
+          outputCostPerToken: 15,
+          cacheReadInputTokenCost: 0.3,
+        };
+      }
+      return null;
+    });
+
+    const cost = await svc.calculateCost("Kimi-K2.6", 10, 20, 5);
+    expect(cost).toBe(331.5);
+    expect((prisma as any).client.modelPricing.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { model: { contains: "kimi-k2.6", mode: "insensitive" } },
+      })
+    );
   });
 });

@@ -82,9 +82,35 @@ export class PricingService implements OnModuleInit {
     cachedInputTokens: number = 0,
     cacheCreationInputTokens: number = 0,
   ): Promise<number | null> {
-    const pricing = await this.prisma.client.modelPricing.findUnique({
+    let pricing = await this.prisma.client.modelPricing.findUnique({
       where: { model },
     });
+
+    if (!pricing) {
+      const normalizedModel = model.toLowerCase();
+
+      // Try exact case-insensitive match
+      pricing = await this.prisma.client.modelPricing.findFirst({
+        where: {
+          model: {
+            equals: normalizedModel,
+            mode: "insensitive",
+          },
+        },
+      });
+
+      // Try contains case-insensitive match
+      if (!pricing) {
+        pricing = await this.prisma.client.modelPricing.findFirst({
+          where: {
+            model: {
+              contains: normalizedModel,
+              mode: "insensitive",
+            },
+          },
+        });
+      }
+    }
 
     if (!pricing) {
       // Return null if pricing for model is unknown

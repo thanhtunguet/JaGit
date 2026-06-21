@@ -1,3 +1,7 @@
+## 2026-06-21 (pricing-model-normalization)
+
+**Pricing Model Normalization**: Updated `PricingService` cost calculation to normalize model names and fall back to case-insensitive exact or partial match (`contains`) if an exact match isn't found. This prevents calculation errors when provided names differ slightly from stored DB names (e.g. `Kimi-K2.6` vs `azure_ai/kimi-k2.6`).
+
 ## 2026-06-21 (prefer-git-username)
 
 **Prefer Git Username**: Hooks now prefer `git config user.name` over `git config user.email` by default when resolving the username.
