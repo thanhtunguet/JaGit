@@ -3,7 +3,7 @@ import { createJiraWorklog } from "./jira-worklog.js";
 
 // Mock PrismaService
 vi.mock("./prisma.js", () => ({
-  prismaClient: {
+  prisma: {
     credential: {
       findUnique: vi.fn(),
     },
@@ -27,8 +27,8 @@ describe("createJiraWorklog", () => {
   });
 
   it("should create worklog with formatted comment", async () => {
-    const { prismaClient } = await import("./prisma.js");
-    vi.mocked(prismaClient.credential.findUnique).mockResolvedValue(mockCredential as any);
+    const { prisma } = await import("./prisma.js");
+    vi.mocked(prisma.credential.findUnique).mockResolvedValue(mockCredential as any);
     vi.mocked(fetch).mockResolvedValue(new Response("{}", { status: 201 }));
 
     await createJiraWorklog({
@@ -57,8 +57,8 @@ describe("createJiraWorklog", () => {
   });
 
   it("should handle missing credentials gracefully", async () => {
-    const { prismaClient } = await import("./prisma.js");
-    vi.mocked(prismaClient.credential.findUnique).mockResolvedValue(null);
+    const { prisma } = await import("./prisma.js");
+    vi.mocked(prisma.credential.findUnique).mockResolvedValue(null);
 
     // Should not throw
     await createJiraWorklog({
@@ -71,8 +71,8 @@ describe("createJiraWorklog", () => {
   });
 
   it("should handle API errors gracefully", async () => {
-    const { prismaClient } = await import("./prisma.js");
-    vi.mocked(prismaClient.credential.findUnique).mockResolvedValue(mockCredential as any);
+    const { prisma } = await import("./prisma.js");
+    vi.mocked(prisma.credential.findUnique).mockResolvedValue(mockCredential as any);
     vi.mocked(fetch).mockResolvedValue(new Response("Unauthorized", { status: 401 }));
 
     // Should not throw

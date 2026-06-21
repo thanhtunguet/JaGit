@@ -11,6 +11,7 @@ import { StatsModule } from "./stats/stats.module.js";
 import { UsageModule } from "./usage/usage.module.js";
 import { AgentSessionModule } from "./agent-sessions/agent-sessions.module.js";
 import { PricingModule } from "./pricing/pricing.module.js";
+import { SessionMcpModule } from "./session-mcp/session-mcp.module.js";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PricingModule } from "./pricing/pricing.module.js";
     UsageModule,
     AgentSessionModule,
     PricingModule,
+    SessionMcpModule,
   ],
   controllers: [],
 })
