@@ -1,3 +1,7 @@
+## 2026-06-21 (base-tokens)
+
+**Base Tokens (BT)**: Added a normalized cost unit — `1 BT = price of 1 input token of claude-haiku-4-5` — computed backend-side from `costUsd / baseRate`. Surfaced as a "BT" column in the Live Sessions table, the Overview "Total Tokens Used" headline, and tooltips on the Input/Output/Cost summary cards. Includes DRY'd pricing helpers and a Redis-cached, failure-safe model-pricing lookup. Details: `docs/changelogs/2026-06-21-2130-base-tokens.md`.
+
 ## 2026-06-21 (dynamic-token-formatting)
 
 **Dynamic Token Formatting**: Updated the shared `formatTokens` utility to dynamically adjust the number of maximum fractional digits based on the integer part length (2 digits -> max 2 decimals, 3+ digits -> max 1 decimal) to keep the length consistent.
