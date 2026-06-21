@@ -3,13 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   listAgentSessions,
+  aggregateAgentSessions,
   listUsageUsers,
   type AgentSessionListResponse,
+  type AgentSessionAggregateResponse,
   type AgentSessionTool,
   type UsageUser,
 } from "@/api/client.js";
 import { SessionsFilters, type SessionsFiltersValue } from "./SessionsFilters.js";
 import { SessionSummaryCards } from "./SessionSummaryCards.js";
+import { LiveSessionsCharts } from "./LiveSessionsCharts.js";
 import { LiveSessionsTable } from "./LiveSessionsTable.js";
 import { SessionDetailDrawer } from "./SessionDetailDrawer.js";
 
@@ -23,6 +26,7 @@ export function LiveSessionsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState<UsageUser[]>([]);
   const [data, setData] = useState<AgentSessionListResponse | null>(null);
+  const [aggData, setAggData] = useState<AgentSessionAggregateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -79,6 +83,7 @@ export function LiveSessionsTab() {
     [searchParams, setSearchParams],
   );
 
+  // Fetch list when page changes
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -94,6 +99,16 @@ export function LiveSessionsTab() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [tool, username, from, to, page]);
+
+  // Fetch aggregate data when filters (except page) change
+  useEffect(() => {
+    aggregateAgentSessions({
+      tool: tool || undefined,
+      username: username || undefined,
+      from: from || undefined,
+      to: to || undefined,
+    }).then(setAggData).catch(console.error);
+  }, [tool, username, from, to]);
 
   const usernames = useMemo(() => users.map((u) => u.username), [users]);
   const rows = data?.rows ?? [];
@@ -116,6 +131,7 @@ export function LiveSessionsTab() {
       {!loading && !error && (
         <>
           <SessionSummaryCards rows={rows} total={total} />
+          {aggData && <LiveSessionsCharts data={aggData} />}
           <LiveSessionsTable
             rows={rows}
             page={page}
@@ -130,3 +146,4 @@ export function LiveSessionsTab() {
     </div>
   );
 }
+

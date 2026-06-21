@@ -1,3 +1,7 @@
+## 2026-06-21 (live-sessions-aggregate-charts)
+
+**Live Sessions Aggregate Charts**: Added aggregate cost data charts (Cost by User, Model, Tool) to the Live Sessions page. Implemented `aggregate` endpoint in `AgentSessionService` to query Prisma `groupBy` and fetch aggregate data dynamically based on filters.
+
 ## 2026-06-21 (pricing-model-normalization)
 
 **Pricing Model Normalization**: Updated `PricingService` cost calculation to normalize model names and fall back to case-insensitive exact or partial match (`contains`) if an exact match isn't found. This prevents calculation errors when provided names differ slightly from stored DB names (e.g. `Kimi-K2.6` vs `azure_ai/kimi-k2.6`).

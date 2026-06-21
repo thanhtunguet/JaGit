@@ -405,6 +405,21 @@ export const listAgentSessions = (filters: AgentSessionFilters = {}) => {
 export const getAgentSession = (id: string) =>
   request<AgentSessionRow>(`/agent-sessions/${encodeURIComponent(id)}`);
 
+export interface AgentSessionAggregateResponse {
+  byUser: { username: string; costUsd: number }[];
+  byModel: { model: string; costUsd: number }[];
+  byTool: { tool: string; costUsd: number }[];
+}
+
+export const aggregateAgentSessions = (filters: Omit<AgentSessionFilters, "limit" | "offset"> = {}) => {
+  const qs = new URLSearchParams();
+  if (filters.tool) qs.set("tool", filters.tool);
+  if (filters.username) qs.set("username", filters.username);
+  if (filters.from) qs.set("from", filters.from);
+  if (filters.to) qs.set("to", filters.to);
+  return request<AgentSessionAggregateResponse>(`/agent-sessions/aggregate?${qs.toString()}`);
+};
+
 // ─── Token helper ─────────────────────────────────────────────────────────────
 
 export const getStoredToken = () => storage.getItem("DASHBOARD_API_TOKEN") ?? "";

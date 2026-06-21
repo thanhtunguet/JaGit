@@ -49,7 +49,24 @@ export class AgentSessionController {
       offset: Number(offset) || 0,
     });
   }
-
+  @Get("aggregate")
+  @ApiOperation({ summary: "Get aggregate cost data by user, model, and tool" })
+  async aggregate(
+    @Query("tool") tool?: string,
+    @Query("username") username?: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    const toolFilter = tool && (AGENT_TOOLS as readonly string[]).includes(tool)
+      ? (tool as AgentSessionPayload["tool"])
+      : undefined;
+    return this.svc.aggregate({
+      tool: toolFilter,
+      username: username || undefined,
+      from: from || undefined,
+      to: to || undefined,
+    });
+  }
   @Get(":id")
   @ApiOperation({ summary: "Get a single agent session with raw payload" })
   async get(@Param("id") id: string) {

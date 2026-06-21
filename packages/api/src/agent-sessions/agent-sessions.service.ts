@@ -95,6 +95,69 @@ export class AgentSessionService {
     return { rows, total };
   }
 
+  async aggregate(filters: Omit<ListFilters, "limit" | "offset">) {
+    const where: Record<string, unknown> = {};
+    if (filters.tool) where.tool = TOOL_WIRE_TO_ENUM[filters.tool];
+    if (filters.username) where.user = { username: filters.username };
+    if (filters.from || filters.to) {
+      where.lastUpdatedAt = {
+        ...(filters.from ? { gte: new Date(filters.from.includes('T') ? filters.from : `${filters.from}T00:00:00.000Z`) } : {}),
+        ...(filters.to ? { lte: new Date(filters.to.includes('T') ? filters.to : `${filters.to}T23:59:59.999Z`) } : {}),
+      };
+    }
+
+    const [byUserRaw, byModelRaw, byToolRaw] = await Promise.all([
+      this.prisma.client.agentSession.groupBy({
+        by: ["userId"],
+        _sum: { costUsd: true },
+        where: where as any,
+      }),
+      this.prisma.client.agentSession.groupBy({
+        by: ["model"],
+        _sum: { costUsd: true },
+        where: where as any,
+      }),
+      this.prisma.client.agentSession.groupBy({
+        by: ["tool"],
+        _sum: { costUsd: true },
+        where: where as any,
+      }),
+    ]);
+
+    const userIds = byUserRaw.map((u) => u.userId);
+    const users = await this.prisma.client.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u.username]));
+
+    const byUser = byUserRaw
+      .map((u) => ({
+        username: userMap.get(u.userId) ?? "unknown",
+        costUsd: u._sum.costUsd ?? 0,
+      }))
+      .filter((u) => u.costUsd > 0)
+      .sort((a, b) => b.costUsd - a.costUsd);
+
+    const byModel = byModelRaw
+      .map((m) => ({
+        model: m.model,
+        costUsd: m._sum.costUsd ?? 0,
+      }))
+      .filter((m) => m.costUsd > 0)
+      .sort((a, b) => b.costUsd - a.costUsd);
+
+    const byTool = byToolRaw
+      .map((t) => ({
+        tool: t.tool,
+        costUsd: t._sum.costUsd ?? 0,
+      }))
+      .filter((t) => t.costUsd > 0)
+      .sort((a, b) => b.costUsd - a.costUsd);
+
+    return { byUser, byModel, byTool };
+  }
+
   async get(id: string) {
     const row = await this.prisma.client.agentSession.findUnique({
       where: { id },
