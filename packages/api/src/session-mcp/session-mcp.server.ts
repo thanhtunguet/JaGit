@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { SessionMcpService } from "./session-mcp.service.js";
-import { NotFoundException, ConflictException } from "@nestjs/common";
 
 export interface SessionMcpContext {
   username: string;
@@ -33,12 +32,7 @@ export function createSessionMcpServer(ctx: SessionMcpContext): McpServer {
         };
       } catch (err) {
         // Business errors → MCP error result, not HTTP exception
-        const message =
-          err instanceof NotFoundException || err instanceof ConflictException
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Unknown error";
+        const message = err instanceof Error ? err.message : "Unknown error";
         return {
           isError: true,
           content: [{ type: "text" as const, text: message }],
