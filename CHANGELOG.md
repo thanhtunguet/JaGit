@@ -1,3 +1,7 @@
+## 2026-06-21 (daily-spend-modes)
+
+**Daily Spend Modes**: Added a toggle to the Daily Spend chart allowing users to switch between "Individual" and "Cumulative" cost display. The cumulative mode calculates a running total of token costs chronologically.
+
 ## 2026-06-21 (fix-chart-yaxis-labels)
 
 **Fix Chart YAxis Labels**: Fixed an issue across the Usage Dashboard charts where some categorical labels were skipped/hidden. Added `interval={0}` to all `<YAxis>` components to force all labels to render.

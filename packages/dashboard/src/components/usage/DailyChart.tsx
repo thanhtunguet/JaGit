@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { DailyRow } from "@/api/client.js";
@@ -9,14 +10,47 @@ interface Props {
 }
 
 export function DailyChart({ rows, period }: Props) {
-  const data = rows
+  const [mode, setMode] = useState<"individual" | "cumulative">("individual");
+
+  const sortedRows = rows
     .filter((r) => r.Period === period)
-    .map((r) => ({ date: r.Date.slice(5), cost: r["Cost (USD)"] }));
+    .sort((a, b) => a.Date.localeCompare(b.Date));
+
+  let runningTotal = 0;
+  const data = sortedRows.map((r) => {
+    runningTotal += r["Cost (USD)"];
+    return {
+      date: r.Date.slice(5),
+      cost: mode === "cumulative" ? runningTotal : r["Cost (USD)"],
+    };
+  });
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-sm">Daily Spend</CardTitle>
+        <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+          <button
+            onClick={() => setMode("individual")}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              mode === "individual"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Individual
+          </button>
+          <button
+            onClick={() => setMode("cumulative")}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              mode === "cumulative"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Cumulative
+          </button>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={200}>
