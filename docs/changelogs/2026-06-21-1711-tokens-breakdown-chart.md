@@ -8,3 +8,5 @@ Added a fourth pie chart to the Live Sessions page to display the breakdown of C
 - Both `@jagit/api` and `dashboard` were successfully built without any errors.
 
 - Added `label` prop to all `Pie` components to display slice names with leader lines.
+
+- Replaced text labels with color blocks to avoid cutoff while preserving leader lines.

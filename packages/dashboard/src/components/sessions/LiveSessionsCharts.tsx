@@ -28,6 +28,10 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   copilot: "Copilot",
 };
 
+const renderColorBlockLabel = ({ x, y, fill }: any) => {
+  return <rect x={x - 6} y={y - 6} width={12} height={12} fill={fill} rx={2} />;
+};
+
 export function LiveSessionsCharts({ data }: Props) {
   const toolData = data.byTool.slice(0, 10).map((t) => ({
     ...t,
@@ -56,7 +60,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={({ name }) => name}
+                label={renderColorBlockLabel}
               >
                 {data.byUser.slice(0, 10).map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -86,7 +90,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={({ name }) => name}
+                label={renderColorBlockLabel}
               >
                 {data.byModel.slice(0, 10).map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -116,7 +120,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={({ name }) => name}
+                label={renderColorBlockLabel}
               >
                 {toolData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -147,7 +151,7 @@ export function LiveSessionsCharts({ data }: Props) {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ name }) => name}
+                  label={renderColorBlockLabel}
                 >
                   {tokenData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
