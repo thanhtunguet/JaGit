@@ -10,7 +10,7 @@ function makePrisma() {
       user: { upsert: vi.fn().mockResolvedValue({ id: "u1", username: "alice" }) },
       agentSession: {
         upsert: vi.fn().mockResolvedValue({ id: "as1", tool: "claude_code", sessionId: "s1", lastUpdatedAt: new Date() }),
-        findMany: vi.fn().mockResolvedValue([{ id: "as1", user: { username: "alice" } }]),
+        findMany: vi.fn().mockResolvedValue([{ id: "as1", costUsd: 0.0008, user: { username: "alice" } }]),
         count: vi.fn().mockResolvedValue(1),
         findUnique: vi.fn().mockResolvedValue({ id: "as1", rawPayload: { a: 1 } }),
       },
@@ -30,7 +30,12 @@ describe("AgentSessionService", () => {
   let svc: AgentSessionService;
   beforeEach(() => { 
     prisma = makePrisma(); 
-    pricing = { calculateCost: vi.fn().mockResolvedValue(0.123) } as unknown as PricingService;
+    pricing = {
+      calculateCost: vi.fn().mockResolvedValue(0.123),
+      getBaseTokenRate: vi.fn().mockResolvedValue(0.0000008),
+      toBaseTokens: vi.fn((cost: number | null, rate: number | null) =>
+        cost == null || rate == null || rate <= 0 ? null : cost / rate),
+    } as unknown as PricingService;
     svc = new AgentSessionService(prisma, pricing); 
   });
 
@@ -53,7 +58,15 @@ describe("AgentSessionService", () => {
     const args = (prisma as any).client.agentSession.findMany.mock.calls[0][0];
     expect(args.where.tool).toBe("claude_code");
     expect(args.orderBy).toEqual({ lastUpdatedAt: "desc" });
-    expect(res).toEqual({ rows: [{ id: "as1", user: { username: "alice" } }], total: 1 });
+    expect(res.total).toBe(1);
+    expect(res.rows[0]).toMatchObject({ id: "as1", costUsd: 0.0008, user: { username: "alice" } });
+    expect(res.rows[0].baseTokens).toBeCloseTo(1000, 6);
+  });
+
+  it("list sets baseTokens to null when base rate unavailable", async () => {
+    (pricing.getBaseTokenRate as any).mockResolvedValue(null);
+    const res = await svc.list({ limit: 50, offset: 0 });
+    expect(res.rows[0].baseTokens).toBeNull();
   });
 
   it("get returns row with rawPayload", async () => {

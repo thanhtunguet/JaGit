@@ -82,6 +82,7 @@ export class AgentSessionService {
       };
     }
 
+    const baseRate = await this.pricing.getBaseTokenRate();
     const [rows, total] = await Promise.all([
       this.prisma.client.agentSession.findMany({
         where: where as any,
@@ -92,7 +93,11 @@ export class AgentSessionService {
       }),
       this.prisma.client.agentSession.count({ where: where as any }),
     ]);
-    return { rows, total };
+    const rowsWithBt = rows.map((r) => ({
+      ...r,
+      baseTokens: this.pricing.toBaseTokens(r.costUsd, baseRate),
+    }));
+    return { rows: rowsWithBt, total };
   }
 
   async aggregate(filters: Omit<ListFilters, "limit" | "offset">) {
