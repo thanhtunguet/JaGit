@@ -146,6 +146,28 @@ describe("SessionMcpController — MCP Protocol", () => {
       expect((body.result.content[0] as TextContent).text).toContain("Already");
     });
 
+    it("should return isError:true with a generic message for unexpected errors (no internal details leaked)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new Error("Can't reach database server at `localhost:5432`"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      const text = (body.result.content[0] as TextContent).text;
+      expect(text).not.toContain("localhost");
+      expect(text).not.toContain("5432");
+      expect(text).toBe("Internal error");
+    });
+
     it("should return isError:true for unknown tool (not a transport-level error)", async () => {
       const res = await app.inject({
         method: "POST",

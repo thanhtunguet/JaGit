@@ -1,6 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { SessionMcpService } from "./session-mcp.service.js";
+import { NotFoundException, ConflictException, Logger } from "@nestjs/common";
+
+const logger = new Logger("SessionMcpServer");
 
 export interface SessionMcpContext {
   username: string;
@@ -32,10 +35,17 @@ export function createSessionMcpServer(ctx: SessionMcpContext): McpServer {
         };
       } catch (err) {
         // Business errors → MCP error result, not HTTP exception
-        const message = err instanceof Error ? err.message : "Unknown error";
+        if (err instanceof NotFoundException || err instanceof ConflictException) {
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: err.message }],
+          };
+        }
+        // Don't leak internal error details (DB connection strings, stack traces, etc.) to MCP clients.
+        logger.error("activate-jira tool handler failed", err);
         return {
           isError: true,
-          content: [{ type: "text" as const, text: message }],
+          content: [{ type: "text" as const, text: "Internal error" }],
         };
       }
     },
