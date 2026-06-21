@@ -73,7 +73,7 @@ describe("StatsService.getOverview", () => {
         level: "info",
         type: "step_done",
         message: "Job finished",
-        job: { jiraIssueKey: "JIGIT-1" },
+        job: { jiraIssueKey: "JAGIT-1" },
       },
     ]);
 
@@ -98,7 +98,7 @@ describe("StatsService.getOverview", () => {
       id: "e1",
       level: "info",
       message: "Job finished",
-      jiraIssueKey: "JIGIT-1",
+      jiraIssueKey: "JAGIT-1",
     });
   });
 });

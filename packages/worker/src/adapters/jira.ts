@@ -1,4 +1,4 @@
-import { withRetry } from "@jigit/shared";
+import { withRetry } from "@jagit/shared";
 import type { IJiraAdapter, IssueData } from "./interfaces.js";
 
 export interface JiraOpts {

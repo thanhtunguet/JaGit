@@ -3,18 +3,18 @@ import { buildAcpMcpServers, isAcpMcpServerHttp, buildReportInstruction } from "
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const jigitServerPath = path.join(
+const jagitServerPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
   "..",
   "worker",
   "dist",
   "mcp",
-  "jigit-server.js",
+  "jagit-server.js",
 );
 
 describe("buildAcpMcpServers", () => {
-  it("always includes built-in jigit server", async () => {
+  it("always includes built-in jagit server", async () => {
     const servers = await buildAcpMcpServers({
       template: { mcpServerIds: [], requireReviewBeforeCommit: true },
       dbConfigs: [],
@@ -23,19 +23,19 @@ describe("buildAcpMcpServers", () => {
         redisUrl: "redis://localhost",
         publicBaseUrl: "http://localhost:3000",
         dashboardApiToken: "tok",
-        jigitServerPath,
+        jagitServerPath,
         approvalTimeoutMs: 1800000,
       },
       resolveCredential: async () => ({}),
     });
 
-    expect(servers.some((s) => s.name === "jigit")).toBe(true);
-    const jigit = servers.find((s) => s.name === "jigit")!;
-    expect(isAcpMcpServerHttp(jigit)).toBe(false);
-    if (!isAcpMcpServerHttp(jigit)) {
-      expect(jigit.command).toBe("node");
-      expect(jigit.args[0]).toBe(jigitServerPath);
-      expect(jigit.env.find((e) => e.name === "JIGIT_JOB_ID")?.value).toBe("job-1");
+    expect(servers.some((s) => s.name === "jagit")).toBe(true);
+    const jagit = servers.find((s) => s.name === "jagit")!;
+    expect(isAcpMcpServerHttp(jagit)).toBe(false);
+    if (!isAcpMcpServerHttp(jagit)) {
+      expect(jagit.command).toBe("node");
+      expect(jagit.args[0]).toBe(jagitServerPath);
+      expect(jagit.env.find((e) => e.name === "JAGIT_JOB_ID")?.value).toBe("job-1");
     }
   });
 
@@ -63,7 +63,7 @@ describe("buildAcpMcpServers", () => {
         redisUrl: "redis://x",
         publicBaseUrl: "http://localhost:3000",
         dashboardApiToken: "tok",
-        jigitServerPath,
+        jagitServerPath,
         approvalTimeoutMs: 1800000,
       },
       resolveCredential: async () => ({ token: "resolved" }),
@@ -105,7 +105,7 @@ describe("buildAcpMcpServers", () => {
         redisUrl: "redis://x",
         publicBaseUrl: "http://localhost:3000",
         dashboardApiToken: "tok",
-        jigitServerPath,
+        jagitServerPath,
         approvalTimeoutMs: 1800000,
       },
       resolveCredential: async () => ({ apiKey: "sk-test" }),
@@ -141,7 +141,7 @@ describe("buildAcpMcpServers", () => {
         redisUrl: "redis://x",
         publicBaseUrl: "http://localhost:3000",
         dashboardApiToken: "tok",
-        jigitServerPath,
+        jagitServerPath,
         approvalTimeoutMs: 1800000,
       },
       resolveCredential: async () => ({}),

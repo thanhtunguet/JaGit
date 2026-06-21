@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { PrismaJobSink } from "./prisma-sink.js";
-import { prisma, publishEvent, jobChannel } from "@jigit/shared";
+import { prisma, publishEvent, jobChannel } from "@jagit/shared";
 
-vi.mock("@jigit/shared", async (orig) => {
+vi.mock("@jagit/shared", async (orig) => {
   const actual = await orig<any>();
   return {
     ...actual,

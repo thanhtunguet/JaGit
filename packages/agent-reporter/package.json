@@ -1,5 +1,5 @@
 {
-  "name": "@jigit/agent-reporter",
+  "name": "@jagit/agent-reporter",
   "version": "0.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/shared": "workspace:*",
+    "@jagit/shared": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

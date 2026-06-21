@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
-import { McpServerConfigBodySchema } from "@jigit/shared";
+import { McpServerConfigBodySchema } from "@jagit/shared";
 
 export type McpServerConfigBody = ReturnType<typeof McpServerConfigBodySchema.parse>;
 

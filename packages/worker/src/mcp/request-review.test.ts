@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { waitForApprovalDecision } from "@jigit/shared";
+import { waitForApprovalDecision } from "@jagit/shared";
 import { executeRequestReview } from "./request-review.js";
 
-vi.mock("@jigit/shared", () => ({
+vi.mock("@jagit/shared", () => ({
   waitForApprovalDecision: vi.fn(async () => "approve"),
 }));
 

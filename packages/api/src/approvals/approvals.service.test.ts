@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ApprovalsService } from "./approvals.service.js";
-import { publishEvent } from "@jigit/shared";
+import { publishEvent } from "@jagit/shared";
 
 // Mock the PrismaService and Redis publisher
-vi.mock("@jigit/shared", async (importOriginal) => {
+vi.mock("@jagit/shared", async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
@@ -61,7 +61,7 @@ describe("ApprovalsService.decide", () => {
   it("publishes a resolved event to approvalsChannel after deciding", async () => {
     mockPrisma.client.approval.findUnique.mockResolvedValue(pendingApproval);
     await svc.decide("appr-1", "allow", "dashboard", "user-1");
-    const { publishEvent: mockPublishEvent } = await import("@jigit/shared");
+    const { publishEvent: mockPublishEvent } = await import("@jagit/shared");
     expect(mockPublishEvent).toHaveBeenCalledWith(
       expect.any(String),
       "approvals",

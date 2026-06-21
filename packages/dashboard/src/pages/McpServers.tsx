@@ -21,7 +21,9 @@ import { McpServerDialog } from "@/components/McpServerDialog";
 
 export function McpServers() {
   const [items, setItems] = useState<McpServerItem[] | null>(null);
-  const [dialog, setDialog] = useState<{ open: boolean; item?: McpServerItem }>({ open: false });
+  const [dialog, setDialog] = useState<{ open: boolean; item?: McpServerItem }>(
+    { open: false },
+  );
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
@@ -50,8 +52,9 @@ export function McpServers() {
         <div>
           <h2 className="text-2xl font-bold">MCP Servers</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            MCP servers (stdio or HTTP) injected into agent sessions via Agent Templates.
-            The built-in <code className="text-xs">jigit</code> review server is always included (stdio).
+            MCP servers (stdio or HTTP) injected into agent sessions via Agent
+            Templates. The built-in <code className="text-xs">jagit</code>{" "}
+            review server is always included (stdio).
           </p>
         </div>
         <Button onClick={() => setDialog({ open: true })}>
@@ -61,7 +64,9 @@ export function McpServers() {
 
       {error && (
         <Card>
-          <CardContent className="pt-6 text-destructive text-sm">{error}</CardContent>
+          <CardContent className="pt-6 text-destructive text-sm">
+            {error}
+          </CardContent>
         </Card>
       )}
 
@@ -77,7 +82,9 @@ export function McpServers() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No MCP servers configured yet.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              No MCP servers configured yet.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -94,13 +101,16 @@ export function McpServers() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="font-mono text-xs uppercase">
+                      <Badge
+                        variant="outline"
+                        className="font-mono text-xs uppercase"
+                      >
                         {item.transport}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs max-w-md truncate">
                       {item.transport === "http"
-                        ? item.url ?? "—"
+                        ? (item.url ?? "—")
                         : `${item.command} ${item.args.join(" ")}`.trim()}
                     </TableCell>
                     <TableCell>

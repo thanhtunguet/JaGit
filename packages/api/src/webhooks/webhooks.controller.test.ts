@@ -58,9 +58,9 @@ describe("WebhooksController", () => {
     webhookEvent: "jira:issue_updated",
     timestamp: 999,
     issue: {
-      key: "JIGIT-7",
+      key: "JAGIT-7",
       fields: {
-        project: { key: "JIGIT" },
+        project: { key: "JAGIT" },
         issuetype: { name: "Bug" },
         summary: "Fix login",
         description: "",
@@ -73,7 +73,7 @@ describe("WebhooksController", () => {
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jigit-secret": SECRET, "content-type": "application/json" },
+      headers: { "x-jagit-secret": SECRET, "content-type": "application/json" },
       payload: jiraPayload,
     });
     expect(res.statusCode).toBe(202);
@@ -85,7 +85,7 @@ describe("WebhooksController", () => {
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jigit-secret": "wrong", "content-type": "application/json" },
+      headers: { "x-jagit-secret": "wrong", "content-type": "application/json" },
       payload: jiraPayload,
     });
     expect(res.statusCode).toBe(401);
@@ -95,7 +95,7 @@ describe("WebhooksController", () => {
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jigit-secret": SECRET, "content-type": "application/json" },
+      headers: { "x-jagit-secret": SECRET, "content-type": "application/json" },
       payload: { ...jiraPayload, issue: { ...jiraPayload.issue,
         fields: { ...jiraPayload.issue.fields, assignee: { accountId: "someone-else" } } } },
     });

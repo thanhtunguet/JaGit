@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
-import { createQueue, loadConfig } from "@jigit/shared";
+import { createQueue, loadConfig } from "@jagit/shared";
 
-export const QUEUE_TOKEN = "JIGIT_QUEUE";
+export const QUEUE_TOKEN = "JAGIT_QUEUE";
 
 @Global()
 @Module({

@@ -13,8 +13,8 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
 COPY . .
-RUN pnpm --filter @jigit/shared build
-RUN pnpm --filter @jigit/worker build
+RUN pnpm --filter @jagit/shared build
+RUN pnpm --filter @jagit/worker build
 
 FROM base AS runner
 COPY --from=builder /app/node_modules ./node_modules

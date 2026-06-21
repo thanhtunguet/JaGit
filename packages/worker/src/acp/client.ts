@@ -43,7 +43,7 @@ export interface AcpOutput {
   toolResult?: { output?: string; error?: string };
 }
 
-import type { AcpMcpServer } from "@jigit/shared";
+import type { AcpMcpServer } from "@jagit/shared";
 
 export interface AcpSessionOpts {
   command: string;

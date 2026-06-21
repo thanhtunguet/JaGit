@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { normalizeJira, normalizeGitlab, dedupeKey } from "./normalize.js";
 
 const issueFields = (assigneeId: string | null) => ({
-  project: { key: "JIGIT" },
+  project: { key: "JAGIT" },
   issuetype: { name: "Bug" },
   summary: "Fix login bug",
   description: "Steps to reproduce …",
@@ -12,20 +12,20 @@ const issueFields = (assigneeId: string | null) => ({
 const jiraUpdated = (assigneeId: string) => ({
   webhookEvent: "jira:issue_updated",
   timestamp: 1718000000,
-  issue: { key: "JIGIT-7", fields: issueFields(assigneeId) },
+  issue: { key: "JAGIT-7", fields: issueFields(assigneeId) },
 });
 
 const jiraCreated = (assigneeId: string) => ({
   webhookEvent: "jira:issue_created",
   timestamp: 1718000001,
-  issue: { key: "JIGIT-8", fields: issueFields(assigneeId) },
+  issue: { key: "JAGIT-8", fields: issueFields(assigneeId) },
 });
 
 const commentEvt = (commentBody: string, event = "comment_updated") => ({
   webhookEvent: event,
   timestamp: 1718000002,
   comment: { id: "42", body: commentBody },
-  issue: { key: "JIGIT-7", fields: issueFields(null) },
+  issue: { key: "JAGIT-7", fields: issueFields(null) },
 });
 
 describe("normalizeJira", () => {
@@ -35,8 +35,8 @@ describe("normalizeJira", () => {
       expect(t).toMatchObject({
         source: "jira",
         triggerType: "issue_assigned",
-        issueKey: "JIGIT-7",
-        projectKey: "JIGIT",
+        issueKey: "JAGIT-7",
+        projectKey: "JAGIT",
         issueType: "Bug",
         summary: "Fix login bug",
         commentBody: "",
@@ -48,7 +48,7 @@ describe("normalizeJira", () => {
       expect(t).toMatchObject({
         source: "jira",
         triggerType: "issue_assigned",
-        issueKey: "JIGIT-8",
+        issueKey: "JAGIT-8",
       });
     });
 
@@ -57,7 +57,7 @@ describe("normalizeJira", () => {
     });
 
     it("returns null when issue has no assignee", () => {
-      const body = { ...jiraUpdated("bot-acc-1"), issue: { key: "JIGIT-7", fields: issueFields(null) } };
+      const body = { ...jiraUpdated("bot-acc-1"), issue: { key: "JAGIT-7", fields: issueFields(null) } };
       expect(normalizeJira(body, "bot-acc-1")).toBeNull();
     });
   });
@@ -68,7 +68,7 @@ describe("normalizeJira", () => {
       expect(t).toMatchObject({
         source: "jira",
         triggerType: "comment_mention",
-        issueKey: "JIGIT-7",
+        issueKey: "JAGIT-7",
         commentBody: "Hey [~accountid:bot-acc-1] fix this",
       });
     });
@@ -101,7 +101,7 @@ describe("dedupeKey", () => {
 
   it("differs for different issue keys", () => {
     const t1 = normalizeJira(jiraUpdated("bot-acc-1"), "bot-acc-1")!;
-    const t2 = { ...t1, issueKey: "JIGIT-8", eventId: "other" };
+    const t2 = { ...t1, issueKey: "JAGIT-8", eventId: "other" };
     expect(dedupeKey(t1)).not.toBe(dedupeKey(t2));
   });
 });

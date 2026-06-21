@@ -2,42 +2,78 @@ import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Info, Pencil, Trash2, Plus } from "lucide-react";
 import {
-  listCredentials, createCredential, updateCredential, deleteCredential,
-  listRepoMappings, createRepoMapping, updateRepoMapping, deleteRepoMapping,
-  listAgentTemplates, createAgentTemplate, updateAgentTemplate, deleteAgentTemplate,
+  listCredentials,
+  createCredential,
+  updateCredential,
+  deleteCredential,
+  listRepoMappings,
+  createRepoMapping,
+  updateRepoMapping,
+  deleteRepoMapping,
+  listAgentTemplates,
+  createAgentTemplate,
+  updateAgentTemplate,
+  deleteAgentTemplate,
   listMcpServers,
-  type CredentialListItem, type RepoMappingItem, type AgentTemplateItem, type McpServerItem,
-  getStoredToken, setStoredToken,
+  type CredentialListItem,
+  type RepoMappingItem,
+  type AgentTemplateItem,
+  type McpServerItem,
+  getStoredToken,
+  setStoredToken,
 } from "@/api/client";
 
 // ─── Simple textarea-based JSON editor ───────────────────────────────────────
 
 function JsonField({
-  label, value, onChange, placeholder,
-}: { label: string; value: Record<string, string>; onChange: (v: Record<string, string>) => void; placeholder?: string }) {
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: Record<string, string>;
+  onChange: (v: Record<string, string>) => void;
+  placeholder?: string;
+}) {
   const [raw, setRaw] = useState(() => JSON.stringify(value, null, 2));
   const [err, setErr] = useState(false);
   return (
     <div>
-      <label className="text-xs font-medium mb-1 block text-foreground">{label}</label>
+      <label className="text-xs font-medium mb-1 block text-foreground">
+        {label}
+      </label>
       <textarea
         className={`w-full font-mono text-xs p-2 rounded border min-h-[80px] resize-y bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring ${err ? "border-destructive" : "border-input"}`}
         value={raw}
         placeholder={placeholder}
         onChange={(e) => {
           setRaw(e.target.value);
-          try { onChange(JSON.parse(e.target.value)); setErr(false); }
-          catch { setErr(true); }
+          try {
+            onChange(JSON.parse(e.target.value));
+            setErr(false);
+          } catch {
+            setErr(true);
+          }
         }}
       />
       {err && <p className="text-xs text-destructive">Invalid JSON</p>}
@@ -46,11 +82,23 @@ function JsonField({
 }
 
 function Field({
-  label, value, onChange, type = "text", placeholder,
-}: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
   return (
     <div>
-      <label className="text-xs font-medium mb-1 block text-foreground">{label}</label>
+      <label className="text-xs font-medium mb-1 block text-foreground">
+        {label}
+      </label>
       <input
         type={type}
         className="w-full text-sm p-2 rounded border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
@@ -72,7 +120,10 @@ function TokenBar() {
       type="password"
       value={token}
       placeholder="Paste DASHBOARD_API_TOKEN to enable mutations"
-      onChange={(v) => { setToken(v); setStoredToken(v); }}
+      onChange={(v) => {
+        setToken(v);
+        setStoredToken(v);
+      }}
     />
   );
 }
@@ -88,7 +139,9 @@ const SECRET_KEYS: Record<string, string[]> = {
 };
 
 function CredentialDialog({
-  initial, onClose, onSaved,
+  initial,
+  onClose,
+  onSaved,
 }: {
   initial?: CredentialListItem;
   onClose: () => void;
@@ -128,7 +181,9 @@ function CredentialDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Credential" : "New Credential"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Edit Credential" : "New Credential"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           {!isEdit && (
@@ -139,11 +194,19 @@ function CredentialDialog({
                 value={kind}
                 onChange={(e) => {
                   setKind(e.target.value);
-                  setSecrets(Object.fromEntries((SECRET_KEYS[e.target.value] ?? []).map((k) => [k, ""])));
+                  setSecrets(
+                    Object.fromEntries(
+                      (SECRET_KEYS[e.target.value] ?? []).map((k) => [k, ""]),
+                    ),
+                  );
                   setMeta({});
                 }}
               >
-                {CREDENTIAL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                {CREDENTIAL_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
               </select>
             </div>
           )}
@@ -180,7 +243,12 @@ function CredentialDialog({
               />
               <div className="space-y-2">
                 <p className="text-xs font-medium">
-                  Secrets {isEdit && <span className="text-muted-foreground">(leave blank to keep existing)</span>}
+                  Secrets{" "}
+                  {isEdit && (
+                    <span className="text-muted-foreground">
+                      (leave blank to keep existing)
+                    </span>
+                  )}
                 </p>
                 {(SECRET_KEYS[isEdit ? initial!.kind : kind] ?? []).map((k) => (
                   <Field
@@ -198,8 +266,12 @@ function CredentialDialog({
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -209,7 +281,10 @@ function CredentialDialog({
 // ─── Repo Mapping dialog ──────────────────────────────────────────────────────
 
 function RepoMappingDialog({
-  initial, templates, onClose, onSaved,
+  initial,
+  templates,
+  onClose,
+  onSaved,
 }: {
   initial?: RepoMappingItem;
   templates: AgentTemplateItem[];
@@ -247,7 +322,9 @@ function RepoMappingDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{initial ? "Edit Repo Mapping" : "New Repo Mapping"}</DialogTitle>
+          <DialogTitle>
+            {initial ? "Edit Repo Mapping" : "New Repo Mapping"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <Field
@@ -274,20 +351,32 @@ function RepoMappingDialog({
             placeholder='{"Bug": "bugfix/", "Story": "feature/"}'
           />
           <div>
-            <label className="text-xs font-medium mb-1 block">Agent Template</label>
+            <label className="text-xs font-medium mb-1 block">
+              Agent Template
+            </label>
             <select
               className="w-full text-sm p-2 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               value={form.agentTemplateId}
-              onChange={(e) => setForm((f) => ({ ...f, agentTemplateId: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, agentTemplateId: e.target.value }))
+              }
             >
-              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -297,7 +386,10 @@ function RepoMappingDialog({
 // ─── Agent Template dialog ────────────────────────────────────────────────────
 
 function AgentTemplateDialog({
-  initial, onClose, onSaved, mcpServers,
+  initial,
+  onClose,
+  onSaved,
+  mcpServers,
 }: {
   initial?: AgentTemplateItem;
   onClose: () => void;
@@ -309,7 +401,7 @@ function AgentTemplateDialog({
     model: initial?.model ?? "claude-sonnet-4-6",
     prompt: initial?.prompt ?? "",
     maxTurns: String(initial?.maxTurns ?? ""),
-    mcpServerIds: initial?.mcpServerIds ?? [] as string[],
+    mcpServerIds: initial?.mcpServerIds ?? ([] as string[]),
     requireReviewBeforeCommit: initial?.requireReviewBeforeCommit ?? false,
   });
   const [saving, setSaving] = useState(false);
@@ -344,10 +436,16 @@ function AgentTemplateDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{initial ? "Edit Agent Template" : "New Agent Template"}</DialogTitle>
+          <DialogTitle>
+            {initial ? "Edit Agent Template" : "New Agent Template"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <Field label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
+          <Field
+            label="Name"
+            value={form.name}
+            onChange={(v) => setForm((f) => ({ ...f, name: v }))}
+          />
           <Field
             label="Model"
             value={form.model}
@@ -359,7 +457,9 @@ function AgentTemplateDialog({
             <textarea
               className="w-full text-sm p-2 rounded border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring min-h-[100px] resize-y"
               value={form.prompt}
-              onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, prompt: e.target.value }))
+              }
             />
           </div>
           <Field
@@ -374,17 +474,25 @@ function AgentTemplateDialog({
               type="checkbox"
               checked={form.requireReviewBeforeCommit}
               onChange={(e) =>
-                setForm((f) => ({ ...f, requireReviewBeforeCommit: e.target.checked }))
+                setForm((f) => ({
+                  ...f,
+                  requireReviewBeforeCommit: e.target.checked,
+                }))
               }
             />
-            Require human review before commit (jigit_request_review)
+            Require human review before commit (jagit_request_review)
           </label>
           {mcpServers.length > 0 && (
             <div>
-              <label className="text-xs font-medium mb-2 block">Additional MCP servers</label>
+              <label className="text-xs font-medium mb-2 block">
+                Additional MCP servers
+              </label>
               <div className="space-y-1 max-h-32 overflow-y-auto border rounded-md p-2">
                 {mcpServers.map((mcp) => (
-                  <label key={mcp.id} className="flex items-center gap-2 text-sm">
+                  <label
+                    key={mcp.id}
+                    className="flex items-center gap-2 text-sm"
+                  >
                     <input
                       type="checkbox"
                       checked={form.mcpServerIds.includes(mcp.id)}
@@ -398,8 +506,11 @@ function AgentTemplateDialog({
                         }));
                       }}
                     />
-                    <span className={!mcp.enabled ? "text-muted-foreground" : ""}>
-                      {mcp.name}{!mcp.enabled ? " (disabled)" : ""}
+                    <span
+                      className={!mcp.enabled ? "text-muted-foreground" : ""}
+                    >
+                      {mcp.name}
+                      {!mcp.enabled ? " (disabled)" : ""}
                     </span>
                   </label>
                 ))}
@@ -409,8 +520,12 @@ function AgentTemplateDialog({
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -422,16 +537,32 @@ function AgentTemplateDialog({
 export function Config() {
   const [templates, setTemplates] = useState<AgentTemplateItem[] | null>(null);
   const [mcpServers, setMcpServers] = useState<McpServerItem[]>([]);
-  const [credentials, setCredentials] = useState<CredentialListItem[] | null>(null);
+  const [credentials, setCredentials] = useState<CredentialListItem[] | null>(
+    null,
+  );
   const [mappings, setMappings] = useState<RepoMappingItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [credDialog, setCredDialog] = useState<{ open: boolean; item?: CredentialListItem }>({ open: false });
-  const [mappingDialog, setMappingDialog] = useState<{ open: boolean; item?: RepoMappingItem }>({ open: false });
-  const [templateDialog, setTemplateDialog] = useState<{ open: boolean; item?: AgentTemplateItem }>({ open: false });
+  const [credDialog, setCredDialog] = useState<{
+    open: boolean;
+    item?: CredentialListItem;
+  }>({ open: false });
+  const [mappingDialog, setMappingDialog] = useState<{
+    open: boolean;
+    item?: RepoMappingItem;
+  }>({ open: false });
+  const [templateDialog, setTemplateDialog] = useState<{
+    open: boolean;
+    item?: AgentTemplateItem;
+  }>({ open: false });
 
   const reload = useCallback(() => {
-    Promise.all([listAgentTemplates(), listCredentials(), listRepoMappings(), listMcpServers()])
+    Promise.all([
+      listAgentTemplates(),
+      listCredentials(),
+      listRepoMappings(),
+      listMcpServers(),
+    ])
       .then(([t, c, m, mcps]) => {
         setTemplates(t);
         setCredentials(c);
@@ -441,17 +572,25 @@ export function Config() {
       .catch((e) => setError(e.message));
   }, []);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const doDelete = async (fn: () => Promise<unknown>, label: string) => {
     if (!confirm(`Delete ${label}?`)) return;
-    try { await fn(); reload(); }
-    catch (e: any) { alert(e.message); }
+    try {
+      await fn();
+      reload();
+    } catch (e: any) {
+      alert(e.message);
+    }
   };
 
   if (error)
     return (
-      <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
 
   return (
@@ -465,7 +604,8 @@ export function Config() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Secrets are write-only — they are never returned to the browser. Leaving a secret field blank keeps the existing value.
+          Secrets are write-only — they are never returned to the browser.
+          Leaving a secret field blank keeps the existing value.
         </AlertDescription>
       </Alert>
 
@@ -473,7 +613,11 @@ export function Config() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm">Agent Templates</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setTemplateDialog({ open: true })}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setTemplateDialog({ open: true })}
+          >
             <Plus className="h-3 w-3 mr-1" /> New
           </Button>
         </CardHeader>
@@ -492,26 +636,49 @@ export function Config() {
                 Array.from({ length: 2 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 4 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : templates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">No agent templates yet.</TableCell>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-muted-foreground py-6"
+                  >
+                    No agent templates yet.
+                  </TableCell>
                 </TableRow>
               ) : (
                 templates.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{t.model}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {t.model}
+                    </TableCell>
                     <TableCell>{t.maxTurns ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setTemplateDialog({ open: true, item: t })}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() =>
+                            setTemplateDialog({ open: true, item: t })
+                          }
+                        >
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => doDelete(() => deleteAgentTemplate(t.id), t.name)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() =>
+                            doDelete(() => deleteAgentTemplate(t.id), t.name)
+                          }
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -528,7 +695,11 @@ export function Config() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm">Credentials</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setCredDialog({ open: true })}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCredDialog({ open: true })}
+          >
             <Plus className="h-3 w-3 mr-1" /> New
           </Button>
         </CardHeader>
@@ -547,26 +718,49 @@ export function Config() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 4 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : credentials.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">No credentials yet.</TableCell>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-muted-foreground py-6"
+                  >
+                    No credentials yet.
+                  </TableCell>
                 </TableRow>
               ) : (
                 credentials.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell><Badge>{c.kind}</Badge></TableCell>
+                    <TableCell>
+                      <Badge>{c.kind}</Badge>
+                    </TableCell>
                     <TableCell>{c.name}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{(c.secretKeys ?? []).join(", ")}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {(c.secretKeys ?? []).join(", ")}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCredDialog({ open: true, item: c })}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => setCredDialog({ open: true, item: c })}
+                        >
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => doDelete(() => deleteCredential(c.id), c.name)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() =>
+                            doDelete(() => deleteCredential(c.id), c.name)
+                          }
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -583,7 +777,12 @@ export function Config() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm">Repo Mappings</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setMappingDialog({ open: true })} disabled={!templates?.length}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMappingDialog({ open: true })}
+            disabled={!templates?.length}
+          >
             <Plus className="h-3 w-3 mr-1" /> New
           </Button>
         </CardHeader>
@@ -603,27 +802,59 @@ export function Config() {
                 Array.from({ length: 2 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 5 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : mappings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">No repo mappings yet.</TableCell>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-6"
+                  >
+                    No repo mappings yet.
+                  </TableCell>
                 </TableRow>
               ) : (
                 mappings.map((m) => (
                   <TableRow key={m.id}>
-                    <TableCell className="font-mono">{m.jiraProjectKey}</TableCell>
-                    <TableCell className="font-mono text-xs">{m.gitlabProjectId}</TableCell>
-                    <TableCell><Badge variant="secondary">{m.defaultBaseBranch}</Badge></TableCell>
-                    <TableCell>{m.agentTemplate?.name ?? m.agentTemplateId}</TableCell>
+                    <TableCell className="font-mono">
+                      {m.jiraProjectKey}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {m.gitlabProjectId}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{m.defaultBaseBranch}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {m.agentTemplate?.name ?? m.agentTemplateId}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMappingDialog({ open: true, item: m })}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() =>
+                            setMappingDialog({ open: true, item: m })
+                          }
+                        >
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => doDelete(() => deleteRepoMapping(m.id), m.jiraProjectKey)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() =>
+                            doDelete(
+                              () => deleteRepoMapping(m.id),
+                              m.jiraProjectKey,
+                            )
+                          }
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -641,7 +872,10 @@ export function Config() {
         <CredentialDialog
           initial={credDialog.item}
           onClose={() => setCredDialog({ open: false })}
-          onSaved={() => { setCredDialog({ open: false }); reload(); }}
+          onSaved={() => {
+            setCredDialog({ open: false });
+            reload();
+          }}
         />
       )}
       {mappingDialog.open && templates && (
@@ -649,7 +883,10 @@ export function Config() {
           initial={mappingDialog.item}
           templates={templates}
           onClose={() => setMappingDialog({ open: false })}
-          onSaved={() => { setMappingDialog({ open: false }); reload(); }}
+          onSaved={() => {
+            setMappingDialog({ open: false });
+            reload();
+          }}
         />
       )}
       {templateDialog.open && (
@@ -657,7 +894,10 @@ export function Config() {
           initial={templateDialog.item}
           mcpServers={mcpServers}
           onClose={() => setTemplateDialog({ open: false })}
-          onSaved={() => { setTemplateDialog({ open: false }); reload(); }}
+          onSaved={() => {
+            setTemplateDialog({ open: false });
+            reload();
+          }}
         />
       )}
     </div>

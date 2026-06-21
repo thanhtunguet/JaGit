@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
 COPY . .
-RUN pnpm --filter @jigit/dashboard build
+RUN pnpm --filter @jagit/dashboard build
 
 FROM nginx:1.27-alpine AS runner
 COPY packages/dashboard/nginx.conf /etc/nginx/conf.d/default.conf

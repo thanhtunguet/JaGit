@@ -1,6 +1,6 @@
-# @jigit/hook-codex
+# @jagit/hook-codex
 
-Reports per-session OpenAI Codex CLI usage to JiGit.
+Reports per-session OpenAI Codex CLI usage to JaGit.
 
 ## Setup
 
@@ -10,7 +10,7 @@ the real `codex` binary and reports after each session ends:
     codex() {
       command codex "$@"
       local status=$?
-      npx -y @jigit/hook-codex >/dev/null 2>&1 || true
+      npx -y @jagit/hook-codex >/dev/null 2>&1 || true
       return $status
     }
 
@@ -21,15 +21,15 @@ exit, the reporter locates the most-recently-modified file under
 Uninstall by removing the shell function.
 
 For a permanent binary instead of `npx -y`:
-`npm i -g @jigit/hook-codex`, then call `jigit-hook-codex` in the wrapper.
+`npm i -g @jagit/hook-codex`, then call `jagit-hook-codex` in the wrapper.
 
 You can also point the reporter at a specific transcript:
 
-    jigit-hook-codex --file ~/.codex/sessions/2026/06/20/rollout-...jsonl
+    jagit-hook-codex --file ~/.codex/sessions/2026/06/20/rollout-...jsonl
 
 ## Environment
 
-    export JAGIT_BASE_URL="https://your-jigit-host"
+    export JAGIT_BASE_URL="https://your-jagit-host"
     export JAGIT_API_KEY="<your DASHBOARD_API_TOKEN>"
 
 Identity defaults to `git config user.email` (read from the session's `cwd`);

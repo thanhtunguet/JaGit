@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, Briefcase, Settings, CheckSquare, Plug, BarChart3 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Briefcase,
+  Settings,
+  CheckSquare,
+  Plug,
+  BarChart3,
+} from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
@@ -32,7 +39,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         const evt = JSON.parse(e.data);
         if (evt.type === "approval_requested") setPendingCount((n) => n + 1);
         if (evt.type === "resolved") setPendingCount((n) => Math.max(0, n - 1));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     return () => es.close();
   }, []);
@@ -42,8 +51,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-border bg-card">
         <div className="px-6 py-4">
-          <h1 className="text-lg font-semibold tracking-tight">JiGit</h1>
-          <p className="text-xs text-muted-foreground">AI Coding Orchestrator</p>
+          <h1 className="text-lg font-semibold tracking-tight">JaGit</h1>
+          <p className="text-xs text-muted-foreground">
+            AI Coding Orchestrator
+          </p>
         </div>
         <Separator />
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -55,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 pathname === to
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
               aria-current={pathname === to ? "page" : undefined}
             >

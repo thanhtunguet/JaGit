@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 import { CredentialsService } from "./credentials.service.js";
 import { CredentialsController } from "./credentials.controller.js";
 import { RepoMappingsService } from "./repo-mappings.service.js";

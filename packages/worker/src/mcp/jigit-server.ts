@@ -5,17 +5,17 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { executeRequestReview, readJigitEnv } from "./request-review.js";
+import { executeRequestReview, readJagitEnv } from "./request-review.js";
 
 const server = new Server(
-  { name: "jigit", version: "1.0.0" },
+  { name: "jagit", version: "1.0.0" },
   { capabilities: { tools: {} } },
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
-      name: "jigit_request_review",
+      name: "jagit_request_review",
       description:
         "Pause and request human review or action selection before continuing. Blocks until a human decides.",
       inputSchema: {
@@ -45,7 +45,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name !== "jigit_request_review") {
+  if (request.params.name !== "jagit_request_review") {
     throw new Error(`Unknown tool: ${request.params.name}`);
   }
 
@@ -59,7 +59,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     ? (args.options as { optionId: string; name: string }[])
     : undefined;
 
-  const env = readJigitEnv();
+  const env = readJagitEnv();
   const result = await executeRequestReview({
     ...env,
     prompt,

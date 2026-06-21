@@ -6,7 +6,7 @@ import {
   approvalsChannel,
   loadConfig,
   isApproveOptionId,
-} from "@jigit/shared";
+} from "@jagit/shared";
 
 export interface ReviewRequestBody {
   jobId: string;

@@ -15,9 +15,9 @@ RUN pnpm install --frozen-lockfile
 # Build
 FROM deps AS builder
 COPY . .
-RUN pnpm --filter @jigit/shared build
-RUN pnpm --filter @jigit/dashboard build
-RUN pnpm --filter @jigit/api build
+RUN pnpm --filter @jagit/shared build
+RUN pnpm --filter @jagit/dashboard build
+RUN pnpm --filter @jagit/api build
 
 # Runtime
 FROM base AS runner

@@ -59,7 +59,7 @@ describe("seed script", () => {
       "anthropic",
     ]);
     expect(seed.repoMapping).toMatchObject({
-      jiraProjectKey: "JIGIT",
+      jiraProjectKey: "JAGIT",
       gitlabProjectId: "your-namespace/your-repo",
       defaultBaseBranch: "main",
       agentTemplateName: "default",
@@ -120,9 +120,9 @@ describe("seed script", () => {
 
     expect(calls.repoMapping).toHaveLength(1);
     expect(calls.repoMapping[0]).toMatchObject({
-      where: { jiraProjectKey: "JIGIT" },
+      where: { jiraProjectKey: "JAGIT" },
       create: {
-        jiraProjectKey: "JIGIT",
+        jiraProjectKey: "JAGIT",
         gitlabProjectId: "your-namespace/your-repo",
         defaultBaseBranch: "main",
         branchPrefixRules: {

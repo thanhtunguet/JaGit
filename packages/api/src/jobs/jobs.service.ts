@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException, Inject } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
 import { QUEUE_TOKEN } from "../common/queue.module.js";
-import { publishControl, loadConfig, removeWorktree } from "@jigit/shared";
+import { publishControl, loadConfig, removeWorktree } from "@jagit/shared";
 import type { Queue } from "bullmq";
 
 const ACTIVE_STATUSES = new Set([

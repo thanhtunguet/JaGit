@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { AuthGuard } from "../auth/auth.guard.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 import { RepoMappingsService, type RepoMappingBody } from "./repo-mappings.service.js";
 
 @ApiTags("Config")

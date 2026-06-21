@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import TelegramBot from "node-telegram-bot-api";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 import { ApprovalsService } from "../approvals/approvals.service.js";
 
 @Injectable()

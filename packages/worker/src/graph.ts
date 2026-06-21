@@ -1,6 +1,6 @@
 import { Annotation, StateGraph, END } from "@langchain/langgraph";
-import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction, buildReportInstruction } from "@jigit/shared";
-import type { PrismaClient } from "@jigit/shared";
+import { deriveBranchName, publishEvent, approvalsChannel, loadConfig, buildReviewInstruction, buildReportInstruction } from "@jagit/shared";
+import type { PrismaClient } from "@jagit/shared";
 import type { IJiraAdapter, IGitlabAdapter, IGitAdapter, IJobSink, ISignals } from "./adapters/interfaces.js";
 import type { RunResult, PermissionRequest } from "./acp/client.js";
 import { awaitApproval } from "./approval.js";
@@ -243,7 +243,7 @@ export function buildGraph(deps: GraphDeps): { run(input: { jobId: string; jiraI
 
   async function reportFailedReview(state: JobState): Promise<Partial<JobState>> {
     const message =
-      "Human review required before commit. Agent must call jigit_request_review and receive approval.";
+      "Human review required before commit. Agent must call jagit_request_review and receive approval.";
     await sink.setStatus(state.jobId, "failed", message);
     await sink.addEvent(state.jobId, {
       type: "review_required",

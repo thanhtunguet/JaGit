@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Sse, MessageEvent } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiParam } from "@nestjs/swagger";
 import { Observable } from "rxjs";
-import { makeRedis, jobChannel, loadConfig } from "@jigit/shared";
+import { makeRedis, jobChannel, loadConfig } from "@jagit/shared";
 
 @ApiTags("Jobs")
 @Controller("jobs")

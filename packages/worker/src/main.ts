@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
-import { createWorker, createQueue, loadConfig, decrypt, prisma, buildAcpMcpServers } from "@jigit/shared";
+import { createWorker, createQueue, loadConfig, decrypt, prisma, buildAcpMcpServers } from "@jagit/shared";
 import { buildGraph } from "./graph.js";
 import { JiraAdapter } from "./adapters/jira.js";
 import { GitlabAdapter } from "./adapters/gitlab.js";
@@ -78,7 +78,7 @@ const worker = createWorker(
       where: { id: jobId },
       include: { agentTemplate: true },
     });
-    const useFakeAdapters = process.env["JIGIT_FAKE_ADAPTERS"] === "1";
+    const useFakeAdapters = process.env["JAGIT_FAKE_ADAPTERS"] === "1";
 
     const mapping = useFakeAdapters
       ? { gitlabProjectId: "fake-project", defaultBaseBranch: "main", branchPrefixRules: {} }
@@ -149,7 +149,7 @@ const worker = createWorker(
       const dbMcpConfigs = mcpIds.length
         ? await prisma.mcpServerConfig.findMany({ where: { id: { in: mcpIds } } })
         : [];
-      const jigitServerPath = resolve(__dirname, "mcp", "jigit-server.js");
+      const jagitServerPath = resolve(__dirname, "mcp", "jagit-server.js");
 
       acpRun = async (prompt, onPermission, onOutput, cwd) => {
         const mcpServers = await buildAcpMcpServers({
@@ -163,7 +163,7 @@ const worker = createWorker(
             redisUrl: cfg.redisUrl,
             publicBaseUrl: cfg.publicBaseUrl,
             dashboardApiToken: cfg.dashboardApiToken,
-            jigitServerPath,
+            jagitServerPath,
             approvalTimeoutMs: cfg.approvalTimeoutMs,
           },
           resolveCredential: async (kind, name) => {
@@ -257,7 +257,7 @@ const worker = createWorker(
       await Promise.allSettled([
         sendTelegram(`❌ Job failed: ${issueKey || jobId}\n${message}`),
         issueKey
-          ? jira.addWorklog(issueKey, `JiGit agent failed:\n${message}`)
+          ? jira.addWorklog(issueKey, `JaGit agent failed:\n${message}`)
           : Promise.resolve(),
       ]);
       throw err;
@@ -289,4 +289,4 @@ async function recoverStaleJobs(): Promise<void> {
 
 recoverStaleJobs().catch((err) => console.error("Failed to recover stale jobs:", err));
 
-console.log(`JiGit worker started (concurrency=${cfg.maxConcurrentAgents})`);
+console.log(`JaGit worker started (concurrency=${cfg.maxConcurrentAgents})`);

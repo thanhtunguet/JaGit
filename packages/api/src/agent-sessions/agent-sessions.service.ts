@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
-import type { AgentSessionPayload } from "@jigit/agent-reporter";
+import type { AgentSessionPayload } from "@jagit/agent-reporter";
 
 const TOOL_WIRE_TO_ENUM: Record<AgentSessionPayload["tool"], "claude_code" | "codex" | "copilot"> = {
   "claude-code": "claude_code",

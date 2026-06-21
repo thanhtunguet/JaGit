@@ -6,14 +6,14 @@ const RULES = { Bug: "bugfix/", Story: "feature/", Task: "feature/", default: "f
 describe("deriveBranchName", () => {
   it("uses type-specific prefix for Bug", () => {
     expect(
-      deriveBranchName({ key: "JIGIT-12", type: "Bug", summary: "Fix Login!" }, RULES)
-    ).toBe("bugfix/JIGIT-12-fix-login");
+      deriveBranchName({ key: "JAGIT-12", type: "Bug", summary: "Fix Login!" }, RULES)
+    ).toBe("bugfix/JAGIT-12-fix-login");
   });
 
   it("falls back to default prefix for unknown type", () => {
     expect(
-      deriveBranchName({ key: "JIGIT-9", type: "Spike", summary: "Explore caching" }, RULES)
-    ).toBe("feature/JIGIT-9-explore-caching");
+      deriveBranchName({ key: "JAGIT-9", type: "Spike", summary: "Explore caching" }, RULES)
+    ).toBe("feature/JAGIT-9-explore-caching");
   });
 
   it("truncates long summaries to 40 chars in the slug", () => {
@@ -33,7 +33,7 @@ describe("deriveBranchName", () => {
 
 describe("extractIssueKey", () => {
   it("extracts a key from a feature branch", () => {
-    expect(extractIssueKey("feature/JIGIT-12-fix-login")).toBe("JIGIT-12");
+    expect(extractIssueKey("feature/JAGIT-12-fix-login")).toBe("JAGIT-12");
   });
 
   it("extracts a key from a bugfix branch", () => {

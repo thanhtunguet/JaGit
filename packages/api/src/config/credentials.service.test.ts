@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CredentialsService } from "./credentials.service.js";
-import { encrypt, credentialSecretKeys, decrypt } from "@jigit/shared";
+import { encrypt, credentialSecretKeys, decrypt } from "@jagit/shared";
 
 const KEY = Buffer.from("0123456789012345678901234567890123456789012345678901234567890123", "hex").toString("base64");
 

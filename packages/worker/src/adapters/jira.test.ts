@@ -6,7 +6,7 @@ describe("JiraAdapter", () => {
     vi.fn().mockResolvedValue({ ok, status: ok ? 200 : 500, json: async () => body });
 
   it("fetches an issue from the correct REST path", async () => {
-    const fetchMock = makeFetch({ key: "JIGIT-7", fields: {
+    const fetchMock = makeFetch({ key: "JAGIT-7", fields: {
       issuetype: { name: "Bug" }, summary: "Fix login", description: "details" } });
     const a = new JiraAdapter({
       baseUrl: "https://jira.example.com",
@@ -15,11 +15,11 @@ describe("JiraAdapter", () => {
       maxRetries: 0,
       fetch: fetchMock as any,
     });
-    const issue = await a.getIssue("JIGIT-7");
-    expect(issue.key).toBe("JIGIT-7");
+    const issue = await a.getIssue("JAGIT-7");
+    expect(issue.key).toBe("JAGIT-7");
     expect(issue.type).toBe("Bug");
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("/rest/api/3/issue/JIGIT-7");
+    expect(url).toContain("/rest/api/3/issue/JAGIT-7");
     expect((opts.headers as Record<string, string>)?.["Authorization"]).toMatch(/^Basic /);
   });
 
@@ -56,7 +56,7 @@ describe("JiraAdapter", () => {
         },
       ],
     };
-    const fetchMock = makeFetch({ key: "JIGIT-7", fields: {
+    const fetchMock = makeFetch({ key: "JAGIT-7", fields: {
       issuetype: { name: "Task" }, summary: "Demo", description: adfDescription } });
     const a = new JiraAdapter({
       baseUrl: "https://jira.example.com",
@@ -65,7 +65,7 @@ describe("JiraAdapter", () => {
       maxRetries: 0,
       fetch: fetchMock as any,
     });
-    const issue = await a.getIssue("JIGIT-7");
+    const issue = await a.getIssue("JAGIT-7");
     expect(issue.description).not.toContain("[object Object]");
     expect(issue.description).not.toContain("object");
     expect(issue.description).toContain("Clone repo về, sửa 1 dòng bất kỳ trong file readme, commit và tạo MR.");

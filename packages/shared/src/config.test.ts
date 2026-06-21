@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { parseConfig } from "./config.js";
 
 const FULL_ENV = {
-  DATABASE_URL: "postgresql://jigit:jigit@localhost:5432/jigit",
+  DATABASE_URL: "postgresql://jagit:jagit@localhost:5432/jagit",
   REDIS_URL: "redis://localhost:6379",
   APP_ENCRYPTION_KEY: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa==",
   MAX_CONCURRENT_AGENTS: "3",

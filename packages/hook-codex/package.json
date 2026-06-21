@@ -1,16 +1,20 @@
 {
-  "name": "@jigit/hook-codex",
+  "name": "@jagit/hook-codex",
   "version": "0.0.0",
   "type": "module",
-  "bin": { "jigit-hook-codex": "dist/index.js" },
-  "files": ["dist"],
+  "bin": {
+    "jagit-hook-codex": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/agent-reporter": "workspace:*"
+    "@jagit/agent-reporter": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

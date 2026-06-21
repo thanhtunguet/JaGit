@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-vi.mock("@jigit/agent-reporter", async (orig) => ({
-  ...(await orig<typeof import("@jigit/agent-reporter")>()),
+vi.mock("@jagit/agent-reporter", async (orig) => ({
+  ...(await orig<typeof import("@jagit/agent-reporter")>()),
   resolveGitUsername: () => "alice",
 }));
 import { buildPayload } from "./index.js";

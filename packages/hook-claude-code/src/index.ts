@@ -2,7 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jigit/agent-reporter";
+import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jagit/agent-reporter";
 
 interface StopStdin { session_id: string; transcript_path: string; cwd?: string }
 interface TranscriptEntry {

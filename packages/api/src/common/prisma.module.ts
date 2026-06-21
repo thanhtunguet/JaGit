@@ -1,5 +1,5 @@
 import { Global, Module, Injectable, OnModuleDestroy } from "@nestjs/common";
-import { prisma } from "@jigit/shared";
+import { prisma } from "@jagit/shared";
 
 @Injectable()
 export class PrismaService implements OnModuleDestroy {

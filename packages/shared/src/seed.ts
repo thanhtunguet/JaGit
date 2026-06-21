@@ -81,7 +81,7 @@ export function buildSeedData(input: { anthropicApiKey: string }): SeedData {
       name: "default",
       model: "claude-opus-4-5",
       systemPrompt:
-        "You are JiGit's default coding agent. Implement assigned Jira issues, verify changes, and report concise progress.",
+        "You are JaGit's default coding agent. Implement assigned Jira issues, verify changes, and report concise progress.",
       maxConcurrent: 1,
       allowedTools: ["read_file", "write_file", "bash", "search"],
       skills: [],
@@ -116,7 +116,7 @@ export function buildSeedData(input: { anthropicApiKey: string }): SeedData {
       },
     ],
     repoMapping: {
-      jiraProjectKey: "JIGIT",
+      jiraProjectKey: "JAGIT",
       gitlabProjectId: "your-namespace/your-repo",
       defaultBaseBranch: "main",
       branchPrefixRules: {

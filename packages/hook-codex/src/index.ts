@@ -4,7 +4,7 @@ import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jigit/agent-reporter";
+import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jagit/agent-reporter";
 
 export interface CodexRecord {
   type?: string;

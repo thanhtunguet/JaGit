@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { IsString, IsArray, ValidateNested, IsOptional } from "class-validator";
 import { Type } from "class-transformer";
 import { AuthGuard } from "../auth/auth.guard.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 import { ApprovalsService } from "./approvals.service.js";
 import { TelegramService } from "../telegram/telegram.service.js";
 import { PrismaService } from "../common/prisma.module.js";
@@ -41,7 +41,7 @@ export class ReviewRequestsController {
 
   @Post()
   @UseGuards(new AuthGuard(loadConfig().dashboardApiToken))
-  @ApiOperation({ summary: "Create a human review approval (used by jigit MCP)" })
+  @ApiOperation({ summary: "Create a human review approval (used by jagit MCP)" })
   async create(@Body() body: ReviewRequestDto) {
     const options = body.options?.length
       ? body.options

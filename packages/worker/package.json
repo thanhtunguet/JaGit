@@ -1,5 +1,5 @@
 {
-  "name": "@jigit/worker",
+  "name": "@jagit/worker",
   "version": "0.0.0",
   "type": "module",
   "main": "dist/main.js",
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/shared": "workspace:*",
+    "@jagit/shared": "workspace:*",
     "@langchain/langgraph": "^1.4.2",
     "@langchain/langgraph-checkpoint-postgres": "^1.0.3",
     "@modelcontextprotocol/sdk": "^1.12.1",

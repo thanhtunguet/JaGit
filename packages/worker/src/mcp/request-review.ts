@@ -1,4 +1,4 @@
-import { waitForApprovalDecision } from "@jigit/shared";
+import { waitForApprovalDecision } from "@jagit/shared";
 
 export interface ReviewOption {
   optionId: string;
@@ -70,8 +70,8 @@ export async function executeRequestReview(
   return { chosenOptionId, status };
 }
 
-export function readJigitEnv(): ExecuteRequestReviewOpts {
-  const jobId = process.env["JIGIT_JOB_ID"];
+export function readJagitEnv(): ExecuteRequestReviewOpts {
+  const jobId = process.env["JAGIT_JOB_ID"];
   const redisUrl = process.env["REDIS_URL"];
   const publicBaseUrl = process.env["PUBLIC_BASE_URL"];
   const apiToken = process.env["DASHBOARD_API_TOKEN"];
@@ -79,7 +79,7 @@ export function readJigitEnv(): ExecuteRequestReviewOpts {
 
   if (!jobId || !redisUrl || !publicBaseUrl || !apiToken) {
     throw new Error(
-      "jigit MCP requires JIGIT_JOB_ID, REDIS_URL, PUBLIC_BASE_URL, DASHBOARD_API_TOKEN",
+      "jagit MCP requires JAGIT_JOB_ID, REDIS_URL, PUBLIC_BASE_URL, DASHBOARD_API_TOKEN",
     );
   }
 

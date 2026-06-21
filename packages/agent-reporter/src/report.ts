@@ -1,4 +1,4 @@
-import { withRetry } from "@jigit/shared";
+import { withRetry } from "@jagit/shared";
 import { AgentSessionPayloadSchema, type AgentSessionPayload } from "./schema.js";
 
 export interface ReportOpts {

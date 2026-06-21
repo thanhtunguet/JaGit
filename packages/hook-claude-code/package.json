@@ -1,16 +1,20 @@
 {
-  "name": "@jigit/hook-claude-code",
+  "name": "@jagit/hook-claude-code",
   "version": "0.0.0",
   "type": "module",
-  "bin": { "jigit-hook-claude-code": "dist/index.js" },
-  "files": ["dist"],
+  "bin": {
+    "jagit-hook-claude-code": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@jigit/agent-reporter": "workspace:*"
+    "@jagit/agent-reporter": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

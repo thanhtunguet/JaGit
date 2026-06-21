@@ -1,4 +1,4 @@
-import { prisma, publishEvent, jobChannel, loadConfig } from "@jigit/shared";
+import { prisma, publishEvent, jobChannel, loadConfig } from "@jagit/shared";
 import type { IJobSink } from "./adapters/interfaces.js";
 
 export class PrismaJobSink implements IJobSink {

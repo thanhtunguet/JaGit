@@ -14,7 +14,7 @@ import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify
 import { ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { AppModule } from "./app.module.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 
 async function bootstrap() {
   const cfg = loadConfig();
@@ -38,7 +38,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle("JiGit API")
+      .setTitle("JaGit API")
       .setDescription("AI coding orchestration — Jira + GitLab + Claude Code")
       .setVersion("1.0")
       .addTag("Jobs")
@@ -74,7 +74,7 @@ async function bootstrap() {
   const host = "0.0.0.0";
 
   await app.listen(cfg.apiPort, host);
-  console.log(`JiGit API listening on ${host}:${cfg.apiPort}`);
+  console.log(`JaGit API listening on ${host}:${cfg.apiPort}`);
   console.log(`Swagger UI → http://${host}:${cfg.apiPort}/api/docs`);
 }
 

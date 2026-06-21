@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { JobsService } from "./jobs.service.js";
-import { publishControl, removeWorktree } from "@jigit/shared";
+import { publishControl, removeWorktree } from "@jagit/shared";
 
-vi.mock("@jigit/shared", async (importOriginal) => {
+vi.mock("@jagit/shared", async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
@@ -16,7 +16,7 @@ vi.mock("@jigit/shared", async (importOriginal) => {
 const mockJob = {
   id: "job-1",
   status: "failed",
-  jiraIssueKey: "JIGIT-1",
+  jiraIssueKey: "JAGIT-1",
   workdir: "/tmp/worktree",
 };
 

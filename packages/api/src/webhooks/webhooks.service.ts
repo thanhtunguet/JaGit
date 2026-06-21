@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { PrismaService } from "../common/prisma.module.js";
 import { QUEUE_TOKEN } from "../common/queue.module.js";
 import { normalizeJira, dedupeKey } from "./normalize.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 import type { Queue } from "bullmq";
 
 @Injectable()

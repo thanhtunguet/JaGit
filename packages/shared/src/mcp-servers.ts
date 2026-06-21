@@ -43,7 +43,7 @@ export interface BuildAcpMcpServersOpts {
     redisUrl: string;
     publicBaseUrl: string;
     dashboardApiToken: string;
-    jigitServerPath: string;
+    jagitServerPath: string;
     approvalTimeoutMs: number;
   };
   resolveCredential: CredentialResolver;
@@ -60,14 +60,14 @@ function parseKeyValues(raw: unknown): Record<string, McpEnvValue> {
   return {};
 }
 
-function buildJigitServer(opts: BuildAcpMcpServersOpts): AcpMcpServerStdio {
+function buildJagitServer(opts: BuildAcpMcpServersOpts): AcpMcpServerStdio {
   const { jobContext } = opts;
   return {
-    name: "jigit",
+    name: "jagit",
     command: "node",
-    args: [jobContext.jigitServerPath],
+    args: [jobContext.jagitServerPath],
     env: toKeyValueArray({
-      JIGIT_JOB_ID: jobContext.jobId,
+      JAGIT_JOB_ID: jobContext.jobId,
       REDIS_URL: jobContext.redisUrl,
       PUBLIC_BASE_URL: jobContext.publicBaseUrl,
       DASHBOARD_API_TOKEN: jobContext.dashboardApiToken,
@@ -76,11 +76,11 @@ function buildJigitServer(opts: BuildAcpMcpServersOpts): AcpMcpServerStdio {
   };
 }
 
-/** Build ACP session/new mcpServers: built-in jigit + template-linked configs. */
+/** Build ACP session/new mcpServers: built-in jagit + template-linked configs. */
 export async function buildAcpMcpServers(
   opts: BuildAcpMcpServersOpts,
 ): Promise<AcpMcpServer[]> {
-  const servers: AcpMcpServer[] = [buildJigitServer(opts)];
+  const servers: AcpMcpServer[] = [buildJagitServer(opts)];
 
   const idSet = new Set(opts.template.mcpServerIds);
   const selected = opts.dbConfigs.filter((c) => idSet.has(c.id) && c.enabled);
@@ -123,7 +123,7 @@ export async function buildAcpMcpServers(
 /** Instruction appended to agent prompt when review before commit is required. */
 export function buildReviewInstruction(): string {
   return [
-    "Before you finish your work, you MUST call the MCP tool `jigit_request_review`",
+    "Before you finish your work, you MUST call the MCP tool `jagit_request_review`",
     "with a summary of your changes and wait for human approval.",
     "Do not consider the task complete until review is approved.",
   ].join(" ");

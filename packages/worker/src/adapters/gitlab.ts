@@ -1,4 +1,4 @@
-import { withRetry } from "@jigit/shared";
+import { withRetry } from "@jagit/shared";
 import type { IGitlabAdapter, MrResult } from "./interfaces.js";
 
 export interface GitlabOpts {

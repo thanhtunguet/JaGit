@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, Sse, MessageE
 import { ApiTags, ApiOperation, ApiParam, ApiBody } from "@nestjs/swagger";
 import { IsString } from "class-validator";
 import { Observable } from "rxjs";
-import { makeRedis, approvalsChannel, loadConfig } from "@jigit/shared";
+import { makeRedis, approvalsChannel, loadConfig } from "@jagit/shared";
 import { ApprovalsService } from "./approvals.service.js";
 
 class DecideDto {

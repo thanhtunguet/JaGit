@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jigit/agent-reporter";
+import { resolveGitUsername, reportSession, type AgentSessionPayload } from "@jagit/agent-reporter";
 
 export interface CopilotInfo {
   model?: string;

@@ -202,7 +202,7 @@ API in production builds).
 ```bash
 pnpm -r build          # build all packages
 pnpm -r test            # run all package test suites
-pnpm --filter @jigit/shared test   # test one package
+pnpm --filter @jagit/shared test   # test one package
 pnpm db:studio          # Prisma Studio
 pnpm test:e2e           # end-to-end smoke test
 ```
@@ -237,17 +237,21 @@ Add a `Stop` hook to `~/.claude/settings.json` (or per-project
 ```json
 {
   "hooks": {
-    "Stop": [{
-      "matcher": "",
-      "hooks": [{ "type": "command", "command": "npx -y @jigit/hook-claude-code" }]
-    }]
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "npx -y @jagit/hook-claude-code" }
+        ]
+      }
+    ]
   }
 }
 ```
 
 The hook reads the transcript, sums the session's cumulative token usage, and
 reports on every turn group. No install needed (`npx -y` fetches on demand);
-for a permanent binary run `npm i -g @jigit/hook-claude-code`.
+for a permanent binary run `npm i -g @jagit/hook-claude-code`.
 
 ### Codex CLI
 
@@ -258,14 +262,14 @@ the reporter after the real `codex` exits:
 codex() {
   command codex "$@"
   local status=$?
-  npx -y @jigit/hook-codex >/dev/null 2>&1 || true
+  npx -y @jagit/hook-codex >/dev/null 2>&1 || true
   return $status
 }
 ```
 
 The reporter finds the most recent `~/.codex/sessions/**/*.jsonl`, takes the
 session's final cumulative token totals, and reports. (Global install:
-`npm i -g @jigit/hook-codex`, then the binary is `jigit-hook-codex`; it also
+`npm i -g @jagit/hook-codex`, then the binary is `jigit-hook-codex`; it also
 accepts `--file <path>`.)
 
 ### GitHub Copilot CLI
@@ -277,14 +281,14 @@ unknown):
 copilot() {
   command copilot "$@"
   local status=$?
-  npx -y @jigit/hook-copilot >/dev/null 2>&1 || true
+  npx -y @jagit/hook-copilot >/dev/null 2>&1 || true
   return $status
 }
 ```
 
-> **Note:** the `@jigit/hook-*` packages must be published to your npm registry
+> **Note:** the `@jagit/hook-*` packages must be published to your npm registry
 > for `npx -y` to resolve. Until then, run them from a local checkout
-> (`pnpm --filter @jigit/hook-claude-code build`, then point the hook command at
+> (`pnpm --filter @jagit/hook-claude-code build`, then point the hook command at
 > the built `dist/index.js`). Each package's README has the full per-tool
 > details.
 

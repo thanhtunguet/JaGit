@@ -1,6 +1,6 @@
-# @jigit/hook-copilot
+# @jagit/hook-copilot
 
-Reports per-invocation GitHub Copilot CLI usage to JiGit.
+Reports per-invocation GitHub Copilot CLI usage to JaGit.
 
 ## Setup
 
@@ -11,7 +11,7 @@ after each invocation ends:
     copilot() {
       command copilot "$@"
       local status=$?
-      npx -y @jigit/hook-copilot >/dev/null 2>&1 || true
+      npx -y @jagit/hook-copilot >/dev/null 2>&1 || true
       return $status
     }
 
@@ -21,11 +21,11 @@ on the legacy `gh copilot` preview wrapper can apply the same pattern to a
 `gh` function instead.) Uninstall by removing the shell function.
 
 For a permanent binary instead of `npx -y`:
-`npm i -g @jigit/hook-copilot`, then call `jigit-hook-copilot` in the wrapper.
+`npm i -g @jagit/hook-copilot`, then call `jagit-hook-copilot` in the wrapper.
 
 ## Environment
 
-    export JAGIT_BASE_URL="https://your-jigit-host"
+    export JAGIT_BASE_URL="https://your-jagit-host"
     export JAGIT_API_KEY="<your DASHBOARD_API_TOKEN>"
 
 Identity defaults to `git config user.email`; override with `JAGIT_GIT_USERNAME`.

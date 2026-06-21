@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildGraph } from "./graph.js";
 
-vi.mock("@jigit/shared", async (orig) => {
+vi.mock("@jagit/shared", async (orig) => {
   const actual = await orig<any>();
   return {
     ...actual,
@@ -38,7 +38,7 @@ const makeSignals = (stop = false) => ({
 const fakeDeps = () => ({
   jira: {
     getIssue: vi.fn().mockResolvedValue({
-      key: "JIGIT-7", type: "Bug", summary: "Fix login", description: "desc",
+      key: "JAGIT-7", type: "Bug", summary: "Fix login", description: "desc",
     }),
     addWorklog: vi.fn().mockResolvedValue(undefined),
   },
@@ -48,7 +48,7 @@ const fakeDeps = () => ({
   },
   git: {
     ensureRepo: vi.fn().mockResolvedValue("_works/repo"),
-    createWorktree: vi.fn().mockResolvedValue("_works/repo/.worktrees/bugfix/jigit-7-fix-login"),
+    createWorktree: vi.fn().mockResolvedValue("_works/repo/.worktrees/bugfix/jagit-7-fix-login"),
     removeWorktree: vi.fn().mockResolvedValue(undefined),
     hasChanges: vi.fn().mockResolvedValue(true),
     commitAll: vi.fn().mockResolvedValue(undefined),
@@ -90,7 +90,7 @@ describe("buildGraph", () => {
   it("runs to done and records mrUrl", async () => {
     const deps = fakeDeps();
     const graph = buildGraph(deps as any);
-    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" });
     expect(final.mrUrl).toBe("https://gitlab/mr/1");
     expect(final.agentSummary).toBe("Fixed the login bug by validating the session token.");
     expect(deps.sink.setUsage).toHaveBeenCalledWith("j-1", 100, 0.05);
@@ -117,7 +117,7 @@ describe("buildGraph", () => {
       },
     );
     const graph = buildGraph(deps as any);
-    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" });
 
     expect(final.status).toBe("done");
     expect(final.mrUrl).toBeFalsy();
@@ -135,7 +135,7 @@ describe("buildGraph", () => {
     const deps = fakeDeps();
     deps.signals.shouldStop = vi.fn().mockReturnValue(true);
     const graph = buildGraph(deps as any);
-    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" });
     expect(final.status).toBe("stopped");
     expect(deps.acp.run).not.toHaveBeenCalled();
   });
@@ -145,7 +145,7 @@ describe("buildGraph", () => {
     deps.gitlab.openMergeRequest = vi.fn().mockRejectedValue(new Error("gitlab 403"));
     const graph = buildGraph(deps as any);
 
-    await expect(graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" })).rejects.toThrow("gitlab 403");
+    await expect(graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" })).rejects.toThrow("gitlab 403");
 
     expect(deps.sink.addEvent).toHaveBeenCalledWith(
       "j-1",
@@ -178,10 +178,10 @@ describe("buildGraph", () => {
     // awaitApproval will be mocked by faking the control signal inline —
     // but since awaitApproval subscribes to Redis which isn't available, we mock it:
     const graph = buildGraph(deps as any);
-    const { publishEvent: mockPublishEvent } = await import("@jigit/shared");
+    const { publishEvent: mockPublishEvent } = await import("@jagit/shared");
 
     // awaitApproval will timeout after approvalTimeoutMs (100ms), that's fine
-    await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" }).catch(() => {});
+    await graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" }).catch(() => {});
 
     expect(mockPublishEvent).toHaveBeenCalledWith(
       "redis://localhost:6379",
@@ -195,7 +195,7 @@ describe("buildGraph", () => {
     deps.agentTemplate.requireReviewBeforeCommit = true;
     deps.prisma.job.findUnique = vi.fn().mockResolvedValue({ reviewApprovedAt: null });
     const graph = buildGraph(deps as any);
-    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JIGIT-7" });
+    const final = await graph.run({ jobId: "j-1", jiraIssueKey: "JAGIT-7" });
     expect(final.status).toBe("failed");
     expect(deps.git.commitAll).not.toHaveBeenCalled();
     expect(deps.sink.setStatus).toHaveBeenCalledWith(

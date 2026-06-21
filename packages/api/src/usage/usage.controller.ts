@@ -13,7 +13,7 @@ import type { FastifyRequest } from "fastify";
 import { UsageService } from "./usage.service.js";
 import { AuthGuard } from "../auth/auth.guard.js";
 import { MAX_UPLOAD_SIZE } from "./types.js";
-import { loadConfig } from "@jigit/shared";
+import { loadConfig } from "@jagit/shared";
 
 @ApiTags("Usage")
 @Controller("usage")

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { awaitApproval } from "./approval.js";
-import { waitForApprovalDecision } from "@jigit/shared";
+import { waitForApprovalDecision } from "@jagit/shared";
 
-vi.mock("@jigit/shared", async (orig) => {
+vi.mock("@jagit/shared", async (orig) => {
   const actual = await orig<any>();
   return {
     ...actual,

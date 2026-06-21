@@ -6,7 +6,7 @@ import {
   credentialSecretKeys,
   decrypt,
   type CredentialKind,
-} from "@jigit/shared";
+} from "@jagit/shared";
 
 export interface CredentialBody {
   kind: CredentialKind;

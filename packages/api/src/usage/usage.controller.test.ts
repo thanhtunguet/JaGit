@@ -68,7 +68,7 @@ describe("UsageController", () => {
   });
 
   it("POST /api/usage/upload with auth → captures username from form field", async () => {
-    const boundary = "----jigit-test-boundary";
+    const boundary = "----jagit-test-boundary";
     const body = [
       `--${boundary}`,
       'Content-Disposition: form-data; name="username"',

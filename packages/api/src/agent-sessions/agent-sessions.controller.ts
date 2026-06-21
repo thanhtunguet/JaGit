@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Query, Body, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
-import { AgentSessionPayloadSchema, AGENT_TOOLS, type AgentSessionPayload } from "@jigit/agent-reporter";
-import { loadConfig } from "@jigit/shared";
+import { AgentSessionPayloadSchema, AGENT_TOOLS, type AgentSessionPayload } from "@jagit/agent-reporter";
+import { loadConfig } from "@jagit/shared";
 import { AuthGuard } from "../auth/auth.guard.js";
 import { AgentSessionService } from "./agent-sessions.service.js";
 

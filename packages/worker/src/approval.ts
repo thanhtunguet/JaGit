@@ -1,4 +1,4 @@
-import { loadConfig, waitForApprovalDecision } from "@jigit/shared";
+import { loadConfig, waitForApprovalDecision } from "@jagit/shared";
 
 export interface AwaitApprovalOpts {
   approvalId: string;
