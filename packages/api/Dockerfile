@@ -30,6 +30,7 @@ COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_mod
 COPY --from=builder /app/packages/shared/prisma ./packages/shared/prisma
 COPY --from=builder /app/packages/agent-reporter/package.json ./packages/agent-reporter/package.json
 COPY --from=builder /app/packages/agent-reporter/dist ./packages/agent-reporter/dist
+COPY --from=builder /app/packages/agent-reporter/node_modules ./packages/agent-reporter/node_modules
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
 COPY --from=builder /app/packages/api/node_modules ./packages/api/node_modules
 COPY --from=builder /app/packages/dashboard/dist ./packages/dashboard/dist
