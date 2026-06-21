@@ -77,8 +77,8 @@ export class AgentSessionService {
     if (filters.username) where.user = { username: filters.username };
     if (filters.from || filters.to) {
       where.lastUpdatedAt = {
-        ...(filters.from ? { gte: new Date(filters.from) } : {}),
-        ...(filters.to ? { lte: new Date(filters.to) } : {}),
+        ...(filters.from ? { gte: new Date(filters.from.includes('T') ? filters.from : `${filters.from}T00:00:00.000Z`) } : {}),
+        ...(filters.to ? { lte: new Date(filters.to.includes('T') ? filters.to : `${filters.to}T23:59:59.999Z`) } : {}),
       };
     }
 

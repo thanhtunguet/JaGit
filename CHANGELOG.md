@@ -1,3 +1,7 @@
+## 2026-06-21 (fix-live-sessions-date-filter-bounds)
+
+**Fix Live Sessions Date Filter Bounds**: Modified `AgentSessionService` so that filtering by end date correctly appends `T23:59:59.999Z` to ensure all sessions on that day are included. The start date also defaults to `T00:00:00.000Z`.
+
 ## 2026-06-21 (fix-live-sessions-date-picker)
 
 **Fix Live Sessions Date Picker**: Added `color-scheme: dark` to global CSS to make the native date picker icon visible in dark mode, and changed date inputs to use uncontrolled `defaultValue` with `ref` syncing to fix a bug where typing a year manually would reset the input.
