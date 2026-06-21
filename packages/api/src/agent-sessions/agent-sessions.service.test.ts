@@ -103,8 +103,10 @@ describe("AgentSessionService", () => {
     expect(res.baseTokens).not.toBeNull();
     expect(res.baseTokens!.total).toBeCloseTo(0.5 / 0.0000008, 2);
     expect(res.baseTokens!.input + res.baseTokens!.output).toBeCloseTo(res.baseTokens!.total, 2);
-    expect(res.baseTokens!.input).toBeGreaterThan(0);
-    expect(res.baseTokens!.output).toBeGreaterThan(res.baseTokens!.input);
+    const expectedTotal = 0.5 / 0.0000008;
+    const expectedInput = expectedTotal * (0.001 / 0.011);
+    expect(res.baseTokens!.input).toBeCloseTo(expectedInput, 2);
+    expect(res.baseTokens!.output).toBeCloseTo(expectedTotal - expectedInput, 2);
   });
 
   it("aggregate returns null baseTokens when base rate unavailable", async () => {
