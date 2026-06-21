@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build and publish all @jigit/hook-* packages to npm.
+ * Build and publish @jagit/shared, @jagit/agent-reporter, and all @jagit/hook-* packages to npm.
  *
  * Usage:
  *   pnpm tsx scripts/publish-hooks.ts [--dry-run] [--version bump|patch|minor|major]
@@ -29,10 +29,17 @@ interface PackageJson {
   private?: boolean;
 }
 
+// Published in this order: shared dependencies before the hook CLIs that need them.
+const LIBRARY_PACKAGES = ["shared", "agent-reporter"];
+
 function getHookPackages(): string[] {
   return readdirSync(PACKAGES_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name.startsWith("hook-"))
     .map((d) => d.name);
+}
+
+function getPublishablePackages(): string[] {
+  return [...LIBRARY_PACKAGES, ...getHookPackages()];
 }
 
 function run(cmd: string, cwd: string = ROOT_DIR, dryRun: boolean = false): void {
@@ -102,13 +109,13 @@ function main(): void {
     }
   }
 
-  const hookPackages = getHookPackages();
-  if (hookPackages.length === 0) {
-    console.error("❌ No hook packages found in packages/");
+  const publishPackages = getPublishablePackages();
+  if (publishPackages.length === 0) {
+    console.error("❌ No publishable packages found in packages/");
     process.exit(1);
   }
 
-  console.log(`📦 Found ${hookPackages.length} hook packages: ${hookPackages.join(", ")}\n`);
+  console.log(`📦 Found ${publishPackages.length} packages to publish: ${publishPackages.join(", ")}\n`);
 
   // Step 1: Build all packages
   console.log("🔨 Building all packages...\n");
@@ -120,7 +127,7 @@ function main(): void {
     const strategy = versionStrategy === "bump" ? "patch" : versionStrategy;
     console.log(`📈 Bumping version (${strategy})...\n`);
 
-    for (const pkgDir of hookPackages) {
+    for (const pkgDir of publishPackages) {
       const pkg = readPackageJson(pkgDir);
       const oldVersion = pkg.version;
       const newVersion = bumpVersion(pkgDir, strategy);
@@ -129,10 +136,10 @@ function main(): void {
     console.log("");
   }
 
-  // Step 3: Publish each package
+  // Step 3: Publish each package (shared libs first, so hook-* deps resolve on the registry)
   console.log("🚀 Publishing to npm...\n");
 
-  for (const pkgDir of hookPackages) {
+  for (const pkgDir of publishPackages) {
     const pkg = readPackageJson(pkgDir);
     console.log(`\n📦 Publishing ${pkg.name}@${pkg.version}...`);
 
@@ -149,7 +156,8 @@ function main(): void {
       // Package not found on npm, first publish
     }
 
-    run(`npm publish --access public`, pkgPath, dryRun);
+    // pnpm publish (not npm publish) so workspace:* deps get rewritten to real versions.
+    run(`pnpm publish --access public --no-git-checks`, pkgPath, dryRun);
     console.log(`  ✅ Published ${pkg.name}@${pkg.version}`);
   }
 
@@ -157,8 +165,8 @@ function main(): void {
 
   if (!dryRun && versionStrategy) {
     console.log("\n💡 Don't forget to commit the version bumps:");
-    console.log("   git add packages/hook-*/package.json");
-    console.log('   git commit -m "chore: bump hook package versions"');
+    console.log("   git add packages/shared/package.json packages/agent-reporter/package.json packages/hook-*/package.json");
+    console.log('   git commit -m "chore: bump published package versions"');
   }
 }
 

@@ -4,6 +4,10 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "scripts": {
     "postinstall": "prisma generate",
     "build": "tsc -p tsconfig.json",
@@ -16,10 +20,10 @@
     "bullmq": "^5.78.1",
     "ioredis": "^5.11.1",
     "pg": "^8.21.0",
+    "prisma": "^7.8.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/pg": "^8.20.0",
-    "prisma": "^7.8.0"
+    "@types/pg": "^8.20.0"
   }
 }
