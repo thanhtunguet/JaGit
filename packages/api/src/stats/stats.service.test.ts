@@ -7,7 +7,6 @@ const mockPrisma = {
       count: vi.fn(),
       groupBy: vi.fn(),
       findMany: vi.fn(),
-      findMany: vi.fn(),
     },
     agentSession: {
       aggregate: vi.fn(),
