@@ -9,6 +9,7 @@
 # Options:
 #   -s, --server URL     Dashboard server base URL (env: CODEBURN_SERVER)
 #   -u, --username NAME  Username to upload as (default: git config user.name)
+#   -k, --api-key KEY    API key for authentication (env: JAGIT_API_KEY)
 #   -t, --token TOKEN    API token for authentication (env: CODEBURN_API_TOKEN)
 #   -d, --dir PATH       Upload CSVs from this directory instead of running export
 #   -h, --help           Show this help
@@ -121,6 +122,7 @@ prompt_remove() {
 
 server="${CODEBURN_SERVER:-${DEFAULT_SERVER}}"
 username=""
+api_key="${JAGIT_API_KEY:-}"
 token="${CODEBURN_API_TOKEN:-}"
 export_dir=""
 auto_exported=0
@@ -133,6 +135,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -u|--username)
       username="$2"
+      shift 2
+      ;;
+    -k|--api-key)
+      api_key="$2"
       shift 2
       ;;
     -t|--token)
@@ -189,10 +195,17 @@ curl_args=(
   -F "file=@${zip_path};filename=export.zip"
 )
 
-if [[ -n "${token}" ]]; then
-  curl_args+=(-H "Authorization: Bearer ${token}")
+auth_token=""
+if [[ -n "${api_key}" ]]; then
+  auth_token="${api_key}"
+elif [[ -n "${token}" ]]; then
+  auth_token="${token}"
+fi
+
+if [[ -n "${auth_token}" ]]; then
+  curl_args+=(-H "Authorization: Bearer ${auth_token}")
 else
-  echo "Warning: No API token provided. Upload may fail if server requires authentication." >&2
+  echo "Warning: No API key or token provided. Upload may fail if server requires authentication." >&2
 fi
 
 http_code="$(curl "${curl_args[@]}" "${upload_url}")"
