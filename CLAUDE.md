@@ -78,6 +78,36 @@ this first to know where to resume.
 - **In progress:** _n/a_
 - **Next up:** Task 2: Jira Worklog Service.
 
+### Previous plan progress (Session MCP Real Protocol — completed)
+
+- **Active plan:** Session MCP Real Protocol — plan
+  `docs/superpowers/plans/2026-06-22-session-mcp-real-protocol.md`, branch
+  `feature/session-mcp-real-protocol` (off `feature/base-tokens` tip `df7f8cb`).
+- **Last completed:** All 5 plan tasks via subagent-driven-development (implementer +
+  spec reviewer + code-quality reviewer per task, plus a final whole-diff review).
+  `/api/session-mcp` rewritten as a real MCP-over-Streamable-HTTP server using
+  `@modelcontextprotocol/sdk` v1.29.0's `McpServer` + `StreamableHTTPServerTransport`:
+  new `session-mcp.server.ts` tool-registry factory (`activate-jira` tool, business
+  errors → `isError: true` MCP results, unexpected errors logged server-side and
+  returned generically — fixed post-final-review after a mid-stream cleanup commit
+  had widened the error-message passthrough to leak internal details), rewritten
+  `session-mcp.controller.ts` (fresh server/transport per request,
+  `enableJsonResponse: true`, cleanup in `finally`), rewritten
+  `session-mcp.controller.test.ts` driving real MCP JSON-RPC envelopes. `pnpm
+  --filter @jagit/api build` clean; `pnpm --filter @jagit/api test` 128/128 passing,
+  no regressions. Manual curl-based end-to-end verification against the live dev
+  server confirmed `tools/list`/`tools/call` work correctly with real DB
+  connectivity. Notes: `docs/changelogs/2026-06-22-0240-session-mcp-real-protocol.md`.
+- **In progress:** _n/a_ — branch is implementation-complete and reviewed; next step
+  is `finishing-a-development-branch` (merge/PR/cleanup decision).
+- **Next up:** Real interactive Claude Code MCP-client verification (`.claude.json` +
+  Claude Code UI — not practical from an automated/subagent context, needs a human);
+  optionally add tests for malformed/missing `Accept` header (406), malformed JSON
+  body (`-32700`), and an explicit assertion that `try/finally` cleanup runs `close()`
+  even when `handleRequest` throws; fix `@jigit/shared`/`@jigit/api` naming drift in
+  the plan doc and `CLAUDE.md` pseudocode (actual package names are
+  `@jagit/shared`/`@jagit/api`).
+
 ### Previous plan progress (Agent Session Reporting Phase 1)
 
 - **Active plan:** Agent Session Reporting Phase 1 (implementation-complete) —

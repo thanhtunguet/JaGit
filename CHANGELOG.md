@@ -1,4 +1,5 @@
 ## 2026-06-22
+- Rebuild `/api/session-mcp` as a real MCP-over-Streamable-HTTP server (`@modelcontextprotocol/sdk`), replacing the ad-hoc REST handler so it works as a `.claude.json` MCP server. Details: `docs/changelogs/2026-06-22-0240-session-mcp-real-protocol.md`.
 - Add session tracking fields (`jiraTicketId`, `durationMs`, LOC metrics) to `AgentSession` model (Prisma schema + migration).
 
 ## 2026-06-21 (base-tokens)
