@@ -27,3 +27,8 @@ export function formatTokens(tokens: number): string {
   }
   return format(tokens / 1_000, "k");
 }
+
+export function formatBaseTokens(bt: number | null): string {
+  if (bt == null) return "—";
+  return formatTokens(bt);
+}

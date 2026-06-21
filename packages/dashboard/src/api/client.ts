@@ -91,6 +91,7 @@ export interface OverviewStats {
   doneYesterday: number;
   approvalQueue: number;
   totalTokensUsed: number;
+  totalBaseTokens: number | null;
   throughput: { day: string; date: string; jobs: number }[];
   statusDistribution: { status: string; count: number }[];
   recentEvents: {
@@ -370,6 +371,7 @@ export interface AgentSessionRow {
   outputTokens: number;
   costUsd: number | null;
   toolCallCount: number | null;
+  baseTokens: number | null;
   startedAt: string;
   lastUpdatedAt: string;
   createdAt: string;
@@ -412,6 +414,7 @@ export interface AgentSessionAggregateResponse {
   totalTokens: { newInput: number; cachedInput: number; output: number };
   totalCostUsd: number;
   missingCostCount: number;
+  baseTokens: { input: number; output: number; total: number } | null;
 }
 
 export const aggregateAgentSessions = (filters: Omit<AgentSessionFilters, "limit" | "offset"> = {}) => {

@@ -114,6 +114,7 @@ function HistoricalView() {
             totalTokens,
             totalCostUsd,
             missingCostCount: 0,
+            baseTokens: null,
           });
         })
         .catch(console.error)
