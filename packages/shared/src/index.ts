@@ -22,3 +22,4 @@ export * from "./seed.js";
 export * from "./mcp-config.js";
 export * from "./mcp-servers.js";
 export * from "./approval-bridge.js";
+export * from "./jira-worklog.js";
