@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { CHART_COLORS } from "@/lib/colors.js";
 import type { ShellCommandRow } from "@/api/client.js";
 
 interface Props {
@@ -24,7 +25,11 @@ export function ShellCommandsChart({ rows }: Props) {
               contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               formatter={(value) => [Number(value ?? 0).toLocaleString(), "Calls"]}
             />
-            <Bar dataKey="calls" fill="#22c55e" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="calls" radius={[0, 3, 3, 0]}>
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { CHART_COLORS } from "@/lib/colors.js";
 import type { ActivityRow } from "@/api/client.js";
 import type { Period } from "@/hooks/useUsageData.js";
 
@@ -29,7 +30,11 @@ export function ActivityChart({ rows, period }: Props) {
               contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, "Cost"]}
             />
-            <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="cost" radius={[0, 3, 3, 0]}>
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

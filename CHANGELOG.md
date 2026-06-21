@@ -1,3 +1,7 @@
+## 2026-06-21 (chart-colors)
+
+**Chart Colors**: Updated the CodeBurn Usage dashboard charts (`ModelsChart`, `ProjectsChart`, `ActivityChart`, `ToolsChart`, `ShellCommandsChart`) to use a distinctive 10-color palette (`lib/colors.ts`) instead of a single uniform color. Full details in `docs/changelogs/2026-06-21-1745-chart-colors.md`.
+
 ## 2026-06-21 (tokens-breakdown-chart)
 
 **Tokens Breakdown Chart**: Added a fourth pie chart to the Live Sessions page (`LiveSessionsCharts.tsx`) showing the breakdown of Cached Input vs New Input vs Output tokens across the current filter. This data is driven by a new token aggregation query in the backend (`AgentSessionService.aggregate`).
