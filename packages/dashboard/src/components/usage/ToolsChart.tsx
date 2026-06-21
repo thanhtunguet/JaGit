@@ -20,7 +20,7 @@ export function ToolsChart({ rows }: Props) {
           <BarChart layout="vertical" data={data} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 12 }} />
-            <YAxis type="category" dataKey="tool" width={100} tick={{ fontSize: 12 }} />
+            <YAxis type="category" dataKey="tool" width={100} tick={{ fontSize: 12 }} interval={0} />
             <Tooltip
               contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               formatter={(value) => [Number(value ?? 0).toLocaleString(), "Calls"]}
