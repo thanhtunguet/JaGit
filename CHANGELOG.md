@@ -1,3 +1,7 @@
+## 2026-06-21 (prefer-git-username)
+
+**Prefer Git Username**: Hooks now prefer `git config user.name` over `git config user.email` by default when resolving the username.
+
 ## 2026-06-21 (fix-live-sessions-date-filter-bounds)
 
 **Fix Live Sessions Date Filter Bounds**: Modified `AgentSessionService` so that filtering by end date correctly appends `T23:59:59.999Z` to ensure all sessions on that day are included. The start date also defaults to `T00:00:00.000Z`.

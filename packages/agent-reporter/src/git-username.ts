@@ -12,5 +12,5 @@ function tryGit(args: string, cwd: string): string | undefined {
 export function resolveGitUsername(cwd: string = process.cwd()): string {
   const fromEnv = process.env.JAGIT_GIT_USERNAME?.trim();
   if (fromEnv) return fromEnv;
-  return tryGit("config user.email", cwd) ?? tryGit("config user.name", cwd) ?? "unknown";
+  return tryGit("config user.name", cwd) ?? tryGit("config user.email", cwd) ?? "unknown";
 }

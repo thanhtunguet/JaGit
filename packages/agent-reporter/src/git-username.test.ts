@@ -15,15 +15,15 @@ describe("resolveGitUsername", () => {
     expect(execSyncMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to git user.email", () => {
-    execSyncMock.mockReturnValueOnce("alice@example.com\n");
-    expect(resolveGitUsername("/tmp")).toBe("alice@example.com");
-  });
-
-  it("falls back to git user.name when email missing", () => {
-    execSyncMock.mockImplementationOnce(() => { throw new Error("no email"); });
+  it("falls back to git user.name", () => {
     execSyncMock.mockReturnValueOnce("Alice\n");
     expect(resolveGitUsername("/tmp")).toBe("Alice");
+  });
+
+  it("falls back to git user.email when name missing", () => {
+    execSyncMock.mockImplementationOnce(() => { throw new Error("no name"); });
+    execSyncMock.mockReturnValueOnce("alice@example.com\n");
+    expect(resolveGitUsername("/tmp")).toBe("alice@example.com");
   });
 
   it("returns 'unknown' when git fails entirely", () => {
