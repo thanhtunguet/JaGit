@@ -56,7 +56,8 @@ export class StatsService {
       approvalQueue,
       statusGroups,
       doneJobsWeek,
-      tokenAggregate,
+      agentSessionAggregate,
+      latestUploads,
       recentEvents,
     ] = await Promise.all([
       this.prisma.client.job.count({
@@ -80,7 +81,18 @@ export class StatsService {
         where: { status: "done", updatedAt: { gte: sevenDaysAgo } },
         select: { updatedAt: true },
       }),
-      this.prisma.client.job.aggregate({ _sum: { tokensUsed: true } }),
+      this.prisma.client.agentSession.aggregate({
+        _sum: {
+          inputTokens: true,
+          cachedInputTokens: true,
+          cacheCreationInputTokens: true,
+          outputTokens: true,
+        },
+      }),
+      this.prisma.client.usageUpload.findMany({
+        distinct: ["userId"],
+        orderBy: [{ userId: "asc" }, { uploadedAt: "desc" }],
+      }),
       this.prisma.client.jobEvent.findMany({
         orderBy: { ts: "desc" },
         take: 15,
@@ -88,7 +100,35 @@ export class StatsService {
       }),
     ]);
 
-    const totalTokensUsed = tokenAggregate._sum.tokensUsed ?? 0;
+    const liveTokens =
+      (agentSessionAggregate._sum.inputTokens ?? 0) +
+      (agentSessionAggregate._sum.cachedInputTokens ?? 0) +
+      (agentSessionAggregate._sum.cacheCreationInputTokens ?? 0) +
+      (agentSessionAggregate._sum.outputTokens ?? 0);
+
+    let codeburnTokens = 0;
+    for (const upload of latestUploads) {
+      const data = upload.data as any;
+      if (data?.daily && Array.isArray(data.daily)) {
+        const uniqueDates = new Map<string, number>();
+        for (const row of data.daily) {
+          const date = row.Date;
+          if (date && !uniqueDates.has(date)) {
+            const t =
+              (row["Input Tokens"] || 0) +
+              (row["Output Tokens"] || 0) +
+              (row["Cache Read Tokens"] || 0) +
+              (row["Cache Write Tokens"] || 0);
+            uniqueDates.set(date, t);
+          }
+        }
+        for (const t of uniqueDates.values()) {
+          codeburnTokens += t;
+        }
+      }
+    }
+
+    const totalTokensUsed = liveTokens + codeburnTokens;
 
     return {
       activeJobs,

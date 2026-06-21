@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { formatTokens } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -64,9 +65,7 @@ function doneDeltaDescription(doneToday: number, doneYesterday: number): string 
   return `${sign}${delta} from yesterday`;
 }
 
-function formatTokenCount(n: number): string {
-  return n.toLocaleString();
-}
+
 
 export function Overview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
@@ -172,9 +171,9 @@ export function Overview() {
             />
             <StatCard
               title="Total Tokens Used"
-              value={formatTokenCount(stats.totalTokensUsed)}
+              value={formatTokens(stats.totalTokensUsed)}
               icon={Hash}
-              description="Across all jobs"
+              description="Live sessions & historical"
             />
             <StatCard
               title="Approval Queue"
@@ -338,7 +337,7 @@ export function Overview() {
           <div className="mb-4 flex items-baseline justify-between border-b pb-3">
             <div>
               <div className="text-2xl font-bold">
-                {liveTokens7d === null ? "—" : liveTokens7d.toLocaleString()}
+                {liveTokens7d === null ? "—" : formatTokens(liveTokens7d)}
               </div>
               <div className="text-xs text-muted-foreground">Live tokens (7d)</div>
             </div>

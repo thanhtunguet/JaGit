@@ -7,7 +7,13 @@ const mockPrisma = {
       count: vi.fn(),
       groupBy: vi.fn(),
       findMany: vi.fn(),
+      findMany: vi.fn(),
+    },
+    agentSession: {
       aggregate: vi.fn(),
+    },
+    usageUpload: {
+      findMany: vi.fn(),
     },
     approval: {
       count: vi.fn(),
@@ -65,7 +71,29 @@ describe("StatsService.getOverview", () => {
       { updatedAt: new Date("2026-06-16T10:00:00Z") },
       { updatedAt: new Date("2026-06-15T10:00:00Z") },
     ]);
-    mockPrisma.client.job.aggregate.mockResolvedValue({ _sum: { tokensUsed: 125_000 } });
+    mockPrisma.client.agentSession.aggregate.mockResolvedValue({
+      _sum: {
+        inputTokens: 20_000,
+        cachedInputTokens: 0,
+        cacheCreationInputTokens: 5_000,
+        outputTokens: 50_000,
+      },
+    });
+    mockPrisma.client.usageUpload.findMany.mockResolvedValue([
+      {
+        data: {
+          daily: [
+            {
+              Date: "2026-06-16",
+              "Input Tokens": 30_000,
+              "Output Tokens": 20_000,
+              "Cache Read Tokens": 0,
+              "Cache Write Tokens": 0,
+            },
+          ],
+        },
+      },
+    ]);
     mockPrisma.client.jobEvent.findMany.mockResolvedValue([
       {
         id: "e1",

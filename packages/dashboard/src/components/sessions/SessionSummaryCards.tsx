@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatTokens } from "@/lib/utils";
 import type { AgentSessionAggregateResponse } from "@/api/client.js";
 
 interface Props {
@@ -6,18 +7,6 @@ interface Props {
   aggData: AgentSessionAggregateResponse | null;
 }
 
-function formatTokens(tokens: number): string {
-  if (tokens < 10000) {
-    return tokens.toLocaleString();
-  }
-  if (tokens >= 1_000_000_000) {
-    return `${(tokens / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}B`;
-  }
-  if (tokens >= 1_000_000) {
-    return `${(tokens / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}M`;
-  }
-  return `${(tokens / 1_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}k`;
-}
 
 export function SessionSummaryCards({ total, aggData }: Props) {
   const totalInputTokens = aggData

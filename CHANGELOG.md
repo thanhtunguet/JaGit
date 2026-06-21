@@ -1,3 +1,11 @@
+## 2026-06-21 (format-tokens-overview)
+
+**Format Tokens Overview**: Extracted `formatTokens` (the `k/M/B` token abbreviator) into a shared utility and applied it to the "Total Tokens Used" and "Live tokens (7d)" counters on the Overview page to ensure consistent token formatting across the dashboard.
+
+## 2026-06-21 (total-tokens-used-card)
+
+**Total Tokens Used Card**: Updated the "Total tokens used" card on the Dashboard Overview to calculate tokens from both live sessions (`agentSession.aggregate`) and historical CodeBurn data (`usageUpload.findMany`, deduplicated by Date).
+
 ## 2026-06-21 (reorder-usage-cards)
 
 **Reorder Usage Cards**: Reordered the Historical Usage tab layout so that the Tools and Shell Commands charts appear above the Top Sessions table.
