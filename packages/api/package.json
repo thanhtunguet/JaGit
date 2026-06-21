@@ -14,6 +14,7 @@
     "@fastify/static": "^9.1.3",
     "@jagit/agent-reporter": "workspace:*",
     "@jagit/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "@nestjs/common": "^11.1.26",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.26",
