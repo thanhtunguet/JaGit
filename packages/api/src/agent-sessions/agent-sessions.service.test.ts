@@ -114,6 +114,25 @@ describe("AgentSessionService", () => {
     expect(res.baseTokens).toBeNull();
   });
 
+  it("aggregate excludes unpriced models from baseTokens split", async () => {
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "model") return [
+        { model: "known", _sum: { costUsd: 0.5, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } },
+        { model: "mystery", _sum: { costUsd: 0, inputTokens: 9999, cachedInputTokens: 9999, cacheCreationInputTokens: 9999, outputTokens: 9999 } },
+      ];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({ _sum: { inputTokens: 10999, cachedInputTokens: 9999, cacheCreationInputTokens: 9999, outputTokens: 11999, costUsd: 0.5 } });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([]);
+
+    const res = await svc.aggregate({});
+    // Only "known" contributes: input 1000*0.000001=0.001 -> 1250; output 2000*0.000005=0.01 -> 12500
+    expect(res.baseTokens!.input).toBeCloseTo(1250, 5);
+    expect(res.baseTokens!.output).toBeCloseTo(12500, 5);
+  });
+
   it("get returns row with rawPayload", async () => {
     expect(await svc.get("as1")).toMatchObject({ id: "as1", rawPayload: { a: 1 } });
   });

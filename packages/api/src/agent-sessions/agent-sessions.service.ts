@@ -111,7 +111,7 @@ export class AgentSessionService {
       };
     }
 
-    const [byUserRaw, byModelRaw, byToolRaw, tokensAgg, missingCostCount] = await Promise.all([
+    const [byUserRaw, byModelRaw, byToolRaw, tokensAgg, missingCostCount, baseRate] = await Promise.all([
       this.prisma.client.agentSession.groupBy({
         by: ["userId"],
         _sum: { costUsd: true },
@@ -146,6 +146,7 @@ export class AgentSessionService {
       this.prisma.client.agentSession.count({
         where: { ...where, costUsd: null } as any,
       }),
+      this.pricing.getBaseTokenRate(),
     ]);
 
     const userIds = byUserRaw.map((u) => u.userId);
@@ -187,7 +188,6 @@ export class AgentSessionService {
 
     const totalCostUsd = tokensAgg._sum.costUsd ?? 0;
 
-    const baseRate = await this.pricing.getBaseTokenRate();
     let baseTokens: { input: number; output: number; total: number } | null = null;
     if (baseRate != null) {
       let inputUsd = 0;
