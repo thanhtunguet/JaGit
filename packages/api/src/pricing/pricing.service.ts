@@ -164,6 +164,22 @@ export class PricingService implements OnModuleInit {
     return pricing.inputCostPerToken;
   }
 
+  async getModelRates(model: string): Promise<{
+    inputCostPerToken: number;
+    outputCostPerToken: number;
+    cacheReadInputTokenCost: number | null;
+    cacheCreationInputTokenCost: number | null;
+  } | null> {
+    const p = await this.findPricing(model);
+    if (!p) return null;
+    return {
+      inputCostPerToken: p.inputCostPerToken,
+      outputCostPerToken: p.outputCostPerToken,
+      cacheReadInputTokenCost: p.cacheReadInputTokenCost ?? null,
+      cacheCreationInputTokenCost: p.cacheCreationInputTokenCost ?? null,
+    };
+  }
+
   toBaseTokens(costUsd: number | null, baseRate: number | null): number | null {
     if (costUsd == null || baseRate == null || baseRate <= 0) return null;
     return costUsd / baseRate;

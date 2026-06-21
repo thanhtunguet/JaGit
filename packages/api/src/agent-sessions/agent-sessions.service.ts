@@ -82,8 +82,8 @@ export class AgentSessionService {
       };
     }
 
-    const baseRate = await this.pricing.getBaseTokenRate();
-    const [rows, total] = await Promise.all([
+    const [baseRate, rows, total] = await Promise.all([
+      this.pricing.getBaseTokenRate(),
       this.prisma.client.agentSession.findMany({
         where: where as any,
         orderBy: { lastUpdatedAt: "desc" },
@@ -119,7 +119,13 @@ export class AgentSessionService {
       }),
       this.prisma.client.agentSession.groupBy({
         by: ["model"],
-        _sum: { costUsd: true },
+        _sum: {
+          costUsd: true,
+          inputTokens: true,
+          cachedInputTokens: true,
+          cacheCreationInputTokens: true,
+          outputTokens: true,
+        },
         where: where as any,
       }),
       this.prisma.client.agentSession.groupBy({
@@ -181,7 +187,29 @@ export class AgentSessionService {
 
     const totalCostUsd = tokensAgg._sum.costUsd ?? 0;
 
-    return { byUser, byModel, byTool, totalTokens, totalCostUsd, missingCostCount };
+    const baseRate = await this.pricing.getBaseTokenRate();
+    let baseTokens: { input: number; output: number; total: number } | null = null;
+    if (baseRate != null) {
+      let inputUsd = 0;
+      let outputUsd = 0;
+      for (const m of byModelRaw) {
+        const rates = await this.pricing.getModelRates(m.model);
+        if (!rates) continue;
+        const inTok = m._sum.inputTokens ?? 0;
+        const cachedTok = m._sum.cachedInputTokens ?? 0;
+        const cacheCreateTok = m._sum.cacheCreationInputTokens ?? 0;
+        const outTok = m._sum.outputTokens ?? 0;
+        const cacheReadCost = rates.cacheReadInputTokenCost ?? rates.inputCostPerToken * 0.1;
+        const cacheCreateCost = rates.cacheCreationInputTokenCost ?? rates.inputCostPerToken * 1.25;
+        inputUsd += inTok * rates.inputCostPerToken + cachedTok * cacheReadCost + cacheCreateTok * cacheCreateCost;
+        outputUsd += outTok * rates.outputCostPerToken;
+      }
+      const input = inputUsd / baseRate;
+      const output = outputUsd / baseRate;
+      baseTokens = { input, output, total: input + output };
+    }
+
+    return { byUser, byModel, byTool, totalTokens, totalCostUsd, missingCostCount, baseTokens };
   }
 
   async get(id: string) {

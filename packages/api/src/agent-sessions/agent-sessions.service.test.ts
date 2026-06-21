@@ -35,6 +35,10 @@ describe("AgentSessionService", () => {
       getBaseTokenRate: vi.fn().mockResolvedValue(0.0000008),
       toBaseTokens: vi.fn((cost: number | null, rate: number | null) =>
         cost == null || rate == null || rate <= 0 ? null : cost / rate),
+      getModelRates: vi.fn(async (model: string) =>
+        model === "known"
+          ? { inputCostPerToken: 0.000001, outputCostPerToken: 0.000005, cacheReadInputTokenCost: null, cacheCreationInputTokenCost: null }
+          : null),
     } as unknown as PricingService;
     svc = new AgentSessionService(prisma, pricing); 
   });
@@ -67,6 +71,47 @@ describe("AgentSessionService", () => {
     (pricing.getBaseTokenRate as any).mockResolvedValue(null);
     const res = await svc.list({ limit: 50, offset: 0 });
     expect(res.rows[0].baseTokens).toBeNull();
+  });
+
+  it("aggregate returns per-type baseTokens split", async () => {
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "userId") return [{ userId: "u1", _sum: { costUsd: 0.5 } }];
+      if (by[0] === "model") {
+        return [
+          { model: "known", _sum: { costUsd: 0.5, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } },
+        ];
+      }
+      if (by[0] === "tool") return [{ tool: "claude_code", _sum: { costUsd: 0.5 } }];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({
+      _sum: { inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000, costUsd: 0.5 },
+    });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([{ id: "u1", username: "alice" }]);
+
+    const res = await svc.aggregate({});
+    // input USD = 1000 * 0.000001 = 0.001 -> /0.0000008 = 1250
+    // output USD = 2000 * 0.000005 = 0.01 -> /0.0000008 = 12500
+    expect(res.baseTokens).not.toBeNull();
+    expect(res.baseTokens!.input).toBeCloseTo(1250, 5);
+    expect(res.baseTokens!.output).toBeCloseTo(12500, 5);
+    expect(res.baseTokens!.total).toBeCloseTo(res.baseTokens!.input + res.baseTokens!.output, 5);
+  });
+
+  it("aggregate returns null baseTokens when base rate unavailable", async () => {
+    (pricing.getBaseTokenRate as any).mockResolvedValue(null);
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "model") return [{ model: "known", _sum: { costUsd: 0, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } }];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({ _sum: { inputTokens: 0, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 0, costUsd: 0 } });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([]);
+    const res = await svc.aggregate({});
+    expect(res.baseTokens).toBeNull();
   });
 
   it("get returns row with rawPayload", async () => {
