@@ -1,3 +1,7 @@
+## 2026-06-21 (dynamic-token-formatting)
+
+**Dynamic Token Formatting**: Updated the shared `formatTokens` utility to dynamically adjust the number of maximum fractional digits based on the integer part length (2 digits -> max 2 decimals, 3+ digits -> max 1 decimal) to keep the length consistent.
+
 ## 2026-06-21 (format-tokens-overview)
 
 **Format Tokens Overview**: Extracted `formatTokens` (the `k/M/B` token abbreviator) into a shared utility and applied it to the "Total Tokens Used" and "Live tokens (7d)" counters on the Overview page to ensure consistent token formatting across the dashboard.

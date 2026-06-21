@@ -9,11 +9,21 @@ export function formatTokens(tokens: number): string {
   if (tokens < 10000) {
     return tokens.toLocaleString();
   }
+
+  const format = (val: number, suffix: string) => {
+    const intDigits = Math.trunc(val).toString().length;
+    let fractionDigits = 3;
+    if (intDigits === 2) fractionDigits = 2;
+    else if (intDigits >= 3) fractionDigits = 1;
+    
+    return `${val.toLocaleString(undefined, { maximumFractionDigits: fractionDigits })}${suffix}`;
+  };
+
   if (tokens >= 1_000_000_000) {
-    return `${(tokens / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}B`;
+    return format(tokens / 1_000_000_000, "B");
   }
   if (tokens >= 1_000_000) {
-    return `${(tokens / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}M`;
+    return format(tokens / 1_000_000, "M");
   }
-  return `${(tokens / 1_000).toLocaleString(undefined, { maximumFractionDigits: 3 })}k`;
+  return format(tokens / 1_000, "k");
 }
