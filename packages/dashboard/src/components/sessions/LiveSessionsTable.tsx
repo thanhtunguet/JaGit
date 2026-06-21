@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AgentSessionRow } from "@/api/client.js";
+import { formatBaseTokens } from "@/lib/utils";
 
 interface Props {
   rows: AgentSessionRow[];
@@ -37,6 +38,7 @@ export function LiveSessionsTable({ rows, page, pageCount, onPageChange, onRowCl
               <TableHead className="text-right">Input</TableHead>
               <TableHead className="text-right">Cached</TableHead>
               <TableHead className="text-right">Output</TableHead>
+              <TableHead className="text-right">BT</TableHead>
               <TableHead className="text-right">Cost</TableHead>
               <TableHead className="text-right">Tool calls</TableHead>
             </TableRow>
@@ -44,7 +46,7 @@ export function LiveSessionsTable({ rows, page, pageCount, onPageChange, onRowCl
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   No sessions found.
                 </TableCell>
               </TableRow>
@@ -69,6 +71,7 @@ export function LiveSessionsTable({ rows, page, pageCount, onPageChange, onRowCl
                   <TableCell className="text-right">{row.inputTokens.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{row.cachedInputTokens.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{row.outputTokens.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatBaseTokens(row.baseTokens)}</TableCell>
                   <TableCell className="text-right">
                     {row.costUsd == null ? "—" : `$${row.costUsd.toFixed(2)}`}
                   </TableCell>
