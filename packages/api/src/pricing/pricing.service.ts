@@ -11,6 +11,8 @@ export interface LiteLlmPricingResponse {
   };
 }
 
+export const BASE_TOKEN_MODEL = "claude-haiku-4-5";
+
 @Injectable()
 export class PricingService implements OnModuleInit {
   private readonly logger = new Logger(PricingService.name);
@@ -136,5 +138,34 @@ export class PricingService implements OnModuleInit {
     cost += cacheCreationInputTokens * cacheCreationCost;
 
     return cost;
+  }
+
+  private async findPricing(model: string) {
+    let pricing = await this.prisma.client.modelPricing.findUnique({
+      where: { model },
+    });
+    if (!pricing) {
+      const normalizedModel = model.toLowerCase();
+      pricing = await this.prisma.client.modelPricing.findFirst({
+        where: { model: { equals: normalizedModel, mode: "insensitive" } },
+      });
+      if (!pricing) {
+        pricing = await this.prisma.client.modelPricing.findFirst({
+          where: { model: { contains: normalizedModel, mode: "insensitive" } },
+        });
+      }
+    }
+    return pricing;
+  }
+
+  async getBaseTokenRate(): Promise<number | null> {
+    const pricing = await this.findPricing(BASE_TOKEN_MODEL);
+    if (!pricing || pricing.inputCostPerToken <= 0) return null;
+    return pricing.inputCostPerToken;
+  }
+
+  toBaseTokens(costUsd: number | null, baseRate: number | null): number | null {
+    if (costUsd == null || baseRate == null || baseRate <= 0) return null;
+    return costUsd / baseRate;
   }
 }

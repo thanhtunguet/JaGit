@@ -175,4 +175,40 @@ describe("PricingService", () => {
       })
     );
   });
+
+  it("getBaseTokenRate returns base model inputCostPerToken", async () => {
+    (prisma as any).client.modelPricing.findUnique.mockResolvedValue({
+      inputCostPerToken: 0.0000008,
+      outputCostPerToken: 0.000004,
+    });
+    const rate = await svc.getBaseTokenRate();
+    expect(rate).toBe(0.0000008);
+    expect((prisma as any).client.modelPricing.findUnique).toHaveBeenCalledWith({
+      where: { model: "claude-haiku-4-5" },
+    });
+  });
+
+  it("getBaseTokenRate returns null when base model missing", async () => {
+    (prisma as any).client.modelPricing.findUnique.mockResolvedValue(null);
+    (prisma as any).client.modelPricing.findFirst.mockResolvedValue(null);
+    expect(await svc.getBaseTokenRate()).toBeNull();
+  });
+
+  it("getBaseTokenRate returns null when rate is zero or negative", async () => {
+    (prisma as any).client.modelPricing.findUnique.mockResolvedValue({
+      inputCostPerToken: 0,
+      outputCostPerToken: 0.000004,
+    });
+    expect(await svc.getBaseTokenRate()).toBeNull();
+  });
+
+  it("toBaseTokens divides cost by base rate", () => {
+    expect(svc.toBaseTokens(0.0008, 0.0000008)).toBeCloseTo(1000, 6);
+  });
+
+  it("toBaseTokens returns null for null cost, null rate, or non-positive rate", () => {
+    expect(svc.toBaseTokens(null, 0.0000008)).toBeNull();
+    expect(svc.toBaseTokens(0.0008, null)).toBeNull();
+    expect(svc.toBaseTokens(0.0008, 0)).toBeNull();
+  });
 });
