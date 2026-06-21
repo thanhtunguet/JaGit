@@ -1,0 +1,67 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-21-base-tokens.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Base-rate resolver + toBaseTokens on PricingService",
+      "status": "pending",
+      "description": "**Goal:** Add BASE_TOKEN_MODEL const, getBaseTokenRate(), toBaseTokens() to PricingService.\n\n```json:metadata\n{\"files\":[\"packages/api/src/pricing/pricing.service.ts\",\"packages/api/src/pricing/pricing.service.test.ts\"],\"verifyCommand\":\"pnpm --filter @jagit/api test -- pricing.service\",\"acceptanceCriteria\":[\"BASE_TOKEN_MODEL=claude-haiku-4-5\",\"getBaseTokenRate returns inputCostPerToken or null\",\"toBaseTokens(cost,rate) divides or returns null\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Per-row baseTokens in AgentSessionService.list()",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Each listed row carries baseTokens (costUsd/baseRate or null).\n\n```json:metadata\n{\"files\":[\"packages/api/src/agent-sessions/agent-sessions.service.ts\",\"packages/api/src/agent-sessions/agent-sessions.service.test.ts\"],\"verifyCommand\":\"pnpm --filter @jagit/api test -- agent-sessions.service\",\"acceptanceCriteria\":[\"list calls getBaseTokenRate once\",\"baseTokens added per row\",\"null when costUsd or rate null\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Per-type BT split in AgentSessionService.aggregate()",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** aggregate returns baseTokens {input,output,total}|null from per-model token sums priced against model rates / base rate. Adds getModelRates to PricingService.\n\n```json:metadata\n{\"files\":[\"packages/api/src/pricing/pricing.service.ts\",\"packages/api/src/agent-sessions/agent-sessions.service.ts\",\"packages/api/src/agent-sessions/agent-sessions.service.test.ts\"],\"verifyCommand\":\"pnpm --filter @jagit/api test -- agent-sessions.service\",\"acceptanceCriteria\":[\"combined by:[model] groupBy sums cost+tokens\",\"input/output USD priced per model\",\"total~=input+output\",\"null when base rate null\",\"unpriced models contribute 0\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: totalBaseTokens in StatsService.getOverview()",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Overview exposes totalBaseTokens (live cost/base rate, null when unavailable). StatsService takes PricingService via DI.\n\n```json:metadata\n{\"files\":[\"packages/api/src/stats/stats.service.ts\",\"packages/api/src/stats/stats.service.test.ts\",\"packages/api/src/stats/stats.module.ts\"],\"verifyCommand\":\"pnpm --filter @jagit/api test -- stats.service\",\"acceptanceCriteria\":[\"constructor injects PricingService\",\"aggregate _sum adds costUsd\",\"totalBaseTokens converted\",\"null when base rate null\",\"totalTokensUsed unchanged\",\"module DI resolves\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Dashboard types + formatBaseTokens helper",
+      "status": "pending",
+      "description": "**Goal:** Extend client types + add formatBaseTokens.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/api/client.ts\",\"packages/dashboard/src/lib/utils.ts\"],\"verifyCommand\":\"pnpm --filter @jagit/dashboard build\",\"acceptanceCriteria\":[\"AgentSessionRow.baseTokens number|null\",\"aggregate baseTokens {input,output,total}|null\",\"overview totalBaseTokens number|null\",\"formatBaseTokens returns — for null\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: BT column in Live Sessions table",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Right-aligned BT column after Output; colSpan 10->11.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/components/sessions/LiveSessionsTable.tsx\"],\"verifyCommand\":\"pnpm --filter @jagit/dashboard build\",\"acceptanceCriteria\":[\"BT head between Output and Cost\",\"cell uses formatBaseTokens(row.baseTokens)\",\"empty colSpan=11\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: BT tooltips on session summary cards",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Input/Output/Cost cards get Radix tooltips showing breakdown + Base Tokens.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/components/sessions/SessionSummaryCards.tsx\"],\"verifyCommand\":\"pnpm --filter @jagit/dashboard build\",\"acceptanceCriteria\":[\"Input tooltip new+cached(%)+BT input\",\"Output tooltip output+BT output\",\"Cost tooltip input+output+BT total\",\"Sessions card no tooltip\",\"— when bt null\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: BT in Overview Total Tokens Used card",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Headline shows `<BT> BT` (— when null); description shows raw token total.\n\n```json:metadata\n{\"files\":[\"packages/dashboard/src/pages/Overview.tsx\"],\"verifyCommand\":\"pnpm --filter @jagit/dashboard build\",\"acceptanceCriteria\":[\"value formatBaseTokens(totalBaseTokens)+ BT or —\",\"description uses formatTokens(totalTokensUsed)\",\"import formatBaseTokens\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Full build + test sweep",
+      "status": "pending",
+      "blockedBy": [2, 3, 4, 6, 7, 8],
+      "description": "**Goal:** pnpm -r build succeeds; api tests green except 2 known webhooks 401 failures.\n\n```json:metadata\n{\"files\":[],\"verifyCommand\":\"pnpm -r build && pnpm --filter @jagit/api test\",\"acceptanceCriteria\":[\"pnpm -r build passes\",\"api tests pass except 2 pre-existing webhooks failures\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-21"
+}
