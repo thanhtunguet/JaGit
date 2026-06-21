@@ -37,7 +37,7 @@ export function buildPayload(
   read: (path: string) => TranscriptEntry[] = readTranscript,
 ): AgentSessionPayload {
   const entries = read(stdin.transcript_path);
-  let inputTokens = 0, cachedInputTokens = 0, outputTokens = 0, toolCallCount = 0;
+  let inputTokens = 0, cachedInputTokens = 0, cacheCreationInputTokens = 0, outputTokens = 0, toolCallCount = 0;
   let model = "unknown";
 
   for (const e of entries) {
@@ -47,7 +47,8 @@ export function buildPayload(
     const u = e.message.usage;
     if (u) {
       inputTokens += u.input_tokens ?? 0;
-      cachedInputTokens += (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+      cachedInputTokens += u.cache_read_input_tokens ?? 0;
+      cacheCreationInputTokens += u.cache_creation_input_tokens ?? 0;
       outputTokens += u.output_tokens ?? 0;
     }
   }
@@ -61,6 +62,7 @@ export function buildPayload(
     model,
     inputTokens,
     cachedInputTokens,
+    cacheCreationInputTokens,
     outputTokens,
     costUsd: null,
     toolCallCount,

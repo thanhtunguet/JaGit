@@ -366,6 +366,7 @@ export interface AgentSessionRow {
   model: string;
   inputTokens: number;
   cachedInputTokens: number;
+  cacheCreationInputTokens: number;
   outputTokens: number;
   costUsd: number | null;
   toolCallCount: number | null;

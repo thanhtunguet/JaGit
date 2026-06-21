@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NotFoundException } from "@nestjs/common";
 import { AgentSessionService } from "./agent-sessions.service.js";
 import { PrismaService } from "../common/prisma.module.js";
+import { PricingService } from "../pricing/pricing.service.js";
 
 function makePrisma() {
   return {
@@ -25,8 +26,13 @@ const payload = {
 
 describe("AgentSessionService", () => {
   let prisma: PrismaService;
+  let pricing: PricingService;
   let svc: AgentSessionService;
-  beforeEach(() => { prisma = makePrisma(); svc = new AgentSessionService(prisma); });
+  beforeEach(() => { 
+    prisma = makePrisma(); 
+    pricing = { calculateCost: vi.fn().mockResolvedValue(0.123) } as unknown as PricingService;
+    svc = new AgentSessionService(prisma, pricing); 
+  });
 
   it("upsert maps wire tool to enum and find-or-creates user", async () => {
     await svc.upsert(payload);
@@ -38,6 +44,8 @@ describe("AgentSessionService", () => {
     expect(call.create.startedAt).toBeInstanceOf(Date);
     expect(call.update.startedAt).toBeUndefined();
     expect(call.create.rawPayload).toEqual({});
+    expect(pricing.calculateCost).toHaveBeenCalledWith("m", 1, 1, 0, 0);
+    expect(call.create.costUsd).toBe(0.123);
   });
 
   it("list filters by tool, returns rows + total", async () => {

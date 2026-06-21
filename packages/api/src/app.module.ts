@@ -10,6 +10,8 @@ import { TelegramModule } from "./telegram/telegram.module.js";
 import { StatsModule } from "./stats/stats.module.js";
 import { UsageModule } from "./usage/usage.module.js";
 import { AgentSessionModule } from "./agent-sessions/agent-sessions.module.js";
+import { PricingModule } from "./pricing/pricing.module.js";
+
 @Module({
   imports: [
     PrismaModule,
@@ -23,6 +25,7 @@ import { AgentSessionModule } from "./agent-sessions/agent-sessions.module.js";
     StatsModule,
     UsageModule,
     AgentSessionModule,
+    PricingModule,
   ],
   controllers: [],
 })

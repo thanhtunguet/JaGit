@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
+import { PricingService } from "../pricing/pricing.service.js";
 import type { AgentSessionPayload } from "@jagit/agent-reporter";
 
 const TOOL_WIRE_TO_ENUM: Record<AgentSessionPayload["tool"], "claude_code" | "codex" | "copilot"> = {
@@ -19,7 +20,10 @@ export interface ListFilters {
 
 @Injectable()
 export class AgentSessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricing: PricingService,
+  ) {}
 
   async upsert(payload: AgentSessionPayload) {
     const tool = TOOL_WIRE_TO_ENUM[payload.tool];
@@ -30,12 +34,25 @@ export class AgentSessionService {
     });
 
     const raw = (payload.rawPayload ?? {}) as object;
+    const cacheCreationInputTokens = payload.cacheCreationInputTokens ?? 0;
+    let costUsd = payload.costUsd;
+    if (costUsd === undefined || costUsd === null) {
+      costUsd = await this.pricing.calculateCost(
+        payload.model,
+        payload.inputTokens,
+        payload.outputTokens,
+        payload.cachedInputTokens,
+        cacheCreationInputTokens,
+      ) ?? null;
+    }
+
     const common = {
       model: payload.model,
       inputTokens: payload.inputTokens,
       cachedInputTokens: payload.cachedInputTokens,
+      cacheCreationInputTokens,
       outputTokens: payload.outputTokens,
-      costUsd: payload.costUsd,
+      costUsd: costUsd,
       toolCallCount: payload.toolCallCount,
       rawPayload: raw as never,
     };

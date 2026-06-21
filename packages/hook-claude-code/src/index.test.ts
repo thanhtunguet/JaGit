@@ -19,7 +19,7 @@ describe("buildPayload", () => {
     const p = buildPayload(stdin, () => transcript);
     expect(p).toMatchObject({
       tool: "claude-code", sessionId: "sess-9", gitUsername: "alice", model: "claude-opus-4-7",
-      inputTokens: 300, cachedInputTokens: 15, outputTokens: 100, costUsd: null, toolCallCount: 1,
+      inputTokens: 300, cachedInputTokens: 10, cacheCreationInputTokens: 5, outputTokens: 100, costUsd: null, toolCallCount: 1,
       startedAt: "2026-06-20T10:00:00.000Z",
     });
   });

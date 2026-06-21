@@ -10,6 +10,7 @@ export const AgentSessionPayloadSchema = z.object({
   model: z.string().min(1).max(200),
   inputTokens: z.number().int().nonnegative(),
   cachedInputTokens: z.number().int().nonnegative(),
+  cacheCreationInputTokens: z.number().int().nonnegative().optional(),
   outputTokens: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative().nullable(),
   toolCallCount: z.number().int().nonnegative().nullable(),

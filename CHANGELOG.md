@@ -1,3 +1,11 @@
+## 2026-06-21 (pricing-review-fixes)
+
+**Pricing Review Fixes**: Verified an external review of the ccusage pricing work; fixed real issues — `hook-claude-code` no longer conflates cache-read and cache-creation tokens (was undercosting cache writes by ~12x), `PricingService`'s LiteLLM fetch now has a 10s timeout, and the per-model upsert loop runs in parallel. The "double-counting input tokens" claim was a false positive (Anthropic's `input_tokens` already excludes cache tokens).
+
+## 2026-06-21 (ccusage-api-pricing)
+
+**ccusage API Pricing Integration**: Implemented a periodic fetch service using `@nestjs/schedule` to sync LiteLLM model prices into the database and calculate accurate session costs on the fly when natively unavailable.
+
 # Changelog
 
 ## 2026-06-20 (fix-hook-claude-code-symlink)

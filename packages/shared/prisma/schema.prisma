@@ -235,23 +235,40 @@ enum AgentTool {
 }
 
 model AgentSession {
-  id                String    @id @default(cuid())
-  tool              AgentTool
-  sessionId         String
-  userId            String
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  model             String
-  inputTokens       Int       @default(0)
-  cachedInputTokens Int       @default(0)
-  outputTokens      Int       @default(0)
-  costUsd           Float?
-  toolCallCount     Int?
-  startedAt         DateTime
-  lastUpdatedAt     DateTime  @updatedAt
-  rawPayload        Json      @default("{}")
-  createdAt         DateTime  @default(now())
+  id                       String    @id @default(cuid())
+  tool                     AgentTool
+  sessionId                String
+  userId                   String
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model                    String
+  inputTokens              Int       @default(0)
+  cachedInputTokens        Int       @default(0)
+  cacheCreationInputTokens Int       @default(0)
+  outputTokens             Int       @default(0)
+  costUsd                  Float?
+  toolCallCount            Int?
+  startedAt                DateTime
+  lastUpdatedAt            DateTime  @updatedAt
+  rawPayload               Json      @default("{}")
+  createdAt                DateTime  @default(now())
 
   @@unique([tool, sessionId])
   @@index([userId, lastUpdatedAt])
   @@index([tool, lastUpdatedAt])
+}
+
+// ─── ModelPricing ────────────────────────────────────────────────────────────
+// Periodically updated model API pricing.
+
+model ModelPricing {
+  id                          String   @id @default(cuid())
+  model                       String   @unique
+  inputCostPerToken           Float    @default(0)
+  outputCostPerToken          Float    @default(0)
+  cacheCreationInputTokenCost Float?
+  cacheReadInputTokenCost     Float?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@index([model])
 }
