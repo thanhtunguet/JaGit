@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { AgentSessionAggregateResponse } from "@/api/client.js";
 
 interface Props {
@@ -28,161 +28,137 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   copilot: "Copilot",
 };
 
-const renderColorBlockLabel = ({ x, y, fill }: any) => {
-  return <rect x={x - 6} y={y - 6} width={12} height={12} fill={fill} rx={2} />;
-};
-
-const renderLegendContent = (props: any) => {
-  const { payload } = props;
+const renderColorBlockLabel = ({ x, y, fill, percent }: any) => {
   return (
-    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-2 text-xs pt-6">
-      {payload.map((entry: any, index: number) => (
-        <li key={`item-${index}`} className="flex items-center overflow-hidden" title={entry.value}>
-          <span
-            className="w-3 h-3 rounded-sm mr-2 flex-shrink-0"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="truncate text-muted-foreground">{entry.value}</span>
-        </li>
-      ))}
-    </ul>
+    <g>
+      <rect x={x - 6} y={y - 6} width={12} height={12} fill={fill} rx={2}>
+        <title>{`${(percent * 100).toFixed(1)}%`}</title>
+      </rect>
+    </g>
   );
 };
 
+interface ChartCardProps {
+  title: string;
+  data: any[];
+  dataKey: string;
+  nameKey: string;
+  legendData: Array<{ color: string; value: string }>;
+  tooltipFormatter?: (value: any, name: any) => any[];
+}
+
+function ChartCard({ title, data, dataKey, nameKey, legendData, tooltipFormatter }: ChartCardProps) {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <CardTitle className="text-sm">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col">
+        <div className="shrink h-[240px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey={dataKey}
+                nameKey={nameKey}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={renderColorBlockLabel}
+              >
+                {data.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                formatter={tooltipFormatter || renderTooltipContent}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="grow">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-2 text-xs pt-4">
+            {legendData.map((entry, index) => (
+              <li key={`item-${index}`} className="flex items-center overflow-hidden" title={entry.value}>
+                <span
+                  className="w-3 h-3 rounded-sm mr-2 flex-shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="truncate text-muted-foreground">{entry.value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function LiveSessionsCharts({ data }: Props) {
-  const toolData = data.byTool.slice(0, 10).map((t) => ({
+  const userPieData = data.byUser.slice(0, 10);
+  const userLegendData = userPieData.map((entry, index) => ({
+    color: COLORS[index % COLORS.length],
+    value: entry.username,
+  }));
+
+  const modelPieData = data.byModel.slice(0, 10);
+  const modelLegendData = modelPieData.map((entry, index) => ({
+    color: COLORS[index % COLORS.length],
+    value: entry.model,
+  }));
+
+  const toolPieData = data.byTool.slice(0, 10).map((t) => ({
     ...t,
     toolName: TOOL_DISPLAY_NAMES[t.tool] || t.tool,
   }));
+  const toolLegendData = toolPieData.map((entry, index) => ({
+    color: COLORS[index % COLORS.length],
+    value: entry.toolName,
+  }));
 
-  const tokenData = data.totalTokens ? [
+  const tokenPieData = data.totalTokens ? [
     { name: "Cached Input", value: data.totalTokens.cachedInput },
     { name: "New Input", value: data.totalTokens.newInput },
     { name: "Output", value: data.totalTokens.output },
   ].filter((d) => d.value > 0) : [];
+  const tokenLegendData = tokenPieData.map((entry, index) => ({
+    color: COLORS[index % COLORS.length],
+    value: entry.name,
+  }));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Cost by User</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={data.byUser.slice(0, 10)}
-                dataKey="costUsd"
-                nameKey="username"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={renderColorBlockLabel}
-              >
-                {data.byUser.slice(0, 10).map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                formatter={renderTooltipContent}
-              />
-              <Legend content={renderLegendContent} verticalAlign="bottom" />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Cost by Model</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={data.byModel.slice(0, 10)}
-                dataKey="costUsd"
-                nameKey="model"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={renderColorBlockLabel}
-              >
-                {data.byModel.slice(0, 10).map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                formatter={renderTooltipContent}
-              />
-              <Legend content={renderLegendContent} verticalAlign="bottom" />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Cost by Tool</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={toolData}
-                dataKey="costUsd"
-                nameKey="toolName"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={renderColorBlockLabel}
-              >
-                {toolData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                formatter={renderTooltipContent}
-              />
-              <Legend content={renderLegendContent} verticalAlign="bottom" />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {tokenData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Tokens Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={320}>
-              <PieChart>
-                <Pie
-                  data={tokenData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={renderColorBlockLabel}
-                >
-                  {tokenData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                  formatter={(value: any, name: any) => [Number(value ?? 0).toLocaleString(), String(name ?? "")]}
-                />
-                <Legend content={renderLegendContent} verticalAlign="bottom" />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <ChartCard
+        title="Cost by User"
+        data={userPieData}
+        dataKey="costUsd"
+        nameKey="username"
+        legendData={userLegendData}
+      />
+      <ChartCard
+        title="Cost by Model"
+        data={modelPieData}
+        dataKey="costUsd"
+        nameKey="model"
+        legendData={modelLegendData}
+      />
+      <ChartCard
+        title="Cost by Tool"
+        data={toolPieData}
+        dataKey="costUsd"
+        nameKey="toolName"
+        legendData={toolLegendData}
+      />
+      {tokenPieData.length > 0 && (
+        <ChartCard
+          title="Tokens Breakdown"
+          data={tokenPieData}
+          dataKey="value"
+          nameKey="name"
+          legendData={tokenLegendData}
+          tooltipFormatter={(value: any, name: any) => [Number(value ?? 0).toLocaleString(), String(name ?? "")]}
+        />
       )}
     </div>
   );
