@@ -32,6 +32,23 @@ const renderColorBlockLabel = ({ x, y, fill }: any) => {
   return <rect x={x - 6} y={y - 6} width={12} height={12} fill={fill} rx={2} />;
 };
 
+const renderLegendContent = (props: any) => {
+  const { payload } = props;
+  return (
+    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-2 text-xs pt-6">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center overflow-hidden" title={entry.value}>
+          <span
+            className="w-3 h-3 rounded-sm mr-2 flex-shrink-0"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="truncate text-muted-foreground">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 export function LiveSessionsCharts({ data }: Props) {
   const toolData = data.byTool.slice(0, 10).map((t) => ({
     ...t,
@@ -51,7 +68,7 @@ export function LiveSessionsCharts({ data }: Props) {
           <CardTitle className="text-sm">Cost by User</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie
                 data={data.byUser.slice(0, 10)}
@@ -70,7 +87,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                 formatter={renderTooltipContent}
               />
-              <Legend />
+              <Legend content={renderLegendContent} verticalAlign="bottom" />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
@@ -81,7 +98,7 @@ export function LiveSessionsCharts({ data }: Props) {
           <CardTitle className="text-sm">Cost by Model</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie
                 data={data.byModel.slice(0, 10)}
@@ -100,7 +117,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                 formatter={renderTooltipContent}
               />
-              <Legend />
+              <Legend content={renderLegendContent} verticalAlign="bottom" />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
@@ -111,7 +128,7 @@ export function LiveSessionsCharts({ data }: Props) {
           <CardTitle className="text-sm">Cost by Tool</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie
                 data={toolData}
@@ -130,7 +147,7 @@ export function LiveSessionsCharts({ data }: Props) {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                 formatter={renderTooltipContent}
               />
-              <Legend />
+              <Legend content={renderLegendContent} verticalAlign="bottom" />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
@@ -142,7 +159,7 @@ export function LiveSessionsCharts({ data }: Props) {
             <CardTitle className="text-sm">Tokens Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={320}>
               <PieChart>
                 <Pie
                   data={tokenData}
@@ -161,7 +178,7 @@ export function LiveSessionsCharts({ data }: Props) {
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                   formatter={(value: any, name: any) => [Number(value ?? 0).toLocaleString(), String(name ?? "")]}
                 />
-                <Legend />
+                <Legend content={renderLegendContent} verticalAlign="bottom" />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
