@@ -74,9 +74,9 @@ this first to know where to resume.
 ### Current plan progress
 
 - **Active plan:** Base Tokens / Session Tracking Enhancement
-- **Last completed:** Task 1: Database Migration for Session Tracking Fields (`jiraTicketId`, `initialCommitSha`, `durationMs`, LOC).
+- **Last completed:** Task 1: Database Migration for Session Tracking Fields (`jiraTicketId`, `initialCommitSha`, `durationMs`, LOC). Plus an out-of-plan bugfix on `feature/base-tokens`: `activate-jira` MCP tool was failing because callers had no way to know their own `AgentSession.sessionId` (a harness-level value never exposed to the LLM), causing the agent to guess the placeholder `"current"`. Fixed by making `sessionId` optional on the tool — when omitted, `SessionMcpService.activateJira` now resolves the user's most recently active `AgentSession` (`lastUpdatedAt desc`). Changed: `packages/api/src/session-mcp/session-mcp.{server,service}.ts` + both test files (+3 cases). `pnpm --filter @jagit/api test` 131/131 passing; build clean. Notes: `docs/changelogs/2026-06-22-0300-activate-jira-optional-session-id.md`.
 - **In progress:** _n/a_
-- **Next up:** Task 2: Jira Worklog Service.
+- **Next up:** Task 2: Jira Worklog Service. (Also: GitNexus index is stale for the `session-mcp` module and recent dashboard/hook changes — re-run `node .gitnexus/run.cjs analyze` before relying on `impact`/`detect_changes` coverage there.)
 
 ### Previous plan progress (Session MCP Real Protocol — completed)
 

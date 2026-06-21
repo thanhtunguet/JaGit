@@ -1,4 +1,5 @@
 ## 2026-06-22
+- Fix `activate-jira` MCP tool failing with a literal `"current"` session ID: `sessionId` is now optional and falls back to the user's most recently active `AgentSession`. Details: `docs/changelogs/2026-06-22-0300-activate-jira-optional-session-id.md`.
 - Rebuild `/api/session-mcp` as a real MCP-over-Streamable-HTTP server (`@modelcontextprotocol/sdk`), replacing the ad-hoc REST handler so it works as a `.claude.json` MCP server. Details: `docs/changelogs/2026-06-22-0240-session-mcp-real-protocol.md`.
 - Add session tracking fields (`jiraTicketId`, `durationMs`, LOC metrics) to `AgentSession` model (Prisma schema + migration).
 

@@ -107,6 +107,32 @@ describe("SessionMcpController — MCP Protocol", () => {
       expect(data.jiraTicketId).toBe("PROJ-123");
     });
 
+    it("should call the service with sessionId undefined when omitted from arguments", async () => {
+      mockSvc.activateJira.mockResolvedValue({
+        success: true,
+        sessionId: "most-recent-session",
+        jiraTicketId: "PROJ-123",
+        message: "Jira ticket associated with session",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(mockSvc.activateJira).toHaveBeenCalledWith(undefined, "testuser", "PROJ-123");
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBeUndefined();
+      const text = (body.result.content[0] as TextContent).text;
+      expect(JSON.parse(text).sessionId).toBe("most-recent-session");
+    });
+
     it("should return isError:true for non-existent session (not HTTP 404)", async () => {
       mockSvc.activateJira.mockRejectedValue(new NotFoundException("Session not found"));
 

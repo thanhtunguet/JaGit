@@ -64,5 +64,25 @@ describe("SessionMcpService", () => {
 
       expect(result.success).toBe(true);
     });
+
+    it("should resolve the user's most recently active session when sessionId is omitted", async () => {
+      mockPrisma.client.agentSession.findFirst.mockResolvedValue({ id: "session-1", sessionId: "s9", jiraTicketId: null });
+      mockPrisma.client.agentSession.update.mockResolvedValue({ id: "session-1", sessionId: "s9", jiraTicketId: "PROJ-123" });
+
+      const result = await service.activateJira(undefined, "testuser", "PROJ-123");
+
+      expect(mockPrisma.client.agentSession.findFirst).toHaveBeenCalledWith({
+        where: { user: { username: "testuser" } },
+        orderBy: { lastUpdatedAt: "desc" },
+      });
+      expect(result.success).toBe(true);
+      expect(result.sessionId).toBe("s9");
+    });
+
+    it("should throw NotFoundException when sessionId is omitted and the user has no session", async () => {
+      mockPrisma.client.agentSession.findFirst.mockResolvedValue(null);
+
+      await expect(service.activateJira(undefined, "testuser", "PROJ-123")).rejects.toThrow(NotFoundException);
+    });
   });
 });

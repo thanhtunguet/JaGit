@@ -5,13 +5,22 @@ import { PrismaService } from "../common/prisma.module.js";
 export class SessionMcpService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async activateJira(sessionId: string, username: string, ticketId: string) {
-    const session = await this.prisma.client.agentSession.findFirst({
-      where: { sessionId, user: { username } },
-    });
+  async activateJira(sessionId: string | undefined, username: string, ticketId: string) {
+    const session = sessionId
+      ? await this.prisma.client.agentSession.findFirst({
+          where: { sessionId, user: { username } },
+        })
+      : await this.prisma.client.agentSession.findFirst({
+          where: { user: { username } },
+          orderBy: { lastUpdatedAt: "desc" },
+        });
 
     if (!session) {
-      throw new NotFoundException(`Session ${sessionId} not found for user ${username}`);
+      throw new NotFoundException(
+        sessionId
+          ? `Session ${sessionId} not found for user ${username}`
+          : `No active session found for user ${username}`
+      );
     }
 
     if (session.jiraTicketId && session.jiraTicketId !== ticketId) {

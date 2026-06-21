@@ -23,7 +23,12 @@ export function createSessionMcpServer(ctx: SessionMcpContext): McpServer {
       description: "Associate a Jira ticket with an active agent session for worklog tracking",
       inputSchema: {
         ticketId: z.string().describe("Jira issue key (e.g., PROJ-123)"),
-        sessionId: z.string().describe("Agent session ID to associate"),
+        sessionId: z
+          .string()
+          .optional()
+          .describe(
+            "Agent session ID to associate. Omit to use the caller's most recently active session."
+          ),
       },
     },
     async (args) => {
