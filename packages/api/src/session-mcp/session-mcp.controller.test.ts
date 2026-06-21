@@ -4,13 +4,23 @@ import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify
 import { SessionMcpController } from "./session-mcp.controller.js";
 import { SessionMcpService } from "./session-mcp.service.js";
 import { PrismaService } from "../common/prisma.module.js";
-import { BadRequestException, NotFoundException, ConflictException } from "@nestjs/common";
+import { NotFoundException, ConflictException } from "@nestjs/common";
 
 const mockSvc = {
   activateJira: vi.fn(),
 };
 
-describe("SessionMcpController", () => {
+// Helper to build a valid MCP JSON-RPC request body
+function mcpRequest(method: string, params: Record<string, unknown> = {}, id: number | string = 1) {
+  return {
+    jsonrpc: "2.0",
+    id,
+    method,
+    params,
+  };
+}
+
+describe("SessionMcpController — MCP Protocol", () => {
   let app: NestFastifyApplication;
 
   beforeEach(async () => {
@@ -33,11 +43,32 @@ describe("SessionMcpController", () => {
     await app?.close();
   });
 
-  describe("POST /api/session-mcp", () => {
-    const validHeaders = { "x-git-username": "testuser", authorization: "Bearer test-dashboard-token" };
-    const validBody = { name: "activate-jira", arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" } };
+  const validHeaders = { "x-git-username": "testuser", authorization: "Bearer test-dashboard-token" };
 
-    it("should successfully associate Jira ticket", async () => {
+  describe("MCP tools/list", () => {
+    it("should list activate-jira tool with correct schema", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.jsonrpc).toBe("2.0");
+      expect(body.result).toBeDefined();
+      expect(body.result.tools).toBeInstanceOf(Array);
+      const tool = body.result.tools.find((t: { name: string }) => t.name === "activate-jira");
+      expect(tool).toBeDefined();
+      expect(tool.description).toContain("Jira");
+      expect(tool.inputSchema.properties.ticketId).toBeDefined();
+      expect(tool.inputSchema.properties.sessionId).toBeDefined();
+    });
+  });
+
+  describe("MCP tools/call activate-jira", () => {
+    it("should return CallToolResult on success", async () => {
       mockSvc.activateJira.mockResolvedValue({
         success: true,
         sessionId: "test-session-1",
@@ -49,73 +80,102 @@ describe("SessionMcpController", () => {
         method: "POST",
         url: "/api/session-mcp",
         headers: validHeaders,
-        payload: validBody,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
       });
 
-      expect(res.statusCode).toBe(201); // NestJS defaults to 201 for POST
+      expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.body);
-      expect(body.success).toBe(true);
-      expect(body.jiraTicketId).toBe("PROJ-123");
-      expect(mockSvc.activateJira).toHaveBeenCalledWith("test-session-1", "testuser", "PROJ-123");
+      expect(body.jsonrpc).toBe("2.0");
+      expect(body.result).toBeDefined();
+      expect(body.result.content).toBeInstanceOf(Array);
+      expect(body.result.content[0].type).toBe("text");
+      const text = body.result.content[0].text;
+      const data = JSON.parse(text);
+      expect(data.success).toBe(true);
+      expect(data.jiraTicketId).toBe("PROJ-123");
     });
 
-    it("should reject if no x-git-username header", async () => {
+    it("should return isError:true for non-existent session (not HTTP 404)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new NotFoundException("Session not found"));
+
       const res = await app.inject({
         method: "POST",
         url: "/api/session-mcp",
-        headers: { authorization: "Bearer test-dashboard-token" }, // missing x-git-username
-        payload: validBody,
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "missing" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.result.isError).toBe(true);
+      expect(body.result.content[0].type).toBe("text");
+      expect(body.result.content[0].text).toContain("not found");
+    });
+
+    it("should return isError:true for ticket conflict (not HTTP 409)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new ConflictException("Already associated"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.result.isError).toBe(true);
+      expect(body.result.content[0].text).toContain("Already");
+    });
+
+    it("should return MCP error for unknown tool", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "unknown-tool",
+          arguments: {},
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.error).toBeDefined();
+      expect(body.error.code).toBe(-32601); // Method not found
+    });
+  });
+
+  describe("Transport-level guards (unchanged)", () => {
+    it("should reject with HTTP 401 if no auth header", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: { "x-git-username": "testuser" }, // missing auth
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("should reject with HTTP 400 if missing x-git-username", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: { authorization: "Bearer test-dashboard-token" }, // missing username
+        payload: mcpRequest("tools/list"),
       });
 
       expect(res.statusCode).toBe(400);
-    });
-
-    it("should reject if unknown tool name", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/session-mcp",
-        headers: validHeaders,
-        payload: { ...validBody, name: "other-tool" },
-      });
-
-      expect(res.statusCode).toBe(400);
-    });
-
-    it("should reject if arguments are missing", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/session-mcp",
-        headers: validHeaders,
-        payload: { name: "activate-jira", arguments: { ticketId: "PROJ-123" } }, // missing sessionId
-      });
-
-      expect(res.statusCode).toBe(400);
-    });
-
-    it("should return 404 for non-existent session or wrong user", async () => {
-      mockSvc.activateJira.mockRejectedValue(new NotFoundException());
-
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/session-mcp",
-        headers: validHeaders,
-        payload: validBody,
-      });
-
-      expect(res.statusCode).toBe(404);
-    });
-
-    it("should return 409 if already associated with different ticket", async () => {
-      mockSvc.activateJira.mockRejectedValue(new ConflictException());
-
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/session-mcp",
-        headers: validHeaders,
-        payload: validBody,
-      });
-
-      expect(res.statusCode).toBe(409);
     });
   });
 });
