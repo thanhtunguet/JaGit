@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { Test } from "@nestjs/testing";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { WebhooksController } from "./webhooks.controller.js";
+import { createHmac } from "node:crypto";
 import { WebhooksService } from "./webhooks.service.js";
 import { PrismaService } from "../common/prisma.module.js";
 import { QUEUE_TOKEN } from "../common/queue.module.js";
@@ -11,6 +12,9 @@ const mockPrisma = {
     job: {
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: "job-1" }),
+    },
+    credential: {
+      findFirst: vi.fn().mockResolvedValue({ id: "cred-1", kind: "jira", meta: { botAccountId: "bot-account-1" } }),
     },
   },
 };
@@ -70,11 +74,13 @@ describe("WebhooksController", () => {
   };
 
   it("POST /webhooks/jira → 202 and enqueues", async () => {
+    const rawBody = JSON.stringify(jiraPayload);
+    const signature = "sha256=" + createHmac("sha256", SECRET).update(rawBody).digest("hex");
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jagit-secret": SECRET, "content-type": "application/json" },
-      payload: jiraPayload,
+      headers: { "x-hub-signature": signature, "content-type": "application/json" },
+      payload: rawBody,
     });
     expect(res.statusCode).toBe(202);
     expect(JSON.parse(res.body)).toMatchObject({ jobId: "job-1" });
@@ -85,19 +91,22 @@ describe("WebhooksController", () => {
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jagit-secret": "wrong", "content-type": "application/json" },
-      payload: jiraPayload,
+      headers: { "x-hub-signature": "sha256=wrong", "content-type": "application/json" },
+      payload: Buffer.from(JSON.stringify(jiraPayload)),
     });
     expect(res.statusCode).toBe(401);
   });
 
   it("ignores non-bot assignment → 200 ignored", async () => {
+    const customPayload = { ...jiraPayload, issue: { ...jiraPayload.issue,
+      fields: { ...jiraPayload.issue.fields, assignee: { accountId: "someone-else" } } } };
+    const rawBody = JSON.stringify(customPayload);
+    const signature = "sha256=" + createHmac("sha256", SECRET).update(rawBody).digest("hex");
     const res = await app.inject({
       method: "POST",
       url: "/webhooks/jira",
-      headers: { "x-jagit-secret": SECRET, "content-type": "application/json" },
-      payload: { ...jiraPayload, issue: { ...jiraPayload.issue,
-        fields: { ...jiraPayload.issue.fields, assignee: { accountId: "someone-else" } } } },
+      headers: { "x-hub-signature": signature, "content-type": "application/json" },
+      payload: rawBody,
     });
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toMatchObject({ ignored: true });
