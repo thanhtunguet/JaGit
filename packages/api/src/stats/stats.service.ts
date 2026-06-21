@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma.module.js";
+import { PricingService } from "../pricing/pricing.service.js";
 
 export const TERMINAL_STATUSES = ["done", "stopped", "failed"] as const;
 
@@ -41,7 +42,10 @@ export function bucketByDay(
 
 @Injectable()
 export class StatsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricing: PricingService,
+  ) {}
 
   async getOverview() {
     const now = new Date();
@@ -87,6 +91,7 @@ export class StatsService {
           cachedInputTokens: true,
           cacheCreationInputTokens: true,
           outputTokens: true,
+          costUsd: true,
         },
       }),
       this.prisma.client.usageUpload.findMany({
@@ -130,12 +135,19 @@ export class StatsService {
 
     const totalTokensUsed = liveTokens + codeburnTokens;
 
+    const baseRate = await this.pricing.getBaseTokenRate();
+    const totalBaseTokens = this.pricing.toBaseTokens(
+      agentSessionAggregate._sum.costUsd ?? 0,
+      baseRate,
+    );
+
     return {
       activeJobs,
       doneToday,
       doneYesterday,
       approvalQueue,
       totalTokensUsed,
+      totalBaseTokens,
       throughput: bucketByDay(doneJobsWeek, now),
       statusDistribution: statusGroups
         .map((g) => ({ status: g.status, count: g._count._all }))

@@ -43,12 +43,18 @@ describe("bucketByDay", () => {
 
 describe("StatsService.getOverview", () => {
   let svc: StatsService;
+  let pricing: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-16T12:00:00Z"));
-    svc = new StatsService(mockPrisma as any);
+    pricing = {
+      getBaseTokenRate: vi.fn().mockResolvedValue(0.0000008),
+      toBaseTokens: vi.fn((cost: number | null, rate: number | null) =>
+        cost == null || rate == null || rate <= 0 ? null : cost / rate),
+    } as any;
+    svc = new StatsService(mockPrisma as any, pricing);
   });
 
   afterEach(() => {
@@ -76,6 +82,7 @@ describe("StatsService.getOverview", () => {
         cachedInputTokens: 0,
         cacheCreationInputTokens: 5_000,
         outputTokens: 50_000,
+        costUsd: 0.0008,
       },
     });
     mockPrisma.client.usageUpload.findMany.mockResolvedValue([
@@ -114,6 +121,7 @@ describe("StatsService.getOverview", () => {
     expect(result.doneYesterday).toBe(2);
     expect(result.approvalQueue).toBe(1);
     expect(result.totalTokensUsed).toBe(125_000);
+    expect(result.totalBaseTokens).toBeCloseTo(1000, 6); // 0.0008 / 0.0000008
     expect(result.throughput).toHaveLength(7);
     expect(result.statusDistribution).toEqual([
       { status: "done", count: 10 },
@@ -127,5 +135,20 @@ describe("StatsService.getOverview", () => {
       message: "Job finished",
       jiraIssueKey: "JAGIT-1",
     });
+  });
+
+  it("totalBaseTokens is null when base rate unavailable", async () => {
+    pricing.getBaseTokenRate.mockResolvedValue(null);
+    mockPrisma.client.job.count.mockResolvedValue(0);
+    mockPrisma.client.approval.count.mockResolvedValue(0);
+    mockPrisma.client.job.groupBy.mockResolvedValue([]);
+    mockPrisma.client.job.findMany.mockResolvedValue([]);
+    mockPrisma.client.agentSession.aggregate.mockResolvedValue({
+      _sum: { inputTokens: 0, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 0, costUsd: 0.0008 },
+    });
+    mockPrisma.client.usageUpload.findMany.mockResolvedValue([]);
+    mockPrisma.client.jobEvent.findMany.mockResolvedValue([]);
+    const result = await svc.getOverview();
+    expect(result.totalBaseTokens).toBeNull();
   });
 });
