@@ -1,0 +1,54 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-21-agent-session-tracking-enhancement.md",
+  "tasks": [
+    {
+      "id": 2,
+      "subject": "Task 1: Database Migration for Session Tracking Fields",
+      "status": "pending",
+      "description": "**Goal:** Add optional fields to AgentSession model for Jira association, time tracking, and LOC metrics.\n\n**Files:**\n- Modify: `packages/shared/prisma/schema.prisma:237-258`\n- Create: `packages/shared/prisma/migrations/20260621120000_add_session_tracking_fields/migration.ts`\n\n**Acceptance Criteria:**\n- [ ] AgentSession model has jiraTicketId, initialCommitSha, durationMs, linesAdded, linesRemoved fields\n- [ ] All new fields are optional (nullable)\n- [ ] Index on jiraTicketId for efficient queries\n- [ ] Migration is idempotent and reversible\n\n**Verify:** `pnpm --filter @jigit/shared exec prisma migrate dev --name add_session_tracking_fields` → migration creates successfully\n\n**Steps:**\n- Update Prisma schema with new fields\n- Generate and run migration\n- Verify migration status\n- Commit changes\n\n```json:metadata\n{\"files\": [\"packages/shared/prisma/schema.prisma\", \"packages/shared/prisma/migrations/\"], \"verifyCommand\": \"pnpm --filter @jigit/shared exec prisma migrate status\", \"acceptanceCriteria\": [\"AgentSession model has jiraTicketId, initialCommitSha, durationMs, linesAdded, linesRemoved fields\", \"All new fields are optional\", \"Index on jiraTicketId\", \"Migration is idempotent and reversible\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 2: Jira Worklog Service",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Create shared service for creating Jira worklog entries from agent session data.\n\n**Files:**\n- Create: `packages/shared/src/jira-worklog.ts`\n- Create: `packages/shared/src/jira-worklog.test.ts`\n- Modify: `packages/shared/src/index.ts`\n\n**Acceptance Criteria:**\n- [ ] createJiraWorklog function accepts ticketId, durationMs, baseTokens\n- [ ] Retrieves Jira credentials from Credential table\n- [ ] Formats worklog comment with time and BT\n- [ ] Makes POST request to Jira API with retry logic\n- [ ] Returns void, logs errors without throwing\n- [ ] Unit tests cover success and failure cases\n\n**Verify:** `pnpm --filter @jigit/shared test -- jira-worklog.test.ts` → all tests pass\n\n**Steps:**\n- Write failing tests\n- Implement service\n- Export from index\n- Run tests\n- Commit\n\n```json:metadata\n{\"files\": [\"packages/shared/src/jira-worklog.ts\", \"packages/shared/src/jira-worklog.test.ts\", \"packages/shared/src/index.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/shared test -- jira-worklog.test.ts\", \"acceptanceCriteria\": [\"createJiraWorklog function exists\", \"Retrieves Jira credentials\", \"Formats worklog comment\", \"Makes POST with retry\", \"Handles errors gracefully\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 3: Time Tracking API Endpoint",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Add PATCH endpoint for hooks to update time tracking fields incrementally.\n\n**Files:**\n- Modify: `packages/api/src/agent-sessions/agent-sessions.controller.ts`\n- Modify: `packages/api/src/agent-sessions/agent-sessions.service.ts`\n- Modify: `packages/api/src/agent-sessions/agent-sessions.service.test.ts`\n\n**Acceptance Criteria:**\n- [ ] PATCH /api/agent-sessions/:sessionId/time-tracking endpoint exists\n- [ ] Accepts initialCommitSha and durationMs in request body\n- [ ] Updates only provided fields (partial update)\n- [ ] Returns updated session\n- [ ] Handles session not found case\n- [ ] Unit tests cover all cases\n\n**Verify:** `pnpm --filter @jigit/api test -- agent-sessions.service.test.ts` → all tests pass\n\n**Steps:**\n- Write failing tests\n- Implement service method\n- Add controller endpoint\n- Run tests\n- Commit\n\n```json:metadata\n{\"files\": [\"packages/api/src/agent-sessions/agent-sessions.controller.ts\", \"packages/api/src/agent-sessions/agent-sessions.service.ts\", \"packages/api/src/agent-sessions/agent-sessions.service.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/api test -- agent-sessions.service.test.ts\", \"acceptanceCriteria\": [\"PATCH endpoint exists\", \"Accepts initialCommitSha and durationMs\", \"Partial updates\", \"Returns updated session\", \"Handles not found\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 4: HTTP MCP Server",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Create MCP server with activate-jira tool for associating Jira tickets with sessions.\n\n**Files:**\n- Create: `packages/api/src/session-mcp/session-mcp.controller.ts`\n- Create: `packages/api/src/session-mcp/session-mcp.service.ts`\n- Create: `packages/api/src/session-mcp/session-mcp.module.ts`\n- Create: `packages/api/src/session-mcp/session-mcp.controller.test.ts`\n- Modify: `packages/api/src/app.module.ts`\n\n**Acceptance Criteria:**\n- [ ] POST /api/session-mcp endpoint exists\n- [ ] Requires x-api-key and x-git-username headers\n- [ ] Exposes activate-jira tool with ticketId and sessionId parameters\n- [ ] Updates AgentSession.jiraTicketId for matching session\n- [ ] Returns success/error responses\n- [ ] Handles session not found, unauthorized, already associated cases\n- [ ] Unit tests cover all cases\n\n**Verify:** `pnpm --filter @jigit/api test -- session-mcp.controller.test.ts` → all tests pass\n\n**Steps:**\n- Write failing tests\n- Implement service\n- Implement controller\n- Create module\n- Import in app module\n- Run tests\n- Commit\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/\", \"packages/api/src/app.module.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/api test -- session-mcp.controller.test.ts\", \"acceptanceCriteria\": [\"POST /api/session-mcp exists\", \"Requires x-api-key and x-git-username\", \"activate-jira tool works\", \"Updates jiraTicketId\", \"Error handling\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 5: Time Tracking Hook Package",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "**Goal:** Create hook package for tracking session duration on UserPromptSubmit events.\n\n**Files:**\n- Create: `packages/hook-claude-code-time-tracking/package.json`\n- Create: `packages/hook-claude-code-time-tracking/tsconfig.json`\n- Create: `packages/hook-claude-code-time-tracking/src/index.ts`\n- Create: `packages/hook-claude-code-time-tracking/src/state.ts`\n- Create: `packages/hook-claude-code-time-tracking/src/git.ts`\n- Create: `packages/hook-claude-code-time-tracking/src/index.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Hook reads stdin for UserPromptSubmit event\n- [ ] Initializes state file with sessionId, initialCommitSha, durationMs\n- [ ] Accumulates durationMs on subsequent calls\n- [ ] Syncs state to API asynchronously\n- [ ] Handles missing cwd gracefully\n- [ ] Unit tests cover initialization and accumulation\n\n**Verify:** `pnpm --filter @jigit/hook-claude-code-time-tracking test` → all tests pass\n\n**Steps:**\n- Create package structure\n- Write failing tests\n- Implement git module\n- Implement state module\n- Implement main hook script\n- Run tests\n- Build package\n- Commit\n\n```json:metadata\n{\"files\": [\"packages/hook-claude-code-time-tracking/\"], \"verifyCommand\": \"pnpm --filter @jigit/hook-claude-code-time-tracking test\", \"acceptanceCriteria\": [\"Reads stdin\", \"Initializes state\", \"Accumulates duration\", \"Syncs to API\", \"Handles missing cwd\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 6: Enhanced Stop Hook with LOC and Worklog",
+      "status": "pending",
+      "blockedBy": [2, 3, 4],
+      "description": "**Goal:** Enhance existing Stop hook to calculate LOC, BT, and create Jira worklog.\n\n**Files:**\n- Modify: `packages/hook-claude-code/src/index.ts`\n- Modify: `packages/hook-claude-code/src/index.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Reads time tracking state file if exists\n- [ ] Calculates LOC via git diff from initialCommitSha\n- [ ] Calculates BT from costUsd using fixed rate\n- [ ] Includes durationMs, linesAdded, linesRemoved in payload\n- [ ] Creates Jira worklog if jiraTicketId is associated\n- [ ] Cleans up state file after processing\n- [ ] Handles missing state file gracefully\n- [ ] Unit tests cover all new functionality\n\n**Verify:** `pnpm --filter @jigit/hook-claude-code test` → all tests pass\n\n**Steps:**\n- Add failing tests\n- Add helper functions\n- Enhance buildPayload\n- Add worklog creation\n- Run tests\n- Build package\n- Commit\n\n```json:metadata\n{\"files\": [\"packages/hook-claude-code/src/index.ts\", \"packages/hook-claude-code/src/index.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/hook-claude-code test\", \"acceptanceCriteria\": [\"Reads time tracking state\", \"Calculates LOC\", \"Calculates BT\", \"Includes new fields\", \"Creates worklog\", \"Cleans up state\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 7: Integration Testing and Documentation",
+      "status": "pending",
+      "blockedBy": [2, 3, 4, 5, 6, 7],
+      "description": "**Goal:** Verify all components work together and document the feature.\n\n**Files:**\n- Create: `docs/changelogs/2026-06-21-agent-session-tracking-enhancement.md`\n- Modify: `CHANGELOG.md`\n\n**Acceptance Criteria:**\n- [ ] All tests pass across all packages\n- [ ] Build succeeds for all packages\n- [ ] Changelog documents the feature\n- [ ] Manual testing guide provided\n\n**Verify:** `pnpm -r build && pnpm -r test` → all pass\n\n**Steps:**\n- Run all tests\n- Build all packages\n- Write session changelog\n- Update root changelog\n- Commit\n\n```json:metadata\n{\"files\": [\"docs/changelogs/2026-06-21-agent-session-tracking-enhancement.md\", \"CHANGELOG.md\"], \"verifyCommand\": \"pnpm -r build && pnpm -r test\", \"acceptanceCriteria\": [\"All tests pass\", \"All packages build\", \"Changelog written\", \"Manual testing guide provided\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-21T16:00:00.000Z"
+}
