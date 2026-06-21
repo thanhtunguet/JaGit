@@ -1,0 +1,40 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-22-session-mcp-real-protocol.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Add MCP SDK Dependency",
+      "status": "pending",
+      "description": "**Goal:** Add `@modelcontextprotocol/sdk` as an explicit dependency of `packages/api`.\n\n**Files:**\n- Modify: `packages/api/package.json`\n\n**Acceptance Criteria:**\n- [ ] `@modelcontextprotocol/sdk` appears in `packages/api/package.json` dependencies\n- [ ] `pnpm install` succeeds\n- [ ] `pnpm -r build` succeeds\n\n**Verify:** `pnpm --filter @jigit/api build` exits 0\n\n```json:metadata\n{\"files\": [\"packages/api/package.json\"], \"verifyCommand\": \"pnpm --filter @jigit/api build\", \"acceptanceCriteria\": [\"@modelcontextprotocol/sdk in package.json\", \"pnpm install succeeds\", \"build succeeds\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Write Failing MCP Protocol Tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Write the test file that will drive the MCP protocol implementation. Tests will fail until the controller is rewritten.\n\n**Files:**\n- Modify: `packages/api/src/session-mcp/session-mcp.controller.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Test file imports MCP SDK types\n- [ ] `tools/list` test sends real MCP JSON-RPC and asserts `activate-jira` appears\n- [ ] `tools/call` success test sends real MCP envelope and asserts `CallToolResult` shape\n- [ ] `tools/call` error tests assert `isError: true` (not HTTP 404/409)\n- [ ] Existing auth/header guard tests preserved\n- [ ] Tests fail as expected (implementation not done yet)\n\n**Verify:** `pnpm --filter @jigit/api test -- session-mcp.controller.test.ts` shows FAIL lines\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.controller.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/api test -- session-mcp.controller.test.ts 2>&1 | grep -E '(FAIL|PASS)' | head -10\", \"acceptanceCriteria\": [\"tools/list test exists\", \"tools/call tests exist\", \"error tests check isError:true\", \"auth guard tests preserved\", \"tests currently fail\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Create MCP Server Factory",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Create `session-mcp.server.ts` with a tool registry and the `activate-jira` handler that catches business errors and wraps them as MCP error results.\n\n**Files:**\n- Create: `packages/api/src/session-mcp/session-mcp.server.ts`\n\n**Acceptance Criteria:**\n- [ ] Exports `createSessionMcpServer(ctx: { username: string; service: SessionMcpService }): McpServer`\n- [ ] Registers `activate-jira` tool with Zod input schema\n- [ ] Handler catches `NotFoundException`/`ConflictException` and returns `{ isError: true, content: [...] }`\n- [ ] Success returns `{ content: [{type:\"text\", text: JSON.stringify(result)}] }`\n- [ ] TypeScript compiles clean\n\n**Verify:** `pnpm --filter @jigit/api build` exits 0\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.server.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/api build\", \"acceptanceCriteria\": [\"createSessionMcpServer exported\", \"activate-jira tool registered\", \"error handling wraps as isError:true\", \"build succeeds\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Rewrite Controller to Use MCP Transport",
+      "status": "pending",
+      "blockedBy": [2, 3],
+      "description": "**Goal:** Rewrite `session-mcp.controller.ts` to delegate to the MCP server + `StreamableHTTPServerTransport`, using Fastify's raw req/res.\n\n**Files:**\n- Modify: `packages/api/src/session-mcp/session-mcp.controller.ts`\n\n**Acceptance Criteria:**\n- [ ] Controller keeps `@UseGuards(AuthGuard)` and `x-git-username` header check\n- [ ] POST handler builds fresh `McpServer` via factory + stateless transport\n- [ ] Calls `transport.handleRequest(request.raw, reply.raw, request.body)`\n- [ ] Closes transport/server after response\n- [ ] All MCP protocol tests pass\n\n**Verify:** `pnpm --filter @jigit/api test -- session-mcp.controller.test.ts` shows all PASS\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.controller.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/api test -- session-mcp.controller.test.ts\", \"acceptanceCriteria\": [\"AuthGuard preserved\", \"x-git-username check preserved\", \"MCP transport delegation works\", \"all tests pass\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Verify End-to-End with Claude Code MCP Client",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "**Goal:** Manually verify the endpoint works when configured as an MCP server in Claude Code.\n\n**Files:**\n- None (manual verification)\n\n**Acceptance Criteria:**\n- [ ] `pnpm dev:api` starts the API successfully\n- [ ] Claude Code's MCP connection shows connected status\n- [ ] `tools/list` returns `activate-jira` (visible in Claude Code if applicable)\n- [ ] `tools/call activate-jira` succeeds from Claude Code\n\n**Verify:** Manual — Claude Code shows \"jagit-session: connected\" or equivalent\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"manual\", \"acceptanceCriteria\": [\"API starts\", \"MCP connection green\", \"tool callable\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-22T12:00:00Z"
+}
