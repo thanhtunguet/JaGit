@@ -640,6 +640,7 @@ export function buildPayloadFromStdin(
       debugLogPath: usage.sourcePath,
       debugSessionId: usage.sessionId,
       totalTokens: usage.totalTokens,
+      cachedTokens: usage.cachedInputTokens,
       modelUsage: usage.modelUsage,
     } : undefined,
   };

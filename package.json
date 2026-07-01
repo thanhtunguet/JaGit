@@ -23,6 +23,7 @@
     "publish:hooks:major": "tsx scripts/publish-hooks.ts --version major"
   },
   "devDependencies": {
+    "@types/node": "^26.1.0",
     "dotenv-cli": "^11.0.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0",

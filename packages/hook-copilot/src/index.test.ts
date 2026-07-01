@@ -169,6 +169,7 @@ describe("copilot buildPayloadFromStdin (VS Code agent hook mode)", () => {
       workspaceId: "ws-1",
       debugSessionId: "sess-abc123",
       totalTokens: 145,
+      cachedTokens: 30,
     });
   });
 
