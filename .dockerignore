@@ -1,0 +1,16 @@
+.git
+.github
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/*.js.map
+.worktrees
+packages/worker/_works
+docs
+e2e
+webhook-samples
+*.md
+!packages/**/README.md

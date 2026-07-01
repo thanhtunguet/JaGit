@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|NotebookEdit|Glob|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '.codex/hooks/guard.sh'",
+            "statusMessage": "Checking guardrails…"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @jagit/hook-codex",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

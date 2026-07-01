@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum JobStatus {
+  queued
+  cloning
+  running
+  awaiting_approval
+  pushing
+  opening_mr
+  reporting
+  done
+  paused
+  stopped
+  failed
+}
+
+enum CredentialKind {
+  jira
+  gitlab
+  telegram
+  anthropic
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
+// ─── AgentTemplate ───────────────────────────────────────────────────────────
+// Seeded; CRUD deferred to Phase 2+.
+// Controls which model and tools are used for a coding run.
+
+model AgentTemplate {
+  id                        String   @id @default(cuid())
+  name                      String   @unique
+  model                     String   // e.g. "claude-opus-4-5"
+  systemPrompt              String
+  maxConcurrent             Int      @default(1)
+  allowedTools              Json     @default("[]")   // string[] of ACP tool names
+  skills                    Json     @default("[]")   // string[] of skill names (MVP: name-only)
+  mcpServerIds              Json     @default("[]")   // string[] of McpServerConfig ids
+  requireReviewBeforeCommit Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  jobs          Job[]
+  repoMappings  RepoMapping[]
+}
+
+// ─── McpServerConfig ───────────────────────────────────────────────────────────
+// MCP servers injected into ACP session/new via AgentTemplate.mcpServerIds.
+// transport: "stdio" (command/args/env) or "http" (url/headers).
+// env/headers values are literals or credential refs (resolved at session spawn).
+
+model McpServerConfig {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  transport String   @default("stdio") // "stdio" | "http"
+  command   String   @default("")
+  args      Json     @default("[]")   // string[] — stdio only
+  env       Json     @default("{}")   // stdio process env
+  url       String?                    // http only
+  headers   Json     @default("{}")   // http request headers
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Credential ──────────────────────────────────────────────────────────────
+// One row per integration account.  `secrets` stores an encrypted JSON blob
+// (never logged or returned in API responses).  `meta` stores non-secret config
+// like base URLs, project IDs, Telegram chat IDs.
+
+model Credential {
+  id        String         @id @default(cuid())
+  kind      CredentialKind
+  name      String
+  secrets   Json           // encrypted at rest with APP_ENCRYPTION_KEY
+  meta      Json           @default("{}")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([kind, name])
+}
+
+// ─── RepoMapping ─────────────────────────────────────────────────────────────
+// Maps a Jira project to a GitLab project + agent template + branch rules.
+// branchPrefixRules example: { "Bug": "bugfix/", "Story": "feature/", "default": "feature/" }
+
+model RepoMapping {
+  id                String        @id @default(cuid())
+  jiraProjectKey    String        @unique
+  gitlabProjectId   String
+  defaultBaseBranch String        @default("main")
+  branchPrefixRules Json          @default("{}")
+  agentTemplateId   String
+  agentTemplate     AgentTemplate @relation(fields: [agentTemplateId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+// ─── Job ─────────────────────────────────────────────────────────────────────
+// One row per triggered coding run.
+// checkpointThreadId: used by the LangGraph Postgres checkpointer (= dedupeKey).
+// dedupeKey: SHA-1 of (source:issueKey:eventId) — prevents duplicate jobs.
+
+model Job {
+  id                  String         @id @default(cuid())
+  source              String         // "jira" | "gitlab"
+  jiraIssueKey        String?
+  gitlabProjectId     String?
+  branch              String?
+  mrUrl               String?
+  status              JobStatus      @default(queued)
+  agentTemplateId     String?
+  agentTemplate       AgentTemplate? @relation(fields: [agentTemplateId], references: [id])
+  checkpointThreadId  String         @unique
+  dedupeKey           String         @unique
+  tokensUsed          Int            @default(0)
+  costUsd             Float          @default(0)
+  error               String?
+  workdir             String?        // ephemeral clone path (cleaned on terminal state)
+  reviewApprovedAt    DateTime?      // set when human_review approved before commit
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  steps     JobStep[]
+  events    JobEvent[]
+  approvals Approval[]
+}
+
+// ─── JobStep ─────────────────────────────────────────────────────────────────
+// One row per LangGraph node execution.
+// name:   node name (e.g. "resolveContext", "cloneRepo", "runAgent")
+// status: "pending" | "running" | "done" | "failed"
+
+model JobStep {
+  id         String    @id @default(cuid())
+  jobId      String
+  job        Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name       String
+  status     String    @default("pending")
+  detail     Json      @default("{}")
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+// ─── JobEvent ────────────────────────────────────────────────────────────────
+// Append-only timeline; streamed to the dashboard over SSE.
+// type examples: "step_started", "step_done", "agent_message", "tool_use",
+//                "approval_requested", "approval_resolved", "error"
+
+model JobEvent {
+  id      String   @id @default(cuid())
+  jobId   String
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  ts      DateTime @default(now())
+  level   String   @default("info")   // "info" | "warn" | "error"
+  type    String
+  message String
+  payload Json     @default("{}")
+
+  @@index([jobId, ts])
+}
+
+// ─── Approval ────────────────────────────────────────────────────────────────
+// Created when Claude Code emits a session/request_permission event.
+// Single-resolution: whichever channel (Telegram or dashboard) responds first
+// wins; subsequent resolutions are no-ops.
+// telegramMessageRef: message_id from the sent Telegram message (for editing it
+// after resolution to show the chosen option).
+
+model Approval {
+  id                 String         @id @default(cuid())
+  jobId              String
+  job                Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  stepId             String?        // FK to the JobStep that triggered this approval
+  kind               String         // e.g. "tool_permission"
+  prompt             String
+  options            Json           @default("[]")  // { optionId: string; name: string }[]
+  status             ApprovalStatus @default(pending)
+  decidedBy          String?        // user identifier or "system" (timeout)
+  decidedVia         String?        // "telegram" | "dashboard" | "system"
+  chosenOptionId     String?
+  telegramMessageRef String?        // stringified Telegram message_id
+  createdAt          DateTime       @default(now())
+  decidedAt          DateTime?
+
+  @@index([jobId, status])
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+// Represents a user for usage tracking (CodeBurn consolidation).
+
+model User {
+  id            String         @id @default(cuid())
+  username      String         @unique
+  createdAt     DateTime       @default(now())
+  uploads       UsageUpload[]
+  agentSessions AgentSession[]
+}
+
+// ─── UsageUpload ─────────────────────────────────────────────────────────────
+// Stores parsed usage data (e.g., from CSV uploads) per user and period.
+
+model UsageUpload {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+  period     String   // "today", "7days", "30days"
+  data       Json     // structured JSON containing all parsed CSV data
+
+  @@index([userId, uploadedAt])
+}
+
+// ─── AgentSession ────────────────────────────────────────────────────────────
+// Live per-session usage snapshots pushed by per-tool hook adapters.
+
+enum AgentTool {
+  claude_code
+  codex
+  copilot
+}
+
+model AgentSession {
+  id                       String    @id @default(cuid())
+  tool                     AgentTool
+  sessionId                String
+  userId                   String
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model                    String
+  inputTokens              Int       @default(0)
+  cachedInputTokens        Int       @default(0)
+  cacheCreationInputTokens Int       @default(0)
+  outputTokens             Int       @default(0)
+  costUsd                  Float?
+  toolCallCount            Int?
+  startedAt                DateTime
+  lastUpdatedAt            DateTime  @updatedAt
+  rawPayload               Json      @default("{}")
+  createdAt                DateTime  @default(now())
+
+  // Jira association
+  jiraTicketId             String?
+
+  // Time tracking
+  initialCommitSha         String?
+  durationMs               Int?
+
+  // Lines of code
+  linesAdded               Int?
+  linesRemoved             Int?
+
+  @@unique([tool, sessionId])
+  @@index([userId, lastUpdatedAt])
+  @@index([tool, lastUpdatedAt])
+  @@index([jiraTicketId])
+}
+
+// ─── ModelPricing ────────────────────────────────────────────────────────────
+// Periodically updated model API pricing.
+
+model ModelPricing {
+  id                          String   @id @default(cuid())
+  model                       String   @unique
+  inputCostPerToken           Float    @default(0)
+  outputCostPerToken          Float    @default(0)
+  cacheCreationInputTokenCost Float?
+  cacheReadInputTokenCost     Float?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@index([model])
+}

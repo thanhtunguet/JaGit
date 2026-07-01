@@ -1,0 +1,60 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-20-codeburn-phase2-dashboard.md",
+  "tasks": [
+    {
+      "id": 9,
+      "subject": "Phase 2 Task 1: Dashboard API Client",
+      "status": "completed",
+      "description": "**Goal:** Add usage API functions to the dashboard's API client.\n\n**Files:**\n- Modify: `packages/dashboard/src/api/client.ts`\n\n**Acceptance Criteria:**\n- [ ] `listUsageUsers()` calls `GET /api/usage/users`\n- [ ] `getUserUploads(username)` calls `GET /api/usage/users/:username`\n- [ ] `getLatestUpload(username)` calls `GET /api/usage/users/:username/latest`\n- [ ] `deleteUsageUser(username)` calls `DELETE /api/usage/users/:username` (with auth)\n- [ ] Types mirror the API response shapes\n\n**Verify:** `pnpm --filter @jigit/dashboard test client.test.ts` \u2192 all pass\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/api/client.ts\", \"packages/dashboard/src/api/client.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard test client.test.ts\", \"acceptanceCriteria\": [\"listUsageUsers added\", \"getUserUploads added\", \"getLatestUpload added\", \"deleteUsageUser added\", \"Types defined\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Phase 2 Task 2: useUsageData Hook",
+      "status": "completed",
+      "description": "**Goal:** Create a hook that fetches usage data for a selected user and period.\n\n**Files:**\n- Create: `packages/dashboard/src/hooks/useUsageData.ts`\n- Create: `packages/dashboard/src/hooks/useUsageData.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Hook accepts `username` and `period` (Today | 7 Days | 30 Days)\n- [ ] Fetches from `GET /api/usage/users/:username/latest`\n- [ ] Returns `{ data, loading, error }` shape\n- [ ] Filters data rows by the selected period\n- [ ] Test covers loading, success, error states\n\n**Verify:** `pnpm --filter @jigit/dashboard test useUsageData.test.ts` \u2192 all pass\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/hooks/useUsageData.ts\", \"packages/dashboard/src/hooks/useUsageData.test.ts\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard test useUsageData.test.ts\", \"acceptanceCriteria\": [\"Hook fetches data\", \"Hook filters by period\", \"Hook handles loading\", \"Hook handles error\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Phase 2 Task 3: Core Usage Components (Part 1)",
+      "status": "completed",
+      "description": "**Goal:** Port SummaryCards, DailyChart, ActivityChart, and ModelsChart from CodeBurn.\n\n**Files:**\n- Create: `packages/dashboard/src/components/usage/SummaryCards.tsx`\n- Create: `packages/dashboard/src/components/usage/DailyChart.tsx`\n- Create: `packages/dashboard/src/components/usage/ActivityChart.tsx`\n- Create: `packages/dashboard/src/components/usage/ModelsChart.tsx`\n\n**Acceptance Criteria:**\n- [ ] All 4 components render correctly with mock data\n- [ ] Components use shadcn/ui Card components for consistency\n- [ ] Recharts charts match CodeBurn's visual style but use Tailwind colors\n- [ ] Components accept `data` prop and `period` prop where needed\n\n**Verify:** `pnpm --filter @jigit/dashboard typecheck` \u2192 no errors\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/components/usage/SummaryCards.tsx\", \"packages/dashboard/src/components/usage/DailyChart.tsx\", \"packages/dashboard/src/components/usage/ActivityChart.tsx\", \"packages/dashboard/src/components/usage/ModelsChart.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard typecheck\", \"acceptanceCriteria\": [\"SummaryCards renders\", \"DailyChart renders\", \"ActivityChart renders\", \"ModelsChart renders\", \"Typecheck passes\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Phase 2 Task 4: Core Usage Components (Part 2)",
+      "status": "completed",
+      "description": "**Goal:** Port ProjectsChart, SessionsTable, ToolsChart, and ShellCommandsChart.\n\n**Files:**\n- Create: `packages/dashboard/src/components/usage/ProjectsChart.tsx`\n- Create: `packages/dashboard/src/components/usage/SessionsTable.tsx`\n- Create: `packages/dashboard/src/components/usage/ToolsChart.tsx`\n- Create: `packages/dashboard/src/components/usage/ShellCommandsChart.tsx`\n\n**Acceptance Criteria:**\n- [ ] ProjectsChart shows top 10 projects by cost (horizontal bar)\n- [ ] SessionsTable shows top 20 sessions with sortable columns\n- [ ] ToolsChart shows top 10 tools by calls (horizontal bar)\n- [ ] ShellCommandsChart shows top 10 commands by calls (horizontal bar)\n- [ ] All use shadcn/ui Card and Table components\n\n**Verify:** `pnpm --filter @jigit/dashboard typecheck` \u2192 no errors\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/components/usage/ProjectsChart.tsx\", \"packages/dashboard/src/components/usage/SessionsTable.tsx\", \"packages/dashboard/src/components/usage/ToolsChart.tsx\", \"packages/dashboard/src/components/usage/ShellCommandsChart.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard typecheck\", \"acceptanceCriteria\": [\"ProjectsChart renders\", \"SessionsTable renders\", \"ToolsChart renders\", \"ShellCommandsChart renders\", \"Typecheck passes\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Phase 2 Task 5: UserSelector and PeriodToggle",
+      "status": "completed",
+      "description": "**Goal:** Create user selection pills and period toggle buttons.\n\n**Files:**\n- Create: `packages/dashboard/src/components/usage/UserSelector.tsx`\n- Create: `packages/dashboard/src/components/usage/PeriodToggle.tsx`\n\n**Acceptance Criteria:**\n- [ ] UserSelector shows pill buttons for each user, highlights selected\n- [ ] PeriodToggle shows Today/7 Days/30 Days buttons, highlights selected\n- [ ] Both use Tailwind/shadcn styling consistent with dashboard\n- [ ] PeriodToggle uses the Period type from useUsageData\n\n**Verify:** `pnpm --filter @jigit/dashboard typecheck` \u2192 no errors\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/components/usage/UserSelector.tsx\", \"packages/dashboard/src/components/usage/PeriodToggle.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard typecheck\", \"acceptanceCriteria\": [\"UserSelector renders\", \"PeriodToggle renders\", \"Typecheck passes\"]}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Phase 2 Task 6: Usage Page",
+      "status": "completed",
+      "description": "**Goal:** Assemble the `/usage` page with all components, period filtering, and user selection.\n\n**Files:**\n- Create: `packages/dashboard/src/pages/Usage.tsx`\n- Create: `packages/dashboard/src/pages/Usage.test.tsx`\n\n**Acceptance Criteria:**\n- [ ] Page fetches user list on mount\n- [ ] URL query param `?u=` syncs with selected user\n- [ ] Period toggle filters displayed data\n- [ ] All chart components render with fetched data\n- [ ] Empty state shown when no user selected or no data\n- [ ] Test covers rendering and user selection\n\n**Verify:** `pnpm --filter @jigit/dashboard test Usage.test.tsx` \u2192 pass\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/pages/Usage.tsx\", \"packages/dashboard/src/pages/Usage.test.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard test Usage.test.tsx\", \"acceptanceCriteria\": [\"Page renders\", \"URL sync works\", \"Period toggle works\", \"Charts render with data\", \"Empty state shown\", \"Tests pass\"]}\n```"
+    },
+    {
+      "id": 15,
+      "subject": "Phase 2 Task 7: Routes and Navigation",
+      "status": "completed",
+      "description": "**Goal:** Add `/usage` route and sidebar nav item.\n\n**Files:**\n- Modify: `packages/dashboard/src/App.tsx`\n- Modify: `packages/dashboard/src/components/layout/AppShell.tsx`\n\n**Acceptance Criteria:**\n- [ ] `/usage` route renders Usage page\n- [ ] Sidebar has \"Usage\" nav item with bar-chart icon\n- [ ] Nav item highlights when on `/usage` route\n\n**Verify:** `pnpm --filter @jigit/dashboard typecheck` \u2192 no errors\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/App.tsx\", \"packages/dashboard/src/components/layout/AppShell.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard typecheck\", \"acceptanceCriteria\": [\"Route added\", \"Nav item added\", \"Typecheck passes\"]}\n```"
+    },
+    {
+      "id": 16,
+      "subject": "Phase 2 Task 8: Overview Widget",
+      "status": "completed",
+      "description": "**Goal:** Add an AI Usage widget to the Overview page.\n\n**Files:**\n- Modify: `packages/dashboard/src/pages/Overview.tsx`\n\n**Acceptance Criteria:**\n- [ ] Widget shows top 3 users by total cost (last 30 days)\n- [ ] Shows mini bar chart of daily spend for first user\n- [ ] Has link to `/usage` page\n- [ ] Uses existing StatCard component pattern\n\n**Verify:** `pnpm --filter @jigit/dashboard typecheck` \u2192 no errors\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/pages/Overview.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard typecheck\", \"acceptanceCriteria\": [\"Widget shows top users\", \"Widget shows mini chart\", \"Link to /usage works\", \"Typecheck passes\"]}\n```"
+    },
+    {
+      "id": 17,
+      "subject": "Phase 2 Task 9: Dashboard Tests",
+      "status": "completed",
+      "description": "**Goal:** Write tests for the new dashboard functionality.\n\n**Files:**\n- Modify: `packages/dashboard/src/pages/Usage.test.tsx` (expand)\n- Create: `packages/dashboard/src/components/usage/SummaryCards.test.tsx`\n\n**Acceptance Criteria:**\n- [ ] Usage page test covers user selection, period change, and data display\n- [ ] SummaryCards test renders with mock data\n- [ ] All dashboard tests pass\n\n**Verify:** `pnpm --filter @jigit/dashboard test` \u2192 all pass\n\n```json:metadata\n{\"files\": [\"packages/dashboard/src/pages/Usage.test.tsx\", \"packages/dashboard/src/components/usage/SummaryCards.test.tsx\"], \"verifyCommand\": \"pnpm --filter @jigit/dashboard test\", \"acceptanceCriteria\": [\"Usage page tests expanded\", \"SummaryCards test added\", \"All dashboard tests pass\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-20T12:00:00Z"
+}

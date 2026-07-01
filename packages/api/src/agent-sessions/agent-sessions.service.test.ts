@@ -1,0 +1,203 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NotFoundException } from "@nestjs/common";
+import { AgentSessionService } from "./agent-sessions.service.js";
+import { PrismaService } from "../common/prisma.module.js";
+import { PricingService } from "../pricing/pricing.service.js";
+
+function makePrisma() {
+  return {
+    client: {
+      user: { upsert: vi.fn().mockResolvedValue({ id: "u1", username: "alice" }) },
+      agentSession: {
+        upsert: vi.fn().mockResolvedValue({ id: "as1", tool: "claude_code", sessionId: "s1", lastUpdatedAt: new Date() }),
+        findMany: vi.fn().mockResolvedValue([{ id: "as1", costUsd: 0.0008, user: { username: "alice" } }]),
+        count: vi.fn().mockResolvedValue(1),
+        findUnique: vi.fn().mockResolvedValue({ id: "as1", rawPayload: { a: 1 } }),
+        update: vi.fn(),
+      },
+    },
+  } as unknown as PrismaService;
+}
+
+const payload = {
+  tool: "claude-code" as const, sessionId: "s1", gitUsername: "alice", model: "m",
+  inputTokens: 1, cachedInputTokens: 0, outputTokens: 1, costUsd: null, toolCallCount: 2,
+  startedAt: "2026-06-20T10:00:00.000Z",
+};
+
+describe("AgentSessionService", () => {
+  let prisma: PrismaService;
+  let pricing: PricingService;
+  let svc: AgentSessionService;
+  beforeEach(() => { 
+    prisma = makePrisma(); 
+    pricing = {
+      calculateCost: vi.fn().mockResolvedValue(0.123),
+      getBaseTokenRate: vi.fn().mockResolvedValue(0.0000008),
+      toBaseTokens: vi.fn((cost: number | null, rate: number | null) =>
+        cost == null || rate == null || rate <= 0 ? null : cost / rate),
+      getModelRates: vi.fn(async (model: string) =>
+        model === "known"
+          ? { inputCostPerToken: 0.000001, outputCostPerToken: 0.000005, cacheReadInputTokenCost: null, cacheCreationInputTokenCost: null }
+          : null),
+      effectiveRates: vi.fn((p: any) => ({
+        input: p.inputCostPerToken,
+        output: p.outputCostPerToken,
+        cacheRead: p.cacheReadInputTokenCost ?? p.inputCostPerToken * 0.1,
+        cacheCreation: p.cacheCreationInputTokenCost ?? p.inputCostPerToken * 1.25,
+      })),
+    } as unknown as PricingService;
+    svc = new AgentSessionService(prisma, pricing); 
+  });
+
+  it("upsert maps wire tool to enum and find-or-creates user", async () => {
+    await svc.upsert(payload);
+    expect((prisma as any).client.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { username: "alice" }, create: { username: "alice" } }),
+    );
+    const call = (prisma as any).client.agentSession.upsert.mock.calls[0][0];
+    expect(call.where).toEqual({ tool_sessionId: { tool: "claude_code", sessionId: "s1" } });
+    expect(call.create.startedAt).toBeInstanceOf(Date);
+    expect(call.update.startedAt).toBeUndefined();
+    expect(call.create.rawPayload).toEqual({});
+    expect(pricing.calculateCost).toHaveBeenCalledWith("m", 1, 1, 0, 0);
+    expect(call.create.costUsd).toBe(0.123);
+  });
+
+  it("list filters by tool, returns rows + total", async () => {
+    const res = await svc.list({ tool: "claude-code", limit: 50, offset: 0 });
+    const args = (prisma as any).client.agentSession.findMany.mock.calls[0][0];
+    expect(args.where.tool).toBe("claude_code");
+    expect(args.orderBy).toEqual({ lastUpdatedAt: "desc" });
+    expect(res.total).toBe(1);
+    expect(res.rows[0]).toMatchObject({ id: "as1", costUsd: 0.0008, user: { username: "alice" } });
+    expect(res.rows[0].baseTokens).toBeCloseTo(1000, 6);
+  });
+
+  it("list sets baseTokens to null when base rate unavailable", async () => {
+    (pricing.getBaseTokenRate as any).mockResolvedValue(null);
+    const res = await svc.list({ limit: 50, offset: 0 });
+    expect(res.rows[0].baseTokens).toBeNull();
+  });
+
+  it("aggregate returns per-type baseTokens split", async () => {
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "userId") return [{ userId: "u1", _sum: { costUsd: 0.5 } }];
+      if (by[0] === "model") {
+        return [
+          { model: "known", _sum: { costUsd: 0.5, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } },
+        ];
+      }
+      if (by[0] === "tool") return [{ tool: "claude_code", _sum: { costUsd: 0.5 } }];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({
+      _sum: { inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000, costUsd: 0.5 },
+    });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([{ id: "u1", username: "alice" }]);
+
+    const res = await svc.aggregate({});
+    // total is anchored to stored cost: totalCostUsd / baseRate = 0.5 / 0.0000008
+    // input:output ratio from tokens × rates: 0.001 : 0.01 => input share 0.0909...
+    expect(res.baseTokens).not.toBeNull();
+    expect(res.baseTokens!.total).toBeCloseTo(0.5 / 0.0000008, 2);
+    expect(res.baseTokens!.input + res.baseTokens!.output).toBeCloseTo(res.baseTokens!.total, 2);
+    const expectedTotal = 0.5 / 0.0000008;
+    const expectedInput = expectedTotal * (0.001 / 0.011);
+    expect(res.baseTokens!.input).toBeCloseTo(expectedInput, 2);
+    expect(res.baseTokens!.output).toBeCloseTo(expectedTotal - expectedInput, 2);
+  });
+
+  it("aggregate returns null baseTokens when base rate unavailable", async () => {
+    (pricing.getBaseTokenRate as any).mockResolvedValue(null);
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "model") return [{ model: "known", _sum: { costUsd: 0, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } }];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({ _sum: { inputTokens: 0, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 0, costUsd: 0 } });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([]);
+    const res = await svc.aggregate({});
+    expect(res.baseTokens).toBeNull();
+  });
+
+  it("aggregate excludes unpriced models from baseTokens split", async () => {
+    const p = (prisma as any).client.agentSession;
+    p.groupBy = vi.fn(async ({ by }: any) => {
+      if (by[0] === "model") return [
+        { model: "known", _sum: { costUsd: 0.5, inputTokens: 1000, cachedInputTokens: 0, cacheCreationInputTokens: 0, outputTokens: 2000 } },
+        { model: "mystery", _sum: { costUsd: 0, inputTokens: 9999, cachedInputTokens: 9999, cacheCreationInputTokens: 9999, outputTokens: 9999 } },
+      ];
+      return [];
+    });
+    p.aggregate = vi.fn().mockResolvedValue({ _sum: { inputTokens: 10999, cachedInputTokens: 9999, cacheCreationInputTokens: 9999, outputTokens: 11999, costUsd: 0.5 } });
+    p.count = vi.fn().mockResolvedValue(0);
+    (prisma as any).client.user.findMany = vi.fn().mockResolvedValue([]);
+
+    const res = await svc.aggregate({});
+    // Unpriced "mystery" model must not break things; total anchors to stored cost.
+    // Only "known" contributes to the input:output ratio.
+    expect(res.baseTokens!.total).toBeCloseTo(0.5 / 0.0000008, 2);
+    expect(res.baseTokens!.input + res.baseTokens!.output).toBeCloseTo(res.baseTokens!.total, 2);
+    expect(res.baseTokens!.input).toBeGreaterThan(0);
+    expect(res.baseTokens!.output).toBeGreaterThan(res.baseTokens!.input);
+  });
+
+  it("get returns row with rawPayload", async () => {
+    expect(await svc.get("as1")).toMatchObject({ id: "as1", rawPayload: { a: 1 } });
+  });
+
+  it("get throws NotFound when missing", async () => {
+    (prisma as any).client.agentSession.findUnique.mockResolvedValue(null);
+    await expect(svc.get("nope")).rejects.toBeInstanceOf(NotFoundException);
+
+  });
+
+  describe("updateTimeTracking", () => {
+    it("should update durationMs", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-1", initialCommitSha: null });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-1", sessionId: "s1", initialCommitSha: null, durationMs: 3600000
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-1", { durationMs: 3600000 });
+      expect(updated.durationMs).toBe(3600000);
+      expect(updated.initialCommitSha).toBeNull();
+    });
+
+    it("should update initialCommitSha", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-2", durationMs: null });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-2", sessionId: "s2", initialCommitSha: "abc123", durationMs: null
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-2", { initialCommitSha: "abc123" });
+      expect(updated.initialCommitSha).toBe("abc123");
+      expect(updated.durationMs).toBeNull();
+    });
+
+    it("should update both fields", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue({ id: "time-test-3" });
+      (prisma as any).client.agentSession.update.mockResolvedValue({
+        id: "time-test-3", sessionId: "s3", initialCommitSha: "def456", durationMs: 7200000
+      });
+
+      const updated = await svc.updateTimeTracking("time-test-3", {
+        durationMs: 7200000,
+        initialCommitSha: "def456",
+      });
+      expect(updated.durationMs).toBe(7200000);
+      expect(updated.initialCommitSha).toBe("def456");
+    });
+
+    it("should throw NotFoundException for invalid session", async () => {
+      (prisma as any).client.agentSession.findUnique.mockResolvedValue(null);
+      await expect(
+        svc.updateTimeTracking("nonexistent", { durationMs: 1000 })
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+});

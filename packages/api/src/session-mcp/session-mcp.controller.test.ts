@@ -1,0 +1,371 @@
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { Test } from "@nestjs/testing";
+import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+import { SessionMcpController } from "./session-mcp.controller.js";
+import { SessionMcpService } from "./session-mcp.service.js";
+import { PrismaService } from "../common/prisma.module.js";
+import { NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+
+// CallToolResult["content"] is a discriminated union (text/image/audio/resource);
+// these tests only ever produce text content blocks.
+type TextContent = Extract<CallToolResult["content"][number], { type: "text" }>;
+
+const mockSvc = {
+  activateJira: vi.fn(),
+  logWork: vi.fn(),
+};
+
+// Helper to build a valid MCP JSON-RPC request body
+function mcpRequest(method: string, params: Record<string, unknown> = {}, id: number | string = 1) {
+  return {
+    jsonrpc: "2.0",
+    id,
+    method,
+    params,
+  };
+}
+
+describe("SessionMcpController — MCP Protocol", () => {
+  let app: NestFastifyApplication;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const module = await Test.createTestingModule({
+      controllers: [SessionMcpController],
+      providers: [
+        { provide: SessionMcpService, useValue: mockSvc },
+        { provide: PrismaService, useValue: { client: {} } },
+      ],
+    }).compile();
+
+    app = module.createNestApplication(new FastifyAdapter());
+    app.setGlobalPrefix("api");
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  const validHeaders = {
+    "x-git-username": "testuser",
+    authorization: "Bearer test-dashboard-token",
+    accept: "application/json, text/event-stream",
+  };
+
+  describe("MCP tools/list", () => {
+    it("should list activate-jira tool with correct schema", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.jsonrpc).toBe("2.0");
+      expect(body.result).toBeDefined();
+      expect(body.result.tools).toBeInstanceOf(Array);
+      const tool = body.result.tools.find((t: { name: string }) => t.name === "activate-jira");
+      expect(tool).toBeDefined();
+      expect(tool.description).toContain("Jira");
+      expect(tool.inputSchema.properties.ticketId).toBeDefined();
+      expect(tool.inputSchema.properties.sessionId).toBeDefined();
+    });
+  });
+
+  describe("MCP tools/call activate-jira", () => {
+    it("should return CallToolResult on success", async () => {
+      mockSvc.activateJira.mockResolvedValue({
+        success: true,
+        sessionId: "test-session-1",
+        jiraTicketId: "PROJ-123",
+        message: "Jira ticket associated with session",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.jsonrpc).toBe("2.0");
+      expect(body.result).toBeDefined();
+      expect(body.result.content).toBeInstanceOf(Array);
+      expect(body.result.content[0].type).toBe("text");
+      const text = (body.result.content[0] as TextContent).text;
+      const data = JSON.parse(text);
+      expect(data.success).toBe(true);
+      expect(data.jiraTicketId).toBe("PROJ-123");
+    });
+
+    it("should call the service with sessionId undefined when omitted from arguments", async () => {
+      mockSvc.activateJira.mockResolvedValue({
+        success: true,
+        sessionId: "most-recent-session",
+        jiraTicketId: "PROJ-123",
+        message: "Jira ticket associated with session",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(mockSvc.activateJira).toHaveBeenCalledWith(undefined, "testuser", "PROJ-123");
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBeUndefined();
+      const text = (body.result.content[0] as TextContent).text;
+      expect(JSON.parse(text).sessionId).toBe("most-recent-session");
+    });
+
+    it("should return isError:true for non-existent session (not HTTP 404)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new NotFoundException("Session not found"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "missing" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      expect(body.result.content[0].type).toBe("text");
+      expect((body.result.content[0] as TextContent).text).toContain("not found");
+    });
+
+    it("should return isError:true for ticket conflict (not HTTP 409)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new ConflictException("Already associated"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      expect((body.result.content[0] as TextContent).text).toContain("Already");
+    });
+
+    it("should return isError:true with a generic message for unexpected errors (no internal details leaked)", async () => {
+      mockSvc.activateJira.mockRejectedValue(new Error("Can't reach database server at `localhost:5432`"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "activate-jira",
+          arguments: { ticketId: "PROJ-123", sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      const text = (body.result.content[0] as TextContent).text;
+      expect(text).not.toContain("localhost");
+      expect(text).not.toContain("5432");
+      expect(text).toBe("Internal error");
+    });
+
+    it("should return isError:true for unknown tool (not a transport-level error)", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "unknown-tool",
+          arguments: {},
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      // The MCP SDK reports "tool not found" as a CallToolResult with isError:true
+      // (per spec, tool-execution errors are returned in-band so the LLM can see them),
+      // not as a top-level JSON-RPC error object.
+      expect(body.result.isError).toBe(true);
+      expect((body.result.content[0] as TextContent).text).toContain("not found");
+    });
+  });
+
+  describe("MCP tools/list — log-work", () => {
+    it("should list log-work tool with correct schema", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      const tool = body.result.tools.find((t: { name: string }) => t.name === "log-work");
+      expect(tool).toBeDefined();
+      expect(tool.description).toContain("Jira");
+      expect(tool.inputSchema.properties.sessionId).toBeDefined();
+    });
+  });
+
+  describe("MCP tools/call log-work", () => {
+    it("should return CallToolResult on success", async () => {
+      mockSvc.logWork.mockResolvedValue({
+        success: true,
+        ticketId: "PROJ-123",
+        hoursLogged: 4,
+        baseTokens: 33750000,
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "log-work",
+          arguments: { sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.content[0].type).toBe("text");
+      const data = JSON.parse((body.result.content[0] as TextContent).text);
+      expect(data.success).toBe(true);
+      expect(data.hoursLogged).toBe(4);
+    });
+
+    it("should call the service with sessionId undefined when omitted from arguments", async () => {
+      mockSvc.logWork.mockResolvedValue({
+        success: true,
+        ticketId: "PROJ-123",
+        hoursLogged: 8,
+        baseTokens: 67500000,
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "log-work",
+          arguments: {},
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(mockSvc.logWork).toHaveBeenCalledWith(undefined, "testuser");
+    });
+
+    it("should return isError:true for non-existent session (not HTTP 404)", async () => {
+      mockSvc.logWork.mockRejectedValue(new NotFoundException("Session not found"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "log-work",
+          arguments: { sessionId: "missing" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      expect((body.result.content[0] as TextContent).text).toContain("not found");
+    });
+
+    it("should return isError:true for a session missing a Jira ticket (not HTTP 400)", async () => {
+      mockSvc.logWork.mockRejectedValue(
+        new BadRequestException("Session has no associated Jira ticket; call activate-jira first")
+      );
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "log-work",
+          arguments: { sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      expect((body.result.content[0] as TextContent).text).toContain("activate-jira");
+    });
+
+    it("should return isError:true with a generic message for unexpected errors (no internal details leaked)", async () => {
+      mockSvc.logWork.mockRejectedValue(new Error("Can't reach database server at `localhost:5432`"));
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: validHeaders,
+        payload: mcpRequest("tools/call", {
+          name: "log-work",
+          arguments: { sessionId: "test-session-1" },
+        }),
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body) as { jsonrpc: string; id: number; result: CallToolResult };
+      expect(body.result.isError).toBe(true);
+      const text = (body.result.content[0] as TextContent).text;
+      expect(text).not.toContain("localhost");
+      expect(text).toBe("Internal error");
+    });
+  });
+
+  describe("Transport-level guards (unchanged)", () => {
+    it("should reject with HTTP 401 if no auth header", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: { "x-git-username": "testuser" }, // missing auth
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("should reject with HTTP 400 if missing x-git-username", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/session-mcp",
+        headers: { authorization: "Bearer test-dashboard-token" }, // missing username
+        payload: mcpRequest("tools/list"),
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+  });
+});

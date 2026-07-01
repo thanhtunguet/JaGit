@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.tsx": "typescriptreact"
+    },
+    "editor.formatOnSave": true,
+    "files.autoSave": "onFocusChange"
+}

@@ -1,0 +1,12 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-20-codeburn-phase3-integration.md",
+  "tasks": [
+    {
+      "id": 18,
+      "subject": "Phase 3 Task 1: Integration, Build, and Documentation",
+      "status": "completed",
+      "description": "**Goal:** Run full integration tests, verify builds, update documentation, and record the session.\n\n**Files:**\n- Modify: `CHANGELOG.md`\n- Create: `docs/changelogs/2026-06-20-codeburn-consolidation.md`\n- Modify: `CLAUDE.md` (update plan progress)\n\n**Acceptance Criteria:**\n- [ ] `pnpm -r build` succeeds for all packages\n- [ ] `pnpm -r test` passes for all packages\n- [ ] Prisma migration applies cleanly to a fresh database\n- [ ] CHANGELOG.md updated with session summary\n- [ ] Per-session changelog written with details\n- [ ] Plan progress updated in CLAUDE.md\n\n**Verify:** `pnpm -r build && pnpm -r test` \u2192 all pass\n\n```json:metadata\n{\"files\": [\"CHANGELOG.md\", \"docs/changelogs/2026-06-20-codeburn-consolidation.md\", \"CLAUDE.md\"], \"verifyCommand\": \"pnpm -r build && pnpm -r test\", \"acceptanceCriteria\": [\"Build succeeds\", \"All tests pass\", \"Migration verified\", \"CHANGELOG updated\", \"Session log written\", \"Plan progress updated\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-20T12:00:00Z"
+}

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/guard.sh"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/guard.sh",
+        "matcher": "Write|Grep|Glob|StrReplace|Delete|NotebookEdit"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/guard.sh"
+      }
+    ]
+  }
+}

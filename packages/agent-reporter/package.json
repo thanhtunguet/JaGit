@@ -1,0 +1,23 @@
+{
+  "name": "@jagit/agent-reporter",
+  "version": "0.0.7",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jagit/shared": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "vitest": "^2.1.9"
+  }
+}

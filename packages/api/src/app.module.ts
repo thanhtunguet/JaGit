@@ -1,0 +1,34 @@
+import { Module } from "@nestjs/common";
+import { PrismaModule } from "./common/prisma.module.js";
+import { QueueModule } from "./common/queue.module.js";
+import { WebhooksModule } from "./webhooks/webhooks.module.js";
+import { JobsModule } from "./jobs/jobs.module.js";
+import { ApprovalsModule } from "./approvals/approvals.module.js";
+import { SseModule } from "./sse/sse.module.js";
+import { ConfigModule } from "./config/config.module.js";
+import { TelegramModule } from "./telegram/telegram.module.js";
+import { StatsModule } from "./stats/stats.module.js";
+import { UsageModule } from "./usage/usage.module.js";
+import { AgentSessionModule } from "./agent-sessions/agent-sessions.module.js";
+import { PricingModule } from "./pricing/pricing.module.js";
+import { SessionMcpModule } from "./session-mcp/session-mcp.module.js";
+
+@Module({
+  imports: [
+    PrismaModule,
+    QueueModule,
+    WebhooksModule,
+    JobsModule,
+    ApprovalsModule,
+    SseModule,
+    ConfigModule,
+    TelegramModule,
+    StatsModule,
+    UsageModule,
+    AgentSessionModule,
+    PricingModule,
+    SessionMcpModule,
+  ],
+  controllers: [],
+})
+export class AppModule {}

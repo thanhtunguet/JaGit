@@ -1,0 +1,31 @@
+{
+  "name": "jigit",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @jagit/shared build && pnpm -r test",
+    "dev:api": "dotenv -e .env -- pnpm --filter @jagit/api dev",
+    "dev:worker": "dotenv -e .env -- pnpm --filter @jagit/worker dev",
+    "dev:dashboard": "pnpm --filter @jagit/dashboard dev",
+    "dev:dashboard-v2": "pnpm --filter @jagit/dashboard-v2 dev",
+    "build:dashboard-v2": "pnpm --filter @jagit/dashboard-v2 build",
+    "seed": "dotenv -e .env -- tsx scripts/seed.ts",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @jagit/shared exec prisma migrate deploy",
+    "db:migrate:dev": "dotenv -e .env -- pnpm --filter @jagit/shared exec prisma migrate dev",
+    "db:studio": "dotenv -e .env -- pnpm --filter @jagit/shared exec prisma studio",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
+    "publish:hooks": "tsx scripts/publish-hooks.ts",
+    "publish:hooks:dry": "tsx scripts/publish-hooks.ts --dry-run",
+    "publish:hooks:patch": "tsx scripts/publish-hooks.ts --version patch",
+    "publish:hooks:minor": "tsx scripts/publish-hooks.ts --version minor",
+    "publish:hooks:major": "tsx scripts/publish-hooks.ts --version major"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

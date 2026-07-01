@@ -1,0 +1,46 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-22-session-mcp-log-work.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: createJiraWorklog returns a result object",
+      "status": "completed",
+      "description": "**Goal:** Change createJiraWorklog's return type from Promise<void> to Promise<{ success: boolean; reason?: string }> so callers can detect real success/failure, without changing its fire-and-forget error-swallowing behavior.\n\n**Files:**\n- Modify: packages/shared/src/jira-worklog.ts\n- Test: packages/shared/src/jira-worklog.test.ts\n\n**Verify:** pnpm --filter @jagit/shared test; pnpm -r build\n\n```json:metadata\n{\"files\": [\"packages/shared/src/jira-worklog.ts\", \"packages/shared/src/jira-worklog.test.ts\"], \"verifyCommand\": \"pnpm --filter @jagit/shared test\", \"acceptanceCriteria\": [\"success:true on 2xx\", \"success:false+reason on missing/incomplete credentials\", \"success:false+reason on 4xx/5xx\", \"never throws\", \"hook-claude-code still compiles\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: PricingService workday constants",
+      "status": "completed",
+      "description": "**Goal:** Add USD_PER_WORKDAY (67.5) and HOURS_PER_WORKDAY (8) constants.\n\n**Files:**\n- Modify: packages/api/src/pricing/pricing.service.ts\n- Test: packages/api/src/pricing/pricing.service.test.ts\n\n**Verify:** pnpm --filter @jagit/api test -- pricing.service\n\n```json:metadata\n{\"files\": [\"packages/api/src/pricing/pricing.service.ts\", \"packages/api/src/pricing/pricing.service.test.ts\"], \"verifyCommand\": \"pnpm --filter @jagit/api test -- pricing.service\", \"acceptanceCriteria\": [\"USD_PER_WORKDAY = 67.5\", \"HOURS_PER_WORKDAY = 8\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: SessionMcpService.logWork",
+      "status": "completed",
+      "blockedBy": [0, 1],
+      "description": "**Goal:** Implement logWork — resolve session, validate preconditions, compute hours from cost, delegate to createJiraWorklog.\n\n**Files:**\n- Modify: packages/api/src/session-mcp/session-mcp.service.ts\n- Test: packages/api/src/session-mcp/session-mcp.service.test.ts\n\n**Verify:** pnpm --filter @jagit/api test -- session-mcp.service\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.service.ts\", \"packages/api/src/session-mcp/session-mcp.service.test.ts\"], \"verifyCommand\": \"pnpm --filter @jagit/api test -- session-mcp.service\", \"acceptanceCriteria\": [\"resolves session correctly\", \"throws NotFoundException/BadRequestException appropriately\", \"correct hours math\", \"delegates to createJiraWorklog\", \"returns LogWorkResult shape\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: Wire PricingService into SessionMcpModule",
+      "status": "completed",
+      "blockedBy": [2],
+      "description": "**Goal:** Import PricingModule into SessionMcpModule so PricingService resolves via DI.\n\n**Files:**\n- Modify: packages/api/src/session-mcp/session-mcp.module.ts\n\n**Verify:** pnpm --filter @jagit/api build; pnpm --filter @jagit/api test\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.module.ts\"], \"verifyCommand\": \"pnpm --filter @jagit/api build\", \"acceptanceCriteria\": [\"PricingModule imported\", \"build succeeds\", \"no regressions in full test suite\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 5: Register the log-work MCP tool",
+      "status": "completed",
+      "blockedBy": [3],
+      "description": "**Goal:** Expose logWork as a log-work tool on the session MCP server, same error convention as activate-jira.\n\n**Files:**\n- Modify: packages/api/src/session-mcp/session-mcp.server.ts\n- Modify: packages/api/src/session-mcp/session-mcp.controller.test.ts\n\n**Verify:** pnpm --filter @jagit/api test -- session-mcp.controller; pnpm -r build && pnpm -r test\n\n```json:metadata\n{\"files\": [\"packages/api/src/session-mcp/session-mcp.server.ts\", \"packages/api/src/session-mcp/session-mcp.controller.test.ts\"], \"verifyCommand\": \"pnpm --filter @jagit/api test -- session-mcp.controller\", \"acceptanceCriteria\": [\"tools/list shows log-work\", \"success envelope correct\", \"business errors -> isError:true with message\", \"unexpected errors -> isError:true 'Internal error', no leaked details\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 6: Session logging & changelog",
+      "status": "completed",
+      "blockedBy": [4],
+      "description": "**Goal:** Record this session per CLAUDE.md's session-logging convention.\n\n**Files:**\n- Create: docs/changelogs/2026-06-22-<HHMM>-session-mcp-log-work.md\n- Modify: CHANGELOG.md\n- Modify: CLAUDE.md\n\n**Verify:** Manual review; git status shows only intended files.\n\n```json:metadata\n{\"files\": [\"docs/changelogs/2026-06-22-session-mcp-log-work.md\", \"CHANGELOG.md\", \"CLAUDE.md\"], \"verifyCommand\": \"git status\", \"acceptanceCriteria\": [\"changelog file created\", \"CHANGELOG.md updated\", \"CLAUDE.md plan progress updated\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-22T06:00:00Z"
+}

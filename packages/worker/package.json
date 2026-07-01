@@ -1,0 +1,26 @@
+{
+  "name": "@jagit/worker",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jagit/shared": "workspace:*",
+    "@langchain/langgraph": "^1.4.2",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.3",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "bullmq": "^5.78.1",
+    "dotenv": "^17.4.2",
+    "execa": "^9.6.1",
+    "ioredis": "^5.11.1",
+    "node-telegram-bot-api": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.64.15"
+  }
+}
